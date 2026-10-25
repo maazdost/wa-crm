@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Team inbox</title>
+<style>
+:root{--bg:#eef1ef;--panel:#fff;--ink:#18262b;--mute:#66767b;--line:#dde3e1;--pine:#0e5a4a;--pine2:#0a4338;--mint:#d9efe6;--lav:#ebe8f7;--amber:#9a4a07;--amberbg:#fdf1de;--red:#b3261e;--blue:#1d6fb8}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:15px/1.45 "Segoe UI",Roboto,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+.mute{color:var(--mute)}.err{color:var(--red);min-height:1.4em}
+.btn{background:var(--pine);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600}.btn:hover{background:var(--pine2)}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:13px}.ghost:hover{background:var(--bg)}
+input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;width:100%}
+.login{min-height:100dvh;display:grid;place-items:center;padding:20px}
+.login form{background:var(--panel);padding:30px;border-radius:14px;width:min(380px,100%);display:grid;gap:12px;border:1px solid var(--line)}
+.login h1{margin:0;font-size:24px}.login p{margin:0 0 6px}
+.shell{display:grid;grid-template-columns:350px 1fr;height:100dvh}
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px}
+.top .nav{display:flex;gap:6px}.top .me{line-height:1.2}.top .me small{display:block;color:var(--mute)}
+.tools{padding:0 14px 10px;display:grid;gap:8px}
+.tabs{display:flex;gap:4px}.tabs button{flex:1;border:0;background:var(--bg);padding:7px;border-radius:8px;font-size:13px;font-weight:600;color:var(--mute)}
+.tabs button.on{background:var(--pine);color:#fff}
+.list{overflow:auto;flex:1;border-top:1px solid var(--line)}
+.row{display:flex;gap:11px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:11px 14px}
+.row:hover{background:var(--bg)}.row.on{background:var(--mint)}
+.av{flex:none;width:40px;height:40px;border-radius:50%;background:var(--pine);color:#fff;display:grid;place-items:center;font-weight:700}
+.rb{flex:1;min-width:0;display:grid;gap:2px}
+.r1,.r2{display:flex;justify-content:space-between;gap:8px}.r1 time{font-size:12px;color:var(--mute)}
+.prev{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mute);font-size:13px}
+.ub{background:var(--pine);color:#fff;font-style:normal;font-size:12px;font-weight:700;border-radius:10px;padding:0 7px;min-width:20px;text-align:center}
+.r3{display:flex;gap:5px;flex-wrap:wrap}
+.tag,.chip{font-style:normal;font-size:12px;border-radius:6px;padding:1px 7px;background:var(--bg);color:var(--mute)}
+.chip.ok{background:var(--mint);color:var(--pine2)}.chip.warn{background:var(--amberbg);color:var(--amber)}.chip.closed{background:#f6dcda;color:var(--red)}
+.empty{padding:30px 20px;color:var(--mute);text-align:center}
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
+.chat,.team{display:flex;flex-direction:column;flex:1;min-height:0}
+.chat.empty{align-items:center;justify-content:center;color:var(--mute)}
+.ch{display:flex;align-items:center;gap:10px;background:var(--panel);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px}
+.who{flex:1;min-width:0;display:grid;line-height:1.25}.back{display:none;border:0;background:none;font-size:26px;line-height:1;padding:0 6px}
+.mgr{display:flex;align-items:center;gap:8px;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 14px;font-size:13px}.mgr select{max-width:280px;padding:6px 8px}
+.notes{background:#fffbea;border-bottom:1px solid var(--line);padding:10px 14px;max-height:34%;overflow:auto;font-size:14px}
+.notes p{margin:0 0 6px}.notes small{color:var(--mute)}.notes form{display:flex;gap:8px;margin-top:8px}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:6px}
+.day{align-self:center;font-size:12px;color:var(--mute);background:var(--panel);border-radius:10px;padding:2px 10px;margin:8px 0}
+.b{max-width:min(560px,82%);padding:7px 11px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.b p{margin:0;white-space:pre-wrap;word-break:break-word}
+.b.out{align-self:flex-end;background:var(--mint);border-color:#bfe0d1}.b.bot{background:var(--lav);border-color:#d6d0ee}
+.meta{display:flex;justify-content:flex-end;gap:5px;font-size:11px;color:var(--mute)}
+.tg{font-size:11px;font-weight:700;color:var(--mute)}.tk.read{color:var(--blue)}.tk.failed{color:var(--red);font-weight:700}.er{font-size:12px;color:var(--red)}
+.cmp,.tpl{display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--panel);border-top:1px solid var(--line);align-items:flex-end}
+.cmp textarea{resize:none;max-height:140px}
+.bar{padding:10px 14px;background:var(--panel);border-top:1px solid var(--line);font-size:14px;color:var(--mute)}.bar.warn{background:var(--amberbg);color:var(--amber)}
+.team{overflow:auto}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:14px}
+.stats div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--mute);font-size:13px}.stats b{display:block;font-size:26px;color:var(--ink)}
+.tbl{margin:0 14px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px}th{font-size:13px;color:var(--mute)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#c3cbc9;margin-right:6px}.dot.on{background:#2f9e6e}
+.add{margin:0 14px 24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.add h3{grid-column:1/-1;margin:0}
+.mi{max-width:260px;max-height:260px;border-radius:8px;display:block;cursor:zoom-in;background:var(--bg);margin-bottom:4px}
+.b audio{width:240px;max-width:100%;display:block;margin-bottom:4px}.b video{max-width:100%;border-radius:8px}.b .ghost{margin-bottom:4px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.86);display:grid;place-items:center;z-index:20;cursor:zoom-out}.lb img{max-width:94vw;max-height:90vh}
+.cmp .ghost{padding:9px 11px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:9;max-width:90vw}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.main{display:none}.chat-open .main{display:flex}.chat-open .side{display:none}.back{display:block}}
+</style></head><body>
+<div id="app"></div>
+<script>
+const API = window.API_BASE || '';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S = { token:null, user:null, convs:[], active:null, conv:null, msgs:[], notes:[], tab:'open', agent:'', templates:[], agents:[], winOpen:null };
+const isMgr = () => S.user && S.user.role !== 'agent';
+
+async function api(path, method = 'GET', body) {
+  const r = await fetch(API + '/api' + path, { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + S.token }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) { logout(); return { error:'Session expired' }; }
+  const d = await r.json().catch(() => ({}));
+  return r.ok ? d : { error: d.error || 'Request failed', code: d.code };
+}
+function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 4000); }
+const fmtT = t => new Date(t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+const fmtD = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? fmtT(t) : d.toLocaleDateString([], { day:'numeric', month:'short' }); };
+function win(c) {
+  const ms = c.window_expires_at ? new Date(c.window_expires_at) - Date.now() : 0;
+  if (ms <= 0) return { open:false, txt:'Window closed', cls:'closed' };
+  return { open:true, txt:`${Math.floor(ms / 36e5)}h ${Math.floor(ms % 36e5 / 6e4)}m left`, cls: ms < 72e5 ? 'warn' : 'ok' };
+}
+
+/* ---------- Login ---------- */
+function showLogin(err) {
+  $('#app').innerHTML = `<div class="login"><form id="lf"><h1>Team inbox</h1><p class="mute">Sign in with the account your manager created for you.</p>
+  <input id="em" type="email" placeholder="Email" autocomplete="username" required><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+  <button class="btn">Sign in</button><div class="err">${esc(err || '')}</div></form></div>`;
+  $('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const r = await fetch(API + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:$('#em').value, password:$('#pw').value }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) return showLogin(d.error || 'Could not sign in');
+    S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token:d.token, user:d.user })); boot();
+  };
+}
+function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; showLogin(); }
+
+/* ---------- Shell + list ---------- */
+async function boot() {
+  const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
+  $('#app').innerHTML = `<div class="shell"><aside class="side">
+    <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
+    <div class="nav">${isMgr() ? '<button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
+    <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
+    ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}</div><div id="list" class="list"></div></aside>
+    <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
+  $('#out').onclick = logout;
+  $('#q').oninput = debounce(loadList, 300);
+  $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
+  if (isMgr()) { $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  S.templates = (await api('/templates')) || [];
+  await loadList(); connect(); initPush();
+  document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
+  setInterval(tick, 30000);
+}
+function debounce(f, ms) { let t; return () => { clearTimeout(t); t = setTimeout(f, ms); }; }
+async function loadAgents() {
+  const us = await api('/users'); if (us.error) return;
+  S.agents = us.filter(u => u.role === 'agent' && u.is_active);
+  $('#as').innerHTML = '<option value="">All agents</option>' + S.agents.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+}
+async function loadList() {
+  const p = new URLSearchParams();
+  if (S.tab === 'unassigned') p.set('unassigned', 'true'); else { p.set('status', S.tab); if (S.agent) p.set('assigned_to', S.agent); }
+  const q = $('#q').value.trim(); if (q) p.set('q', q);
+  const d = await api('/conversations?' + p); if (d.error) return;
+  S.convs = d; renderList();
+}
+function renderList() {
+  const el = $('#list');
+  const unread = S.convs.reduce((n, c) => n + c.unread_count, 0);
+  document.title = (unread ? `(${unread}) ` : '') + 'Team inbox';
+  if (!S.convs.length) { el.innerHTML = `<p class="empty">${S.tab === 'open' ? 'No open chats yet. New clients appear here as soon as the bot hands them over.' : 'Nothing here.'}</p>`; return; }
+  el.innerHTML = S.convs.map(c => { const w = win(c); const nm = c.contact_name || '+' + c.wa_id;
+    return `<button class="row${c.id === S.active ? ' on' : ''}" data-id="${c.id}"><span class="av">${esc(((c.contact_name || '#').trim()[0] || '#').toUpperCase())}</span><span class="rb">
+    <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
+    <span class="r2"><span class="prev">${esc(c.last_body || '')}</span>${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : ''}</span>
+    <span class="r3"><em class="tag">${esc(c.intent || 'new')}</em><em class="chip ${w.cls}">${w.txt}</em>${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></button>`; }).join('');
+  el.querySelectorAll('.row').forEach(b => b.onclick = () => openConv(+b.dataset.id));
+}
+
+/* ---------- Chat ---------- */
+async function openConv(id) {
+  S.active = id; document.body.classList.add('chat-open'); $('#team').hidden = true; $('#chat').hidden = false;
+  const d = await api(`/conversations/${id}/messages`); if (d.error) return toast(d.error);
+  if (S.active !== id) return;
+  S.conv = d.conversation; S.msgs = d.messages; S.notes = d.notes;
+  $('#chat').className = 'chat';
+  $('#chat').innerHTML = '<div id="head"></div><div id="mgr"></div><section id="notes" class="notes" hidden></section><div id="msgs" class="msgs"></div><div id="comp"></div>';
+  renderHead(); renderMgr(); renderNotes(); renderMsgs(); renderComposer();
+  api(`/conversations/${id}/read`, 'POST').then(loadList);
+}
+function renderHead() {
+  const c = S.conv, w = win(c);
+  $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">‹</button><div class="who"><b>${esc(c.contact_name || 'Unnamed')}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}</span></div>
+  <span class="chip ${w.cls}">${w.txt}</span><button class="ghost" id="nb">Notes (${S.notes.length})</button><button class="ghost" id="st">${c.status === 'closed' ? 'Reopen' : 'Close chat'}</button></header>`;
+  $('#back').onclick = () => { document.body.classList.remove('chat-open'); S.active = null; renderList(); };
+  $('#nb').onclick = () => { const n = $('#notes'); n.hidden = !n.hidden; };
+  $('#st').onclick = async () => { const r = await api(`/conversations/${S.active}/status`, 'POST', { status: c.status === 'closed' ? 'open' : 'closed' }); if (r.error) return toast(r.error); S.conv.status = c.status === 'closed' ? 'open' : 'closed'; renderHead(); renderComposer(); loadList(); };
+}
+function renderMgr() {
+  const el = $('#mgr'); if (!isMgr()) return;
+  const c = S.conv;
+  el.innerHTML = `<div class="mgr"><span>Assigned to</span><select id="rs"><option value="">Auto-pick</option>${S.agents.map(a => `<option value="${a.id}"${a.id === c.assigned_to ? ' selected' : ''}>${esc(a.name)} (${esc(a.team)}, ${a.active_chats} open)</option>`).join('')}</select><button class="ghost" id="rb">Reassign</button></div>`;
+  $('#rb').onclick = async () => { const r = await api(`/conversations/${S.active}/reassign`, 'POST', { agent_id: $('#rs').value || undefined }); if (r.error) return toast(r.error); toast('Chat reassigned'); loadList(); loadAgents(); };
+}
+function renderNotes() {
+  $('#notes').innerHTML = (S.notes.map(n => `<p><b>${esc(n.author)}</b> <small>${fmtD(n.created_at)}</small><br>${esc(n.body)}</p>`).join('') || '<p class="mute">No notes yet. Notes are internal and never sent to the client.</p>') +
+    '<form id="nf"><input id="ni" placeholder="Add an internal note" required><button class="btn">Save note</button></form>';
+  $('#nf').onsubmit = async e => { e.preventDefault(); const r = await api(`/conversations/${S.active}/notes`, 'POST', { body: $('#ni').value }); if (r.error) return toast(r.error);
+    S.notes.push({ ...r, author: S.user.name }); renderNotes(); renderHead(); $('#notes').hidden = false; };
+}
+function renderMsgs(stick = true) {
+  const el = $('#msgs'); let last = '';
+  el.innerHTML = S.msgs.map(m => {
+    const day = new Date(m.created_at).toDateString();
+    const sep = day !== last ? `<div class="day">${new Date(m.created_at).toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' })}</div>` : ''; last = day;
+    const cls = m.sender_type === 'customer' ? 'in' : m.sender_type === 'bot' ? 'out bot' : 'out';
+    const tick = m.direction === 'out' ? `<span class="tk ${m.status}">${m.status === 'failed' ? 'Failed' : m.status === 'sent' ? '✓' : '✓✓'}</span>` : '';
+    const tag = m.sender_type === 'bot' ? '<span class="tg">Bot</span>' : m.type === 'template' ? '<span class="tg">Template</span>' : '';
+    return sep + `<div class="b ${cls}">${tag}${mediaHtml(m)}${m.media_id && /^\[\w+\]$/.test(m.body || '') ? '' : `<p>${esc(m.body || '[' + m.type + ']')}</p>`}<span class="meta">${fmtT(m.created_at)} ${tick}</span>${m.error ? `<span class="er">${esc(m.error)}</span>` : ''}</div>`;
+  }).join('');
+  if (stick) el.scrollTop = el.scrollHeight;
+  hydrateMedia(el, stick);
+}
+function addMsg(m) { if (S.msgs.some(x => x.id === m.id)) return; S.msgs.push(m); renderMsgs(); }
+function renderComposer() {
+  const w = win(S.conv), el = $('#comp'); S.winOpen = w.open;
+  if (S.conv.status === 'closed') { el.innerHTML = '<div class="bar">This chat is closed. Reopen it to reply.</div>'; return; }
+  if (!w.open) {
+    el.innerHTML = `<div class="bar warn">The reply window is closed. Send an approved template to reopen the chat. It restarts when the client replies.</div>
+    <div class="tpl"><select id="tsel">${S.templates.map(t => `<option value="${esc(t.name)}">${esc(t.name)}: ${esc(t.body)}</option>`).join('')}</select><button class="btn" id="tsend">Send template</button></div>`;
+    $('#tsend').onclick = async () => { const r = await api(`/conversations/${S.active}/template`, 'POST', { name: $('#tsel').value }); if (r.error) return toast(r.error); addMsg(r); };
+    return;
+  }
+  el.innerHTML = '<div class="cmp"><button class="ghost" id="clip" aria-label="Attach a file">Attach</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn" id="send">Send</button></div>';
+  const t = $('#txt');
+  t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; };
+  t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } };
+  $('#send').onclick = sendText;
+  $('#clip').onclick = () => $('#file').click();
+  $('#file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
+  t.onpaste = e => { const f = e.clipboardData && e.clipboardData.files[0]; if (f) { e.preventDefault(); sendFile(f); } };
+}
+async function sendText() {
+  const t = $('#txt'), text = t.value.trim(); if (!text) return;
+  t.value = ''; t.style.height = 'auto';
+  const r = await api(`/conversations/${S.active}/messages`, 'POST', { text });
+  if (r.error) { toast(r.error); t.value = text; if (r.code === 'WINDOW_CLOSED') { S.conv.window_expires_at = null; renderHead(); renderComposer(); } return; }
+  addMsg(r); loadList();
+}
+async function refreshActive() {
+  const id = S.active; if (!id) return;
+  const d = await api(`/conversations/${id}/messages`); if (d.error || S.active !== id) return;
+  S.conv = d.conversation; S.msgs = d.messages; renderHead(); renderMsgs();
+  if (win(S.conv).open !== S.winOpen || S.conv.status === 'closed' !== !$('#txt')) renderComposer();
+  api(`/conversations/${id}/read`, 'POST');
+}
+function tick() { renderList(); if (S.conv && S.active) { renderHead(); if (win(S.conv).open !== S.winOpen) renderComposer(); } }
+
+/* ---------- Media ---------- */
+const blobs = {};
+async function mediaBlob(id) {
+  if (blobs[id]) return blobs[id];
+  const r = await fetch(API + '/api/messages/' + id + '/media', { headers: { Authorization: 'Bearer ' + S.token } });
+  if (!r.ok) throw new Error('unavailable');
+  return blobs[id] = URL.createObjectURL(await r.blob());
+}
+function mediaHtml(m) {
+  if (!m.media_id) return '';
+  if (m.type === 'image' || m.type === 'sticker') return `<img class="mi" data-mid="${m.id}" alt="${esc(m.media_name || 'Photo')}">`;
+  if (m.type === 'audio') return `<audio controls data-mid="${m.id}"></audio>`;
+  if (m.type === 'video') return `<button class="ghost" data-open="${m.id}" data-play="1">Play video</button>`;
+  return `<button class="ghost" data-open="${m.id}">Open ${esc(m.media_name || 'document')}</button>`;
+}
+function hydrateMedia(el, stick) {
+  el.querySelectorAll('[data-mid]').forEach(n => mediaBlob(n.dataset.mid).then(u => {
+    if (n.tagName === 'IMG') { n.onload = () => { if (stick) el.scrollTop = el.scrollHeight; }; n.onclick = () => lightbox(u); }
+    n.src = u;
+  }).catch(() => { const e = document.createElement('span'); e.className = 'er'; e.textContent = 'This file is no longer available'; n.replaceWith(e); }));
+  el.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openMedia(b));
+}
+function lightbox(u) { const d = document.createElement('div'); d.className = 'lb'; d.innerHTML = `<img src="${u}" alt="">`; d.onclick = () => d.remove(); document.body.appendChild(d); }
+async function openMedia(b) {
+  const m = S.msgs.find(x => x.id == b.dataset.open);
+  try {
+    const u = await mediaBlob(b.dataset.open);
+    if (b.dataset.play) { const v = document.createElement('video'); v.controls = true; v.autoplay = true; v.src = u; b.replaceWith(v); return; }
+    saveDoc(u, (m && m.media_name) || 'file');
+  } catch { toast('This file is no longer available'); }
+}
+async function saveDoc(u, name) {
+  const C = window.Capacitor;
+  if (C && C.isNativePlatform && C.isNativePlatform()) {
+    try {
+      const blob = await (await fetch(u)).blob();
+      const b64 = await new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result.split(',')[1]); f.readAsDataURL(blob); });
+      const w = await C.Plugins.Filesystem.writeFile({ path: name, data: b64, directory: 'CACHE' });
+      await C.Plugins.Share.share({ title: name, url: w.uri });
+    } catch { toast('Could not open the file'); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+}
+async function sendFile(file) {
+  const id = S.active, cap = ($('#txt') && $('#txt').value.trim()) || '';
+  if (file.size > 16 * 1024 * 1024) return toast('Files must be under 16 MB');
+  if (/^image\/(jpeg|png)$/.test(file.type) && file.size > 5 * 1024 * 1024) return toast('Photos must be under 5 MB');
+  toast('Sending ' + file.name + '…');
+  const q = new URLSearchParams({ filename: file.name, mime: file.type || 'application/octet-stream', caption: cap });
+  const r = await fetch(API + `/api/conversations/${id}/media?` + q, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + S.token }, body: file });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { toast(d.error || 'Could not send the file'); if (d.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } return; }
+  if (cap && $('#txt')) $('#txt').value = '';
+  if (S.active === id) addMsg(d);
+  loadList();
+}
+
+/* ---------- Phone app (Android) push ---------- */
+async function initPush() {
+  const C = window.Capacitor;
+  if (!C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins.PushNotifications) return;
+  const P = C.Plugins.PushNotifications;
+  try {
+    const perm = await P.requestPermissions(); if (perm.receive !== 'granted') return;
+    await P.createChannel({ id: 'messages', name: 'Client messages', importance: 5, sound: 'default', vibration: true });
+    P.addListener('registration', t => { S.pushToken = t.value; api('/devices', 'POST', { token: t.value }); });
+    P.addListener('pushNotificationActionPerformed', a => { const id = a.notification && a.notification.data && a.notification.data.conversationId; if (id) openConv(+id); });
+    await P.register();
+  } catch (e) { console.log('push setup failed', e); }
+}
+
+/* ---------- Realtime ---------- */
+function alertUser(title, body) {
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); o.stop(a.currentTime + .12); } catch {}
+  if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(title, { body });
+}
+function connect() {
+  const s = document.createElement('script'); s.src = API + '/socket.io/socket.io.js';
+  s.onload = () => {
+    const sock = S.sock = API ? window.io(API, { auth:{ token:S.token } }) : window.io({ auth:{ token:S.token } });
+    sock.on('message:new', e => {
+      const inbound = e.message.direction === 'in';
+      if (e.conversationId === S.active) { inbound ? refreshActive() : addMsg(e.message); }
+      else if (inbound && !isMgr()) alertUser('New message', e.message.body || '');
+      loadList();
+    });
+    sock.on('message:status', e => { const m = S.msgs.find(x => x.wa_message_id === e.waMessageId); if (m && e.conversationId === S.active) { m.status = e.status; renderMsgs(false); } });
+    sock.on('conversation:assigned', () => { if (!isMgr()) { alertUser('New client assigned', 'Open your inbox to reply.'); toast('A new client was assigned to you'); } loadList(); });
+    sock.on('conversation:unassigned', () => { if (isMgr()) toast('A client is waiting and no agent is available'); loadList(); });
+    sock.on('conversation:escalated', () => { if (isMgr()) toast('A client has been waiting for a reply too long'); loadList(); });
+    sock.on('conversation:updated', loadList);
+  };
+  document.head.appendChild(s);
+}
+
+/* ---------- Team (managers/admins) ---------- */
+async function showTeam() {
+  document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
+  const [st, us] = await Promise.all([api('/stats'), api('/users')]); if (st.error || us.error) return toast(st.error || us.error);
+  const t = st.totals, admin = S.user.role === 'admin';
+  el.innerHTML = `<header class="ch"><button class="back" id="tb">‹</button><b>Team</b></header>
+  <div class="stats"><div><b>${t.open}</b>open chats</div><div><b>${t.unassigned}</b>waiting for an agent</div><div><b>${t.with_bot}</b>with the bot</div><div><b>${t.new_24h}</b>new in the last 24 hours</div></div>
+  <div class="tbl"><table><tr><th>Name</th><th>Role</th><th>Team</th><th>Open chats</th><th>Status</th>${admin ? '<th></th>' : ''}</tr>
+  ${us.map(u => `<tr><td>${esc(u.name)}<br><small class="mute">${esc(u.email)}</small></td><td>${esc(u.role)}</td><td>${esc(u.team)}</td><td>${u.active_chats} / ${u.max_active_chats}</td>
+  <td><span class="dot${u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td><button class="ghost" data-u="${u.id}" data-a="${u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button></td>` : ''}</tr>`).join('')}</table></div>
+  ${admin ? `<form class="add" id="af"><h3>Add a team member</h3><input id="an" placeholder="Full name" required><input id="ae" type="email" placeholder="Email" required><input id="ap" type="password" minlength="8" placeholder="Password (8+ characters)" required>
+  <select id="at"><option>sales</option><option>recruitment</option><option>classes</option><option>general</option></select><select id="ar"><option value="agent">Agent</option><option value="manager">Manager</option></select><input id="am" type="number" min="1" value="150" title="Maximum open chats"><button class="btn">Add member</button></form>` : ''}`;
+  $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
+  el.querySelectorAll('[data-u]').forEach(b => b.onclick = async () => { await api('/users/' + b.dataset.u, 'PATCH', { is_active: b.dataset.a !== 'true' }); showTeam(); loadAgents(); });
+  if (admin) $('#af').onsubmit = async e => { e.preventDefault();
+    const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
+    if (r.error) return toast(r.error.includes('duplicate') ? 'That email is already used' : r.error); toast('Team member added'); showTeam(); loadAgents(); };
+}
+
+/* ---------- Start ---------- */
+try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; boot(); } else showLogin(); } catch { showLogin(); }
+</script></body></html>
