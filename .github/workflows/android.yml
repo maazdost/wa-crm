@@ -20,7 +20,7 @@ jobs:
         env: { GSJ: "${{ secrets.GOOGLE_SERVICES_JSON }}" }
         run: if [ -n "$GSJ" ]; then echo "$GSJ" > android/app/google-services.json; fi
       - run: npx cap sync android
-      - run: ./gradlew assembleDebug
+      - run: chmod +x gradlew && ./gradlew assembleDebug
         working-directory: android-app/android
       - uses: actions/upload-artifact@v4
         with:
