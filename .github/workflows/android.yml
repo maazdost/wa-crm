@@ -1,0 +1,28 @@
+name: Build Android app
+on:
+  workflow_dispatch: {}
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: android-app } }
+    env:
+      SERVER_URL: ${{ vars.SERVER_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: android-app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - name: Check server address
+        run: test -n "$SERVER_URL" || (echo "Set the SERVER_URL repository variable first" && exit 1)
+      - name: Add Firebase config (optional, enables push notifications)
+        env: { GSJ: "${{ secrets.GOOGLE_SERVICES_JSON }}" }
+        run: if [ -n "$GSJ" ]; then echo "$GSJ" > android/app/google-services.json; fi
+      - run: npx cap sync android
+      - run: ./gradlew assembleDebug
+        working-directory: android-app/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: team-inbox-apk
+          path: android-app/android/app/build/outputs/apk/debug/app-debug.apk
