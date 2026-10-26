@@ -75,7 +75,11 @@ async function handleMessage(m, profileName) {
 }
 
 router.post('/', (req, res) => {
-  if (!wa.verifySignature(req.rawBody, req.headers['x-hub-signature-256'])) return res.sendStatus(401);
+     console.log('[webhook] received', JSON.stringify(req.body).slice(0, 400));
+   if (!wa.verifySignature(req.rawBody, req.headers['x-hub-signature-256'])) {
+     console.warn('[webhook] REJECTED: signature mismatch, so WA_APP_SECRET on the server is wrong');
+     return res.sendStatus(401);
+   }
   res.sendStatus(200); // acknowledge fast, process after
   for (const entry of req.body.entry || []) for (const change of entry.changes || []) {
     const v = change.value || {};
