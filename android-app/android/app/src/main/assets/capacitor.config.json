@@ -1,0 +1,14 @@
+{
+	"appId": "com.horizon.teaminbox",
+	"appName": "Team Inbox",
+	"webDir": "www",
+	"plugins": {
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	}
+}

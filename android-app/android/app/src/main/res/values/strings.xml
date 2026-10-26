@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Team Inbox</string>
+    <string name="title_activity_main">Team Inbox</string>
+    <string name="package_name">com.horizon.teaminbox</string>
+    <string name="custom_url_scheme">com.horizon.teaminbox</string>
+</resources>
