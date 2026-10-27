@@ -18,7 +18,7 @@ jobs:
         run: test -n "$SERVER_URL" || (echo "Set the SERVER_URL repository variable first" && exit 1)
       - name: Add Firebase config (optional, enables push notifications)
         env: { GSJ: "${{ secrets.GOOGLE_SERVICES_JSON }}" }
-        run: if [ -n "$GSJ" ]; then echo "$GSJ" > android/app/google-services.json; fi
+        run: if [ -n "$GSJ" ]; then echo "$GSJ" > android/app/google-services.json; echo "HAS_FIREBASE=1" >> "$GITHUB_ENV"; fi
       - run: npx cap sync android
       - run: chmod +x gradlew && ./gradlew assembleDebug
         working-directory: android-app/android
