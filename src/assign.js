@@ -27,7 +27,7 @@ async function assignConversation(conversationId, team) {
     if (!agent) { await client.query('ROLLBACK'); return null; }
     await client.query('UPDATE users SET last_assigned_at=now() WHERE id=$1', [agent.id]);
     const { rows } = await client.query(
-      `UPDATE conversations SET assigned_to=$1, status='open' WHERE id=$2 RETURNING *`, [agent.id, conversationId]);
+      `UPDATE conversations SET assigned_to=$1, status='open', assigned_at=now() WHERE id=$2 RETURNING *`, [agent.id, conversationId]);
     await client.query('COMMIT');
     return rows[0];
   } catch (e) {

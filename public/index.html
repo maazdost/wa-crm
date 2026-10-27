@@ -4,7 +4,7 @@
 <title>Team inbox</title>
 <style>
 :root{--bg:#eef1ef;--panel:#fff;--ink:#18262b;--mute:#66767b;--line:#dde3e1;--pine:#0e5a4a;--pine2:#0a4338;--mint:#d9efe6;--lav:#ebe8f7;--amber:#9a4a07;--amberbg:#fdf1de;--red:#b3261e;--blue:#1d6fb8}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%;margin:0}
 body{font:15px/1.45 "Segoe UI",Roboto,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
@@ -15,7 +15,7 @@ input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px
 .login{min-height:100dvh;display:grid;place-items:center;padding:20px}
 .login form{background:var(--panel);padding:30px;border-radius:14px;width:min(380px,100%);display:grid;gap:12px;border:1px solid var(--line)}
 .login h1{margin:0;font-size:24px}.login p{margin:0 0 6px}
-.shell{display:grid;grid-template-columns:350px 1fr;height:100dvh}
+.shell{display:grid;grid-template-columns:350px 1fr;height:100vh;height:100dvh}
 .side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top,0px)) 14px 10px}
 .top .nav{display:flex;gap:6px}.top .me{line-height:1.2}.top .me small{display:block;color:var(--mute)}
@@ -62,6 +62,11 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;
 .b audio{width:240px;max-width:100%;display:block;margin-bottom:4px}.b video{max-width:100%;border-radius:8px}.b .ghost{margin-bottom:4px}
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.86);display:grid;place-items:center;z-index:20;cursor:zoom-out}.lb img{max-width:94vw;max-height:90vh}
 .cmp .ghost{padding:9px 11px}
+.panel{margin:0 14px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}.panel h3{margin:0 0 10px;font-size:15px}
+.chart{display:flex;align-items:flex-end;gap:4px;height:150px}.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.col i{width:100%;background:var(--pine);border-radius:4px 4px 0 0;min-height:2px}.col small{font-size:10px;color:var(--mute);margin-top:3px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.hb{display:grid;grid-template-columns:110px 1fr 36px;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.hb i{display:block;height:10px;background:var(--pine);border-radius:5px;min-width:3px}.hb b{text-align:right}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:9;max-width:90vw}
 @media(max-width:760px){.shell{grid-template-columns:1fr}.main{display:none}.chat-open .main{display:flex}.chat-open .side{display:none}.back{display:block}}
 </style></head><body>
@@ -108,14 +113,14 @@ async function boot() {
   const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
   $('#app').innerHTML = `<div class="shell"><aside class="side">
     <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
-    <div class="nav">${isMgr() ? '<button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
+    <div class="nav">${isMgr() ? '<button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
     <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}</div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
   $('#out').onclick = logout;
   $('#q').oninput = debounce(loadList, 300);
   $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
-  if (isMgr()) { $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
   S.templates = (await api('/templates')) || [];
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
@@ -288,6 +293,7 @@ async function sendFile(file) {
 async function initPush() {
   const C = window.Capacitor;
   if (!C || !C.isNativePlatform || !C.isNativePlatform() || !C.Plugins.PushNotifications) return;
+  if (!/TeamInboxFCM/.test(navigator.userAgent)) return; // only builds that include Firebase; asking Android for a push token without it crashes the app
   const P = C.Plugins.PushNotifications;
   try {
     const perm = await P.requestPermissions(); if (perm.receive !== 'granted') return;
@@ -339,6 +345,27 @@ async function showTeam() {
   if (admin) $('#af').onsubmit = async e => { e.preventDefault();
     const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
     if (r.error) return toast(r.error.includes('duplicate') ? 'That email is already used' : r.error); toast('Team member added'); showTeam(); loadAgents(); };
+}
+
+/* ---------- Dashboard (managers/admins) ---------- */
+const fmtDur = s => s == null ? '—' : s < 60 ? Math.round(s) + 's' : s < 3600 ? Math.round(s / 60) + 'm' : Math.floor(s / 3600) + 'h ' + Math.round(s % 3600 / 60) + 'm';
+async function showDashboard(days = 14) {
+  document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
+  const d = await api('/analytics?days=' + days); if (d.error) return toast(d.error);
+  const k = d.kpi, max = Math.max(1, ...d.perDay.map(x => x.chats)), m = d.messages;
+  const names = { info:'More info', team:'Join the team', classes:'Classes', unknown:'Not answered', ad:'From ads', organic:'Organic' };
+  const hbars = list => { const top = Math.max(1, ...list.map(x => x.n)); return list.length ? list.map(x => `<div class="hb"><span>${esc(names[x.k] || x.k)}</span><i style="width:${x.n / top * 100}%"></i><b>${x.n}</b></div>`).join('') : '<p class="mute">No data yet</p>'; };
+  const card = (v, l) => `<div><b>${v}</b>${l}</div>`;
+  el.innerHTML = `<header class="ch"><button class="back" id="tb">‹</button><b>Dashboard</b><span style="flex:1"></span>
+    <select id="dr" style="width:auto">${[7, 14, 30, 90].map(n => `<option value="${n}"${n === d.days ? ' selected' : ''}>Last ${n} days</option>`).join('')}</select></header>
+  <div class="stats">${card(k.new_chats, 'new chats')}${card(k.open, 'open now')}${card(k.unassigned, 'waiting for an agent')}${card(k.with_bot, 'still with the bot')}
+    ${card(fmtDur(d.median_reply_sec), 'median first reply')}${card(m.inbound, 'messages received')}${card(m.agent_out, 'sent by agents')}${card(m.bot_out, 'sent by the bot')}</div>
+  <div class="panel"><h3>New chats per day</h3><div class="chart">${d.perDay.map(x => `<div class="col" title="${x.day}: ${x.chats}"><i style="height:${Math.round(x.chats / max * 120)}px"></i><small>${d.perDay.length > 31 ? '' : x.day.slice(8)}</small></div>`).join('')}</div></div>
+  <div class="two"><div class="panel"><h3>What clients asked for</h3>${hbars(d.intents)}</div><div class="panel"><h3>Where clients came from</h3>${hbars(d.sources)}</div></div>
+  <div class="tbl"><table><tr><th>Agent</th><th>Team</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Unread</th></tr>
+  ${d.agents.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.unread}</td></tr>`).join('') || '<tr><td colspan="8" class="mute">No agents yet</td></tr>'}</table></div>`;
+  $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
+  $('#dr').onchange = e => showDashboard(+e.target.value);
 }
 
 /* ---------- Start ---------- */

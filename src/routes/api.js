@@ -111,7 +111,7 @@ router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(as
   const id = Number(req.params.id);
   let conv;
   if (req.body.agent_id) {
-    conv = (await query(`UPDATE conversations SET assigned_to=$2, status='open' WHERE id=$1 RETURNING *`, [id, req.body.agent_id])).rows[0];
+    conv = (await query(`UPDATE conversations SET assigned_to=$2, status='open', assigned_at=now() WHERE id=$1 RETURNING *`, [id, req.body.agent_id])).rows[0];
   } else {
     const cur = (await query('SELECT team FROM conversations WHERE id=$1', [id])).rows[0];
     conv = await assignConversation(id, cur?.team);
@@ -209,6 +209,39 @@ router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
       COALESCE(SUM(c.unread_count),0)::int AS unread
       FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE u.role='agent' GROUP BY u.id ORDER BY u.name`)).rows;
   res.json({ totals, agents });
+}));
+
+router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 90), d = String(days);
+  const tz = process.env.REPORT_TZ || 'Asia/Karachi';
+  const since = `now() - ($1 || ' days')::interval`;
+  const [kpi, perDay, intents, sources, agents, msgs, med] = await Promise.all([
+    query(`SELECT COUNT(*) FILTER (WHERE created_at > ${since})::int AS new_chats,
+        COUNT(*) FILTER (WHERE status='open')::int AS open,
+        COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done')::int AS unassigned,
+        COUNT(*) FILTER (WHERE status='bot')::int AS with_bot,
+        COUNT(*) FILTER (WHERE status='closed')::int AS closed FROM conversations`, [d]),
+    query(`SELECT to_char(g,'YYYY-MM-DD') AS day, COALESCE(x.n,0)::int AS chats
+        FROM generate_series(((now() AT TIME ZONE $2)::date - ($1::int - 1))::timestamp, (now() AT TIME ZONE $2)::date::timestamp, interval '1 day') g
+        LEFT JOIN (SELECT (created_at AT TIME ZONE $2)::date AS dd, COUNT(*) AS n FROM conversations GROUP BY 1) x ON x.dd = g::date ORDER BY g`, [days, tz]),
+    query(`SELECT COALESCE(intent,'unknown') AS k, COUNT(*)::int AS n FROM conversations WHERE created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
+    query(`SELECT COALESCE(ct.source,'organic') AS k, COUNT(*)::int AS n FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
+    query(`SELECT u.id, u.name, u.team, COUNT(c.id)::int AS assigned, COUNT(c.first_reply)::int AS replied,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (c.first_reply - c.assigned_at))) AS median_reply_sec,
+        (SELECT COUNT(*) FROM messages m WHERE m.sender_id=u.id AND m.sender_type='agent' AND m.created_at > ${since})::int AS msgs_sent,
+        (SELECT COUNT(*) FROM conversations o WHERE o.assigned_to=u.id AND o.status='open')::int AS open_now,
+        (SELECT COALESCE(SUM(unread_count),0) FROM conversations o WHERE o.assigned_to=u.id)::int AS unread
+      FROM users u LEFT JOIN LATERAL (
+        SELECT c2.id, c2.assigned_at, (SELECT MIN(m.created_at) FROM messages m WHERE m.conversation_id=c2.id AND m.sender_type='agent' AND m.created_at >= c2.assigned_at) AS first_reply
+        FROM conversations c2 WHERE c2.assigned_to=u.id AND c2.assigned_at > ${since}) c ON TRUE
+      WHERE u.role='agent' AND u.is_active GROUP BY u.id ORDER BY assigned DESC, u.name`, [d]),
+    query(`SELECT COUNT(*) FILTER (WHERE direction='in')::int AS inbound, COUNT(*) FILTER (WHERE sender_type='agent')::int AS agent_out,
+        COUNT(*) FILTER (WHERE sender_type='bot')::int AS bot_out FROM messages WHERE created_at > ${since}`, [d]),
+    query(`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (fr - assigned_at))) AS sec FROM (
+        SELECT assigned_at, (SELECT MIN(m.created_at) FROM messages m WHERE m.conversation_id=c.id AND m.sender_type='agent' AND m.created_at >= c.assigned_at) AS fr
+        FROM conversations c WHERE assigned_at > ${since}) t WHERE fr IS NOT NULL`, [d])
+  ]);
+  res.json({ days, kpi: kpi.rows[0], perDay: perDay.rows, intents: intents.rows, sources: sources.rows, agents: agents.rows, messages: msgs.rows[0], median_reply_sec: med.rows[0].sec });
 }));
 
 module.exports = router;
