@@ -67,6 +67,12 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;
 .col i{width:100%;background:var(--pine);border-radius:4px 4px 0 0;min-height:2px}.col small{font-size:10px;color:var(--mute);margin-top:3px}
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.hb{display:grid;grid-template-columns:110px 1fr 36px;gap:8px;align-items:center;margin:7px 0;font-size:13px}
 .hb i{display:block;height:10px;background:var(--pine);border-radius:5px;min-width:3px}.hb b{text-align:right}
+.qr{max-height:200px;overflow:auto;background:var(--panel);border-top:1px solid var(--line)}
+.qr button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 14px;border-bottom:1px solid var(--line)}.qr button:hover{background:var(--bg)}
+.qr small{display:block;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+.lb2{border:1px solid;border-radius:12px;padding:1px 11px;font-size:12px;background:none}
+.fld{display:grid;gap:4px;margin-bottom:10px}.fld>span{font-size:13px;color:var(--mute)}.panel textarea{resize:vertical}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:9;max-width:90vw}
 @media(max-width:760px){.shell{grid-template-columns:1fr}.main{display:none}.chat-open .main{display:flex}.chat-open .side{display:none}.back{display:block}}
 </style></head><body>
@@ -76,6 +82,7 @@ const API = window.API_BASE || '';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const S = { token:null, user:null, convs:[], active:null, conv:null, msgs:[], notes:[], tab:'open', agent:'', templates:[], agents:[], winOpen:null };
+const arr = x => Array.isArray(x) ? x : [];
 const isMgr = () => S.user && S.user.role !== 'agent';
 
 async function api(path, method = 'GET', body) {
@@ -113,15 +120,16 @@ async function boot() {
   const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
   $('#app').innerHTML = `<div class="shell"><aside class="side">
     <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
-    <div class="nav">${isMgr() ? '<button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
+    <div class="nav">${isMgr() ? '<button class="ghost" id="nd">Dashboard</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
     <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
-    ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}</div><div id="list" class="list"></div></aside>
+    ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
   $('#out').onclick = logout;
   $('#q').oninput = debounce(loadList, 300);
+  $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
-  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
-  S.templates = (await api('/templates')) || [];
+  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#ns').onclick = showSettings; $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter();
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
   setInterval(tick, 30000);
@@ -136,6 +144,7 @@ async function loadList() {
   const p = new URLSearchParams();
   if (S.tab === 'unassigned') p.set('unassigned', 'true'); else { p.set('status', S.tab); if (S.agent) p.set('assigned_to', S.agent); }
   const q = $('#q').value.trim(); if (q) p.set('q', q);
+  if (S.label) p.set('label', S.label);
   const d = await api('/conversations?' + p); if (d.error) return;
   S.convs = d; renderList();
 }
@@ -148,7 +157,7 @@ function renderList() {
     return `<button class="row${c.id === S.active ? ' on' : ''}" data-id="${c.id}"><span class="av">${esc(((c.contact_name || '#').trim()[0] || '#').toUpperCase())}</span><span class="rb">
     <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
     <span class="r2"><span class="prev">${esc(c.last_body || '')}</span>${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : ''}</span>
-    <span class="r3"><em class="tag">${esc(c.intent || 'new')}</em><em class="chip ${w.cls}">${w.txt}</em>${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></button>`; }).join('');
+    <span class="r3"><em class="tag">${esc(c.intent || 'new')}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></button>`; }).join('');
   el.querySelectorAll('.row').forEach(b => b.onclick = () => openConv(+b.dataset.id));
 }
 
@@ -159,8 +168,8 @@ async function openConv(id) {
   if (S.active !== id) return;
   S.conv = d.conversation; S.msgs = d.messages; S.notes = d.notes;
   $('#chat').className = 'chat';
-  $('#chat').innerHTML = '<div id="head"></div><div id="mgr"></div><section id="notes" class="notes" hidden></section><div id="msgs" class="msgs"></div><div id="comp"></div>';
-  renderHead(); renderMgr(); renderNotes(); renderMsgs(); renderComposer();
+  $('#chat').innerHTML = '<div id="head"></div><div id="lbl"></div><div id="mgr"></div><section id="notes" class="notes" hidden></section><div id="msgs" class="msgs"></div><div id="comp"></div>';
+  renderHead(); renderLabels(); renderMgr(); renderNotes(); renderMsgs(); renderComposer();
   api(`/conversations/${id}/read`, 'POST').then(loadList);
 }
 function renderHead() {
@@ -206,10 +215,11 @@ function renderComposer() {
     $('#tsend').onclick = async () => { const r = await api(`/conversations/${S.active}/template`, 'POST', { name: $('#tsel').value }); if (r.error) return toast(r.error); addMsg(r); };
     return;
   }
-  el.innerHTML = '<div class="cmp"><button class="ghost" id="clip" aria-label="Attach a file">Attach</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn" id="send">Send</button></div>';
+  el.innerHTML = '<div id="qr" class="qr" hidden></div><div class="cmp"><button class="ghost" id="qrb">Replies</button><button class="ghost" id="clip" aria-label="Attach a file">Attach</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn" id="send">Send</button></div>';
   const t = $('#txt');
-  t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; };
-  t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } };
+  t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else $('#qr').hidden = true; };
+  $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them in Settings.'); showQr(''); };
+  t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!$('#qr').hidden && t.value.startsWith('/') && S.qrList.length) return pickQr(0); sendText(); } };
   $('#send').onclick = sendText;
   $('#clip').onclick = () => $('#file').click();
   $('#file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
@@ -345,6 +355,61 @@ async function showTeam() {
   if (admin) $('#af').onsubmit = async e => { e.preventDefault();
     const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
     if (r.error) return toast(r.error.includes('duplicate') ? 'That email is already used' : r.error); toast('Team member added'); showTeam(); loadAgents(); };
+}
+
+/* ---------- Labels + quick replies ---------- */
+function fillLabelFilter() { const f = $('#lf'); if (f) f.innerHTML = '<option value="">All labels</option>' + S.labels.map(l => `<option value="${l.id}"${String(l.id) === String(S.label || '') ? ' selected' : ''}>${esc(l.name)}</option>`).join(''); }
+function renderLabels() {
+  const el = $('#lbl'); if (!el) return;
+  if (!S.labels.length) { el.className = ''; el.innerHTML = ''; return; }
+  const on = new Set((S.conv.labels || []).map(l => l.id)); el.className = 'lbl';
+  el.innerHTML = S.labels.map(l => `<button class="lb2" data-l="${l.id}" style="border-color:${esc(l.color)};${on.has(l.id) ? `background:${esc(l.color)};color:#fff` : `color:${esc(l.color)}`}">${esc(l.name)}</button>`).join('');
+  el.querySelectorAll('[data-l]').forEach(b => b.onclick = async () => {
+    const id = +b.dataset.l, want = !on.has(id);
+    const r = await api(`/conversations/${S.active}/labels`, 'POST', { label_id: id, on: want }); if (r.error) return toast(r.error);
+    S.conv.labels = want ? [...(S.conv.labels || []), S.labels.find(x => x.id === id)] : S.conv.labels.filter(x => x.id !== id);
+    renderLabels(); loadList();
+  });
+}
+const fillVars = t => t.replace(/\{\{\s*name\s*\}\}/gi, ((S.conv && S.conv.contact_name) || 'there').split(' ')[0]).replace(/\{\{\s*agent\s*\}\}/gi, S.user.name);
+function showQr(filter) {
+  const box = $('#qr'); if (!box) return; const f = filter.toLowerCase();
+  S.qrList = S.quick.filter(q => !f || q.shortcut.toLowerCase().includes(f) || q.title.toLowerCase().includes(f));
+  if (!S.qrList.length) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = S.qrList.map((q, i) => `<button data-i="${i}"><b>/${esc(q.shortcut)}</b> ${esc(q.title)}<small>${esc(q.body)}</small></button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => pickQr(+b.dataset.i));
+}
+function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt'); t.value = fillVars(q.body); $('#qr').hidden = true; t.focus(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
+
+/* ---------- Settings (managers/admins) ---------- */
+async function showSettings() {
+  document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
+  const [st, ql, lb] = await Promise.all([api('/settings'), api('/quick-replies'), api('/labels')]); if (st.error) return toast(st.error);
+  S.quick = arr(ql); S.labels = arr(lb); fillLabelFilter();
+  const b = st.bot, a = st.away, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
+  const row = (left, attr) => `<div class="hb" style="grid-template-columns:1fr auto">${left}<button class="ghost" ${attr}>Delete</button></div>`;
+  el.innerHTML = `<header class="ch"><button class="back" id="tb">‹</button><b>Settings</b></header>
+  <form class="panel" id="bf"><h3>Bot messages</h3><p class="mute">What the bot says before a client is handed to an agent. Use {{name}} for the client's name.</p>
+    ${fld('b1', 'Greeting', b.greet, 1)}${fld('b2', 'Button 1 (more info)', b.btnInfo)}${fld('b3', 'Button 2 (join the team)', b.btnTeam)}${fld('b4', 'Button 3 (classes)', b.btnClasses)}${fld('b5', 'Question asking for their name', b.askName, 1)}${fld('b6', 'Hand-off message', b.handoff, 1)}
+    <p class="mute">Buttons can hold 20 characters at most.</p><button class="btn">Save bot messages</button></form>
+  <form class="panel" id="af"><h3>Away message</h3><p class="mute">Sent once every 12 hours when a client writes outside working hours.</p>
+    <label><input type="checkbox" id="a0" ${a.enabled ? 'checked' : ''} style="width:auto"> Turn on</label>${fld('a1', 'Message', a.message, 1)}
+    <div class="fld"><span>Working hours (${esc(a.tz)})</span><div style="display:flex;gap:8px"><input type="time" id="a2" value="${esc(a.start)}"><input type="time" id="a3" value="${esc(a.end)}"></div></div>
+    <div class="fld"><span>Working days</span><div>${dn.map((d, i) => `<label style="margin-right:10px"><input type="checkbox" class="ad" value="${i}" ${a.days.includes(i) ? 'checked' : ''} style="width:auto"> ${d}</label>`).join('')}</div></div><button class="btn">Save away message</button></form>
+  <div class="panel"><h3>Quick replies</h3><p class="mute">Agents type / in a chat to use them. {{name}} becomes the client's first name and {{agent}} the agent's name.</p>
+    ${S.quick.map(q => row(`<span><b>/${esc(q.shortcut)}</b> ${esc(q.title)}<br><small class="mute">${esc(q.body)}</small></span>`, `data-dq="${q.id}"`)).join('') || '<p class="mute">None yet.</p>'}
+    <form id="qf" style="display:grid;gap:8px;margin-top:10px"><input id="q1" placeholder="Shortcut, e.g. fees" required><input id="q2" placeholder="Title, e.g. Course fees" required><textarea id="q3" rows="3" placeholder="Message text" required></textarea><button class="btn">Add quick reply</button></form></div>
+  <div class="panel"><h3>Labels</h3>${S.labels.map(l => row(`<span><i style="display:inline-block;width:12px;height:12px;border-radius:6px;background:${esc(l.color)};margin-right:8px"></i>${esc(l.name)}</span>`, `data-dl="${l.id}"`)).join('') || '<p class="mute">None yet.</p>'}
+    <form id="lf2" style="display:flex;gap:8px;margin-top:10px"><input id="l1" placeholder="Label name, e.g. Hot lead" required><input type="color" id="l2" value="#0e5a4a" style="width:60px;padding:2px"><button class="btn">Add</button></form></div>`;
+  $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
+  $('#bf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/bot', 'PUT', { greet: $('#b1').value, btnInfo: $('#b2').value, btnTeam: $('#b3').value, btnClasses: $('#b4').value, askName: $('#b5').value, handoff: $('#b6').value }); toast(r.error || 'Bot messages saved'); };
+  $('#af').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/away', 'PUT', { enabled: $('#a0').checked, message: $('#a1').value, start: $('#a2').value, end: $('#a3').value, days: [...document.querySelectorAll('.ad:checked')].map(x => +x.value) }); toast(r.error || 'Away message saved'); };
+  $('#qf').onsubmit = async e => { e.preventDefault(); const r = await api('/quick-replies', 'POST', { shortcut: $('#q1').value.trim().replace(/^\//, ''), title: $('#q2').value, body: $('#q3').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That shortcut already exists' : r.error); showSettings(); };
+  $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That label already exists' : r.error); showSettings(); };
+  el.querySelectorAll('[data-dq]').forEach(x => x.onclick = async () => { await api('/quick-replies/' + x.dataset.dq, 'DELETE'); showSettings(); });
+  el.querySelectorAll('[data-dl]').forEach(x => x.onclick = async () => { await api('/labels/' + x.dataset.dl, 'DELETE'); showSettings(); });
 }
 
 /* ---------- Dashboard (managers/admins) ---------- */

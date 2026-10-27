@@ -11,6 +11,8 @@ const push = require('../push');
 const router = express.Router();
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const isAgent = (u) => u.role === 'agent';
+const settings = require('../settings');
+const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
 router.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body;
@@ -27,7 +29,7 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, ct.name AS contact_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
+    `SELECT c.*, ct.wa_id, ct.name AS contact_name, ${LABELS_SQL} FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
     [req.params.id])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
@@ -42,9 +44,10 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
   if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
   else if (!unassigned) where.push(`c.status <> 'bot'`);
+  if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
   if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
-    `SELECT c.*, ct.wa_id, ct.name AS contact_name, u.name AS agent_name,
+    `SELECT c.*, ct.wa_id, ct.name AS contact_name, u.name AS agent_name, ${LABELS_SQL},
             (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body
        FROM conversations c JOIN contacts ct ON ct.id=c.contact_id LEFT JOIN users u ON u.id=c.assigned_to
       WHERE ${where.join(' AND ')} ORDER BY c.last_message_at DESC LIMIT 200`, p);
@@ -209,6 +212,49 @@ router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
       COALESCE(SUM(c.unread_count),0)::int AS unread
       FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE u.role='agent' GROUP BY u.id ORDER BY u.name`)).rows;
   res.json({ totals, agents });
+}));
+
+// ---- Settings: bot wording and away message ----
+router.get('/settings', required('admin', 'manager'), wrap(async (req, res) => res.json({ bot: await settings.get('bot'), away: await settings.get('away') })));
+router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res) => {
+  const k = req.params.key, b = req.body || {};
+  if (k === 'bot') {
+    const v = {};
+    for (const f of ['greet', 'askName', 'handoff', 'btnInfo', 'btnTeam', 'btnClasses'])
+      if (typeof b[f] === 'string' && b[f].trim()) v[f] = b[f].trim().slice(0, f.startsWith('btn') ? 20 : 600);
+    await settings.set('bot', { ...(await settings.get('bot')), ...v });
+  } else if (k === 'away') {
+    const cur = await settings.get('away');
+    const days = Array.isArray(b.days) ? b.days.map(Number).filter(n => n >= 0 && n <= 6) : cur.days;
+    await settings.set('away', { ...cur, enabled: !!b.enabled, message: String(b.message || cur.message).slice(0, 600), days,
+      start: /^\d\d:\d\d$/.test(b.start) ? b.start : cur.start, end: /^\d\d:\d\d$/.test(b.end) ? b.end : cur.end });
+  } else return res.status(404).json({ error: 'unknown setting' });
+  res.json({ ok: true });
+}));
+
+// ---- Quick replies ----
+router.get('/quick-replies', required(), wrap(async (req, res) => res.json((await query('SELECT id,shortcut,title,body FROM quick_replies ORDER BY shortcut')).rows)));
+router.post('/quick-replies', required('admin', 'manager'), wrap(async (req, res) => {
+  const { shortcut, title, body } = req.body;
+  if (!shortcut || !title || !body) return res.status(400).json({ error: 'Shortcut, title and text are required' });
+  res.json((await query('INSERT INTO quick_replies(shortcut,title,body) VALUES($1,$2,$3) RETURNING *',
+    [String(shortcut).trim().replace(/^\/+/, '').slice(0, 30).replace(/\s+/g, '-'), String(title).slice(0, 80), String(body).slice(0, 1000)])).rows[0]);
+}));
+router.delete('/quick-replies/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM quick_replies WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
+
+// ---- Labels ----
+router.get('/labels', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM labels ORDER BY name')).rows)));
+router.post('/labels', required('admin', 'manager'), wrap(async (req, res) => {
+  const color = /^#[0-9a-fA-F]{6}$/.test(req.body.color) ? req.body.color : '#0e5a4a';
+  res.json((await query('INSERT INTO labels(name,color) VALUES($1,$2) RETURNING *', [String(req.body.name || '').trim().slice(0, 30), color])).rows[0]);
+}));
+router.delete('/labels/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM labels WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
+router.post('/conversations/:id/labels', required(), wrap(async (req, res) => {
+  const c = await loadConversation(req, res); if (!c) return;
+  const lid = Number(req.body.label_id);
+  if (req.body.on) await query('INSERT INTO conversation_labels VALUES($1,$2) ON CONFLICT DO NOTHING', [c.id, lid]);
+  else await query('DELETE FROM conversation_labels WHERE conversation_id=$1 AND label_id=$2', [c.id, lid]);
+  res.json({ ok: true });
 }));
 
 router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => {

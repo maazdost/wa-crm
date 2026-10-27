@@ -7,6 +7,7 @@ const { assignConversation } = require('../assign');
 const { saveInbound } = require('../messages');
 const mediaStore = require('../media');
 const push = require('../push');
+const { maybeAway } = require('../away');
 const router = express.Router();
 
 // Meta webhook verification
@@ -72,6 +73,7 @@ async function handleMessage(m, profileName) {
   }
   rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
   if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.name || '+' + waId, msg.body || '', { conversationId: conv.id });
+  await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
 }
 
 router.post('/', (req, res) => {
