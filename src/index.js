@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/webhook', require('./routes/webhook'));
 app.use('/api', require('./routes/api'));
+app.use('/api', require('./routes/marketing'));
 
 const server = http.createServer(app);
 rt.init(server);
@@ -33,6 +34,6 @@ if (MIN > 0) setInterval(async () => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-migrate().then(require('./bootstrap')).then(() => server.listen(PORT, () => console.log(`WA CRM listening on ${PORT}`)))
+migrate().then(require('./bootstrap')).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`); require('./broadcast').start(); }))
   .catch(e => { console.error(e); process.exit(1); });
 module.exports = { app, server };

@@ -66,6 +66,22 @@ const sendMedia = (to, kind, id, { caption, filename } = {}) => call({
   [kind]: { id, ...(caption && kind !== 'audio' ? { caption } : {}), ...(kind === 'document' && filename ? { filename } : {}) }
 });
 
+async function createTemplate(payload) {
+  if (DRY) return { id: 'dry_t_' + crypto.randomUUID(), status: 'APPROVED' };
+  if (!process.env.WA_WABA_ID) throw new Error('WA_WABA_ID is not set on the server');
+  const res = await fetch(`${GRAPH()}/${process.env.WA_WABA_ID}/message_templates`, { method: 'POST', headers: { ...AUTH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const d = await res.json();
+  if (!res.ok) throw new Error(d?.error?.error_user_msg || d?.error?.message || 'Template request failed');
+  return d;
+}
+async function listTemplates() {
+  if (DRY) return [];
+  if (!process.env.WA_WABA_ID) throw new Error('WA_WABA_ID is not set on the server');
+  let url = `${GRAPH()}/${process.env.WA_WABA_ID}/message_templates?fields=name,status,language,category,components,rejected_reason&limit=100`; const out = [];
+  while (url) { const d = await (await fetch(url, { headers: AUTH() })).json(); if (d.error) throw new Error(d.error.message); out.push(...(d.data || [])); url = d.paging && d.paging.next; }
+  return out;
+}
+
 const markRead = (waMessageId) => DRY ? null : call({ status: 'read', message_id: waMessageId }).catch(() => {});
 
 function verifySignature(rawBody, header) {
@@ -76,4 +92,4 @@ function verifySignature(rawBody, header) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-module.exports = { uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead, verifySignature };
+module.exports = { createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead, verifySignature };

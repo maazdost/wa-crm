@@ -81,7 +81,8 @@ router.post('/conversations/:id/template', required(), wrap(async (req, res) => 
   const c = await loadConversation(req, res); if (!c) return;
   const t = (await query('SELECT * FROM templates WHERE name=$1', [req.body.name])).rows[0];
   if (!t) return res.status(404).json({ error: 'template not found' });
-  const params = req.body.params?.length ? req.body.params : [c.contact_name || 'there'];
+  if (t.status !== 'APPROVED' && process.env.WA_DRY_RUN !== 'true') return res.status(409).json({ error: 'Meta has not approved this template yet' });
+  const params = t.var_count === 0 ? [] : (req.body.params?.length ? req.body.params : [(c.contact_name || 'there').split(' ')[0]]);
   try {
     const r = await wa.sendTemplate(c.wa_id, t.name, t.language, params);
     const body = params.reduce((s, v, i) => s.replace(`{{${i + 1}}}`, v), t.body);
@@ -195,10 +196,7 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
 }));
 
 router.get('/templates', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM templates ORDER BY name')).rows)));
-router.post('/templates', required('admin'), wrap(async (req, res) => {
-  const { name, language = 'en', body, category = 'utility' } = req.body;
-  res.json((await query('INSERT INTO templates(name,language,body,category) VALUES($1,$2,$3,$4) RETURNING *', [name, language, body, category])).rows[0]);
-}));
+
 
 router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
   const totals = (await query(`SELECT

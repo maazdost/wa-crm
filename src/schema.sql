@@ -95,3 +95,28 @@ CREATE TABLE IF NOT EXISTS conversation_labels (
   label_id INT NOT NULL REFERENCES labels(id) ON DELETE CASCADE, PRIMARY KEY (conversation_id, label_id)
 );
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_away_at TIMESTAMPTZ;
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS opted_out BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS list_name TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS opt_in_source TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'local';
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS meta_id TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS rejected_reason TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS var_count INT NOT NULL DEFAULT 0;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS footer TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS buttons JSONB;
+UPDATE templates SET var_count=1 WHERE name='followup_interest' AND var_count=0;
+
+CREATE TABLE IF NOT EXISTS broadcasts (
+  id SERIAL PRIMARY KEY, name TEXT NOT NULL, template_name TEXT NOT NULL, language TEXT NOT NULL DEFAULT 'en',
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled','sending','done','cancelled')),
+  segment JSONB, var_map JSONB, scheduled_at TIMESTAMPTZ NOT NULL DEFAULT now(), started_at TIMESTAMPTZ, finished_at TIMESTAMPTZ,
+  created_by INT REFERENCES users(id), created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS broadcast_recipients (
+  id BIGSERIAL PRIMARY KEY, broadcast_id INT NOT NULL REFERENCES broadcasts(id) ON DELETE CASCADE,
+  contact_id INT NOT NULL REFERENCES contacts(id), wa_id TEXT NOT NULL, params JSONB NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'queued', wa_message_id TEXT, error TEXT, sent_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_br_b ON broadcast_recipients(broadcast_id, status);
+CREATE INDEX IF NOT EXISTS idx_br_msg ON broadcast_recipients(wa_message_id);

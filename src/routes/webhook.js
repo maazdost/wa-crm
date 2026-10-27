@@ -4,7 +4,7 @@ const wa = require('../whatsapp');
 const bot = require('../bot');
 const rt = require('../realtime');
 const { assignConversation } = require('../assign');
-const { saveInbound } = require('../messages');
+const { saveInbound, saveOutbound } = require('../messages');
 const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
@@ -55,6 +55,17 @@ async function handleMessage(m, profileName) {
   wa.markRead(m.id);
   if (msg.mediaId) mediaStore.ensure(msg.mediaId).catch(e => console.error('media download', e.message));
 
+  // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)
+  const word = (msg.type === 'text' ? (msg.body || '') : '').trim().toLowerCase();
+  const optWord = /^(stop|unsubscribe)$/.test(word) ? 'out' : (contact.opted_out && /^(start|subscribe)$/.test(word)) ? 'in' : null;
+  if (optWord) {
+    await query('UPDATE contacts SET opted_out=$2 WHERE id=$1', [contact.id, optWord === 'out']);
+    const t = optWord === 'out' ? 'You have been unsubscribed from our promotional messages. Reply START to receive them again.' : 'Welcome back! You will receive our messages again.';
+    const sent = await wa.sendText(waId, t);
+    await saveOutbound(conv, { senderType: 'bot', body: t, waMessageId: sent.messages?.[0]?.id });
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    return;
+  }
   // Returning client whose chat was closed: stay with the same agent (sticky), reassign only if agent is gone
   if (conv.status === 'closed') {
     const owner = conv.assigned_to && (await query('SELECT is_active FROM users WHERE id=$1', [conv.assigned_to])).rows[0];
@@ -90,6 +101,8 @@ router.post('/', (req, res) => {
       serial(m.from, () => handleMessage(m, name));
     }
     for (const s of v.statuses || []) {
+      query(`UPDATE broadcast_recipients SET status=$2, error=COALESCE($3, error) WHERE wa_message_id=$1 AND status <> 'read' AND NOT (status='delivered' AND $2='sent')`,
+        [s.id, s.status, s.errors?.[0]?.title || null]).catch(() => {});
       query(`UPDATE messages SET status=$2, error=$3 WHERE wa_message_id=$1
                AND status <> 'read' AND NOT (status='delivered' AND $2='sent') RETURNING conversation_id`,
         [s.id, s.status, s.errors?.[0]?.title || null])

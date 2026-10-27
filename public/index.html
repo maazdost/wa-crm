@@ -73,6 +73,7 @@ table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;
 .lbl{display:flex;gap:6px;flex-wrap:wrap;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
 .lb2{border:1px solid;border-radius:12px;padding:1px 11px;font-size:12px;background:none}
 .fld{display:grid;gap:4px;margin-bottom:10px}.fld>span{font-size:13px;color:var(--mute)}.panel textarea{resize:vertical}
+.nav2{display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 8px}.nav2 .ghost{padding:4px 9px;font-size:12px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;z-index:9;max-width:90vw}
 @media(max-width:760px){.shell{grid-template-columns:1fr}.main{display:none}.chat-open .main{display:flex}.chat-open .side{display:none}.back{display:block}}
 </style></head><body>
@@ -120,7 +121,7 @@ async function boot() {
   const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
   $('#app').innerHTML = `<div class="shell"><aside class="side">
     <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
-    <div class="nav">${isMgr() ? '<button class="ghost" id="nd">Dashboard</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button>' : ''}<button class="ghost" id="out">Sign out</button></div></header>
+    <div class="nav"><button class="ghost" id="out">Sign out</button></div></header>${isMgr() ? '<div class="nav2"><button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nb">Broadcasts</button><button class="ghost" id="nc">Contacts</button><button class="ghost" id="nm">Templates</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button></div>' : ''}
     <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
@@ -128,7 +129,7 @@ async function boot() {
   $('#q').oninput = debounce(loadList, 300);
   $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
-  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#ns').onclick = showSettings; $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#ns').onclick = showSettings; $('#nb').onclick = showBroadcasts; $('#nc').onclick = showContacts; $('#nm').onclick = showTemplates; $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
   S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter();
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
@@ -211,8 +212,13 @@ function renderComposer() {
   if (S.conv.status === 'closed') { el.innerHTML = '<div class="bar">This chat is closed. Reopen it to reply.</div>'; return; }
   if (!w.open) {
     el.innerHTML = `<div class="bar warn">The reply window is closed. Send an approved template to reopen the chat. It restarts when the client replies.</div>
-    <div class="tpl"><select id="tsel">${S.templates.map(t => `<option value="${esc(t.name)}">${esc(t.name)}: ${esc(t.body)}</option>`).join('')}</select><button class="btn" id="tsend">Send template</button></div>`;
-    $('#tsend').onclick = async () => { const r = await api(`/conversations/${S.active}/template`, 'POST', { name: $('#tsel').value }); if (r.error) return toast(r.error); addMsg(r); };
+    <div class="tpl"><select id="tsel">${S.templates.filter(t => t.status === 'APPROVED').map(t => `<option value="${esc(t.name)}">${esc(t.name)}: ${esc(t.body)}</option>`).join('') || '<option value="">No approved templates yet. Ask a manager to create one.</option>'}</select><button class="btn" id="tsend">Send template</button></div>`;
+    $('#tsend').onclick = async () => {
+      const t = S.templates.find(x => x.name === $('#tsel').value); if (!t) return;
+      const params = [(S.conv.contact_name || 'there').split(' ')[0]];
+      for (let i = 2; i <= (t.var_count || 0); i++) { const v = prompt(`Value for {{${i}}}`); if (v === null) return; params.push(v); }
+      const r = await api(`/conversations/${S.active}/template`, 'POST', { name: t.name, params }); if (r.error) return toast(r.error); addMsg(r);
+    };
     return;
   }
   el.innerHTML = '<div id="qr" class="qr" hidden></div><div class="cmp"><button class="ghost" id="qrb">Replies</button><button class="ghost" id="clip" aria-label="Attach a file">Attach</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn" id="send">Send</button></div>';
@@ -410,6 +416,94 @@ async function showSettings() {
   $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That label already exists' : r.error); showSettings(); };
   el.querySelectorAll('[data-dq]').forEach(x => x.onclick = async () => { await api('/quick-replies/' + x.dataset.dq, 'DELETE'); showSettings(); });
   el.querySelectorAll('[data-dl]').forEach(x => x.onclick = async () => { await api('/labels/' + x.dataset.dl, 'DELETE'); showSettings(); });
+}
+
+/* ---------- Broadcast tools (managers/admins) ---------- */
+const field = (id, label, v = '', area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
+function screen(title, extra = '') {
+  document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
+  el.innerHTML = `<header class="ch"><button class="back" id="tb">‹</button><b>${title}</b>${extra}</header><div id="sc"></div>`;
+  $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
+  return $('#sc');
+}
+async function showTemplates() {
+  const sc = screen('Templates', '<span style="flex:1"></span><button class="ghost" id="ts">Refresh from Meta</button>');
+  const list = S.templates = arr(await api('/templates'));
+  const chip = st => `<em class="chip ${st === 'APPROVED' ? 'ok' : st === 'PENDING' ? 'warn' : st === 'local' ? '' : 'closed'}">${st === 'local' ? 'not on Meta' : esc(st.toLowerCase())}</em>`;
+  sc.innerHTML = `<p class="mute" style="padding:12px 14px 0">Templates are the only messages WhatsApp lets you send after a client has been silent for 24 hours, and the only way to send broadcasts. Meta reviews each one, usually within minutes.</p>
+  <div class="tbl" style="margin-top:12px"><table><tr><th>Name</th><th>Status</th><th>Type</th><th>Message</th><th></th></tr>
+  ${list.map(t => `<tr><td>${esc(t.name)}<br><small class="mute">${esc(t.language)}</small></td><td>${chip(t.status)}${t.rejected_reason && t.rejected_reason !== 'NONE' ? `<br><small class="mute">${esc(t.rejected_reason)}</small>` : ''}</td><td>${esc(t.category)}</td><td style="max-width:340px">${esc(t.body)}</td><td>${t.status === 'local' ? `<button class="ghost" data-dt="${t.id}">Delete</button>` : ''}</td></tr>`).join('')}</table></div>
+  <form class="panel" id="tf"><h3>New template</h3>${field('t1', 'Name (lowercase letters, numbers, underscores)', '')}
+  <label class="fld"><span>Type</span><select id="t2"><option value="MARKETING">Marketing (offers, invitations)</option><option value="UTILITY">Utility (follow-ups, updates about their request)</option></select></label>
+  ${field('t3', 'Language code', 'en')}${field('t4', 'Message text. Use {{1}}, {{2}} for things that change, e.g. Hi {{1}}, our class starts {{2}}.', '', 1)}
+  ${field('t5', 'Example for each variable, separated by commas (Meta requires this), e.g. Ali, Friday 7pm', '')}${field('t6', 'Footer (optional)', '')}${field('t7', 'Quick reply buttons, up to 3, separated by commas (optional)', '')}
+  <button class="btn">Submit to Meta</button></form>`;
+  $('#ts').onclick = async () => { const r = await api('/templates/sync', 'POST'); if (r.error) return toast(r.error); toast(`Updated ${r.synced} templates`); showTemplates(); };
+  $('#tf').onsubmit = async e => { e.preventDefault(); const sp = id => $(id).value.split(',').map(x => x.trim()).filter(Boolean);
+    const r = await api('/templates', 'POST', { name: $('#t1').value.trim(), category: $('#t2').value, language: $('#t3').value.trim() || 'en', body: $('#t4').value, examples: sp('#t5'), footer: $('#t6').value.trim(), buttons: sp('#t7') });
+    if (r.error) return toast(r.error); toast('Submitted. Use Refresh from Meta to see the decision.'); showTemplates(); };
+  sc.querySelectorAll('[data-dt]').forEach(b => b.onclick = async () => { await api('/templates/' + b.dataset.dt, 'DELETE'); showTemplates(); });
+}
+async function showContacts() {
+  const sc = screen('Contacts');
+  const [d, lists] = await Promise.all([api('/contacts'), api('/contacts/lists')]); if (d.error) return toast(d.error);
+  sc.innerHTML = `<div style="padding:12px 14px;display:flex;gap:8px"><input id="cq" placeholder="Search name or number"><select id="cl" style="width:auto"><option value="">All lists</option>${arr(lists).map(l => `<option value="${esc(l.list_name)}">${esc(l.list_name)} (${l.n})</option>`).join('')}</select></div>
+  <p class="mute" style="padding:0 14px" id="cn"></p><div class="tbl"><table id="ct"></table></div>
+  <form class="panel" id="imp"><h3>Import contacts</h3><p class="mute">Only import people who agreed to receive WhatsApp messages from you. They can reply STOP at any time and are removed from future broadcasts.</p>
+  ${field('i1', 'List name, e.g. Webinar leads', '')}${field('i2', 'Country code for numbers that start with 0', '92')}
+  <label class="fld"><span>Paste one person per line: name, phone</span><textarea id="i3" rows="6" placeholder="Ali Khan, 0300 1234567"></textarea></label>
+  <label class="fld"><span>Or choose a CSV file</span><input type="file" id="i4" accept=".csv,.txt"></label>
+  <label><input type="checkbox" id="i5" style="width:auto"> These people agreed to receive messages from us on WhatsApp</label><br><br><button class="btn">Import</button></form>`;
+  const draw = async () => {
+    const r = await api('/contacts?' + new URLSearchParams({ q: $('#cq').value, list: $('#cl').value })); if (r.error) return;
+    $('#cn').textContent = `Showing ${r.rows.length} of ${r.total} contacts`;
+    $('#ct').innerHTML = '<tr><th>Name</th><th>Phone</th><th>List</th><th>Source</th><th>Status</th><th></th></tr>' + r.rows.map(c => `<tr><td>${esc(c.name || '—')}</td><td>+${esc(c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(c.source || '—')}</td>
+      <td>${c.opted_out ? '<em class="chip closed">opted out</em>' : `<em class="chip">${esc(c.chat_status === 'open' ? 'with ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'new' : c.chat_status || 'no chat')}</em>`}</td>
+      <td><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button></td></tr>`).join('');
+    $('#ct').querySelectorAll('[data-oo]').forEach(b => b.onclick = async () => { await api('/contacts/' + b.dataset.oo, 'PATCH', { opted_out: b.dataset.v !== 'true' }); draw(); });
+  };
+  $('#cq').oninput = debounce(draw, 300); $('#cl').onchange = draw; draw();
+  $('#i4').onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { $('#i3').value = rd.result; }; rd.readAsText(f); };
+  $('#imp').onsubmit = async e => { e.preventDefault();
+    const rows = $('#i3').value.split(/\r?\n/).map(l => { const parts = l.split(/[,;\t]/).map(x => x.trim()).filter(Boolean); const phone = parts.find(x => x.replace(/\D/g, '').length >= 7); return phone ? { phone, name: parts.find(x => x !== phone) || '' } : null; }).filter(Boolean);
+    if (!rows.length) return toast('Add at least one phone number');
+    const r = await api('/contacts/import', 'POST', { list_name: $('#i1').value, country: $('#i2').value, consent: $('#i5').checked, rows }); if (r.error) return toast(r.error);
+    toast(`Added ${r.added}, updated ${r.updated}, skipped ${r.skipped} invalid`); showContacts(); };
+}
+async function showBroadcasts() {
+  const sc = screen('Broadcasts', '<span style="flex:1"></span><button class="ghost" id="br">Refresh</button><button class="btn" id="bn">New broadcast</button>');
+  S.templates = arr(await api('/templates')); const list = arr(await api('/broadcasts'));
+  const chip = st => `<em class="chip ${st === 'done' ? 'ok' : st === 'cancelled' ? 'closed' : 'warn'}">${esc(st)}</em>`;
+  sc.innerHTML = `<div class="tbl" style="margin-top:12px"><table><tr><th>Broadcast</th><th>Status</th><th>Results</th><th></th></tr>
+  ${list.map(b => `<tr><td>${esc(b.name)}<br><small class="mute">${esc(b.template_name)} · ${b.status === 'scheduled' ? 'starts ' + new Date(b.scheduled_at).toLocaleString() : new Date(b.scheduled_at).toLocaleDateString()}</small></td><td>${chip(b.status)}</td>
+  <td><small>Audience ${b.total} · Sent ${b.sent} · Delivered ${b.delivered} · Read ${b.read} · Replied ${b.replied} · Failed ${b.failed}${b.queued ? ' · Waiting ' + b.queued : ''}</small></td>
+  <td>${b.status === 'scheduled' || b.status === 'sending' ? `<button class="ghost" data-cb="${b.id}">Cancel</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="4" class="mute">No broadcasts yet.</td></tr>'}</table></div><div id="bform"></div>`;
+  $('#br').onclick = showBroadcasts; $('#bn').onclick = newBroadcast;
+  sc.querySelectorAll('[data-cb]').forEach(b => b.onclick = async () => { if (!confirm('Stop this broadcast? Messages already sent stay sent.')) return; await api(`/broadcasts/${b.dataset.cb}/cancel`, 'POST'); showBroadcasts(); });
+}
+async function newBroadcast() {
+  const box = $('#bform'), lists = arr(await api('/contacts/lists')), tpls = S.templates.filter(t => t.status === 'APPROVED');
+  if (!tpls.length) { box.innerHTML = '<p class="panel mute">You need an approved template first. Create one under Templates.</p>'; return; }
+  const chk = (cls, items) => items.map(i => `<label style="margin-right:12px;white-space:nowrap"><input type="checkbox" class="${cls}" value="${esc(i.v)}" style="width:auto"> ${esc(i.t)}</label>`).join('') || '<span class="mute">none yet</span>';
+  box.innerHTML = `<form class="panel" id="nbf"><h3>New broadcast</h3>${field('n1', 'Name (only your team sees this)', '')}
+  <label class="fld"><span>Template</span><select id="n2">${tpls.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('')}</select></label><p class="mute" id="n3"></p><div id="n4"></div>
+  <div class="fld"><span>Audience. Leave everything unticked to message everyone who has not opted out.</span>
+   <div><b>Lists</b> ${chk('sl', lists.map(l => ({ v: l.list_name, t: `${l.list_name} (${l.n})` })))}</div><div><b>Labels</b> ${chk('sb', S.labels.map(l => ({ v: l.id, t: l.name })))}</div>
+   <div><b>Asked for</b> ${chk('si', [{ v: 'info', t: 'More info' }, { v: 'team', t: 'Join the team' }, { v: 'classes', t: 'Classes' }])}</div><div><b>Came from</b> ${chk('ss', [{ v: 'ad', t: 'Ads' }, { v: 'organic', t: 'Organic' }, { v: 'import', t: 'Imported' }])}</div></div>
+  <p><button type="button" class="ghost" id="n5">Count audience</button> <span class="mute" id="n6"></span></p>
+  <div class="fld"><span>When</span><div style="display:flex;gap:8px;align-items:center"><select id="n7" style="width:auto"><option value="now">Send now</option><option value="later">Schedule</option></select><input type="datetime-local" id="n8" hidden style="width:auto"></div></div>
+  <p class="mute">WhatsApp limits how many new people a number can message each day (about 250 until your business is verified). Bigger audiences are sent over several days automatically.</p>
+  <label><input type="checkbox" id="n9" style="width:auto"> Everyone in this audience agreed to receive these messages</label><br><br><button class="btn">Start broadcast</button></form>`;
+  const seg = () => { const g = c => [...document.querySelectorAll('.' + c + ':checked')].map(x => x.value); return { lists: g('sl'), labels: g('sb').map(Number), intents: g('si'), sources: g('ss') }; };
+  const vars = () => { const t = tpls.find(x => x.name === $('#n2').value); $('#n3').textContent = t.body;
+    $('#n4').innerHTML = Array.from({ length: t.var_count }, (_, i) => `<div class="fld"><span>{{${i + 1}}} is</span><div style="display:flex;gap:8px"><select class="vt" style="width:auto"><option value="name">The client's first name</option><option value="text">Fixed text</option></select><input class="vv" placeholder="Text for everyone" hidden></div></div>`).join('');
+    $('#n4').querySelectorAll('.vt').forEach(sel => sel.onchange = () => { sel.nextElementSibling.hidden = sel.value !== 'text'; }); };
+  $('#n2').onchange = vars; vars(); $('#n7').onchange = e => { $('#n8').hidden = e.target.value !== 'later'; };
+  $('#n5').onclick = async () => { const r = await api('/broadcasts/preview', 'POST', { segment: seg() }); $('#n6').textContent = r.error || `${r.count} people${r.count ? ', for example ' + r.sample.join(', ') : ''}`; };
+  $('#nbf').onsubmit = async e => { e.preventDefault();
+    const var_map = [...document.querySelectorAll('#n4 .fld')].map(f => ({ type: f.querySelector('.vt').value, value: f.querySelector('.vv').value }));
+    const r = await api('/broadcasts', 'POST', { name: $('#n1').value, template_name: $('#n2').value, var_map, segment: seg(), consent: $('#n9').checked, scheduled_at: $('#n7').value === 'later' && $('#n8').value ? new Date($('#n8').value).toISOString() : null });
+    if (r.error) return toast(r.error); toast(`Broadcast started for ${r.recipients} people`); showBroadcasts(); };
 }
 
 /* ---------- Dashboard (managers/admins) ---------- */
