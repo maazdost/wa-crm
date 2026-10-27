@@ -8,6 +8,7 @@ const { saveInbound, saveOutbound } = require('../messages');
 const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
+const settings = require('../settings');
 const router = express.Router();
 
 // Meta webhook verification
@@ -42,9 +43,10 @@ async function handleMessage(m, profileName) {
   const msg = extract(m);
   const waId = m.from;
   const contact = (await query(
-    `INSERT INTO contacts(wa_id,name,source) VALUES($1,$2,$3)
-     ON CONFLICT (wa_id) DO UPDATE SET name = COALESCE(contacts.name, EXCLUDED.name) RETURNING *`,
+    `INSERT INTO contacts(wa_id,profile_name,source) VALUES($1,$2,$3)
+     ON CONFLICT (wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`,
     [waId, profileName || null, m.referral ? 'ad' : 'organic'])).rows[0];
+  if (contact.is_personal) return; // marked "not a client": nothing is stored and nothing is sent
   let conv = (await query(
     `INSERT INTO conversations(contact_id) VALUES($1) ON CONFLICT (contact_id) DO UPDATE SET contact_id=EXCLUDED.contact_id RETURNING *`,
     [contact.id])).rows[0];
@@ -52,7 +54,6 @@ async function handleMessage(m, profileName) {
   const saved = await saveInbound(conv, msg);
   if (!saved) return; // duplicate delivery
   conv = saved.conversation;
-  wa.markRead(m.id);
   if (msg.mediaId) mediaStore.ensure(msg.mediaId).catch(e => console.error('media download', e.message));
 
   // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)
@@ -63,8 +64,21 @@ async function handleMessage(m, profileName) {
     const t = optWord === 'out' ? 'You have been unsubscribed from our promotional messages. Reply START to receive them again.' : 'Welcome back! You will receive our messages again.';
     const sent = await wa.sendText(waId, t);
     await saveOutbound(conv, { senderType: 'bot', body: t, waMessageId: sent.messages?.[0]?.id });
+    wa.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     return;
+  }
+  // Optional gate: only start the bot for ad clicks, imported contacts, or messages with the chosen words
+  const gate = await settings.get('gate');
+  if (gate.mode === 'keywords' && (conv.bot_step === 'held' || (conv.status === 'bot' && conv.bot_step === 'new'))) {
+    const body = (msg.body || '').toLowerCase();
+    const ok = msg.referral || contact.list_name || gate.keywords.some(k => body.includes(k));
+    if (!ok) {
+      await query(`UPDATE conversations SET status='closed', bot_step='held' WHERE id=$1`, [conv.id]);
+      rt.toConversation({}, 'conversation:held', { conversationId: conv.id });
+      return;
+    }
+    if (conv.bot_step === 'held') conv = (await query(`UPDATE conversations SET status='bot', bot_step='new' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];
   }
   // Returning client whose chat was closed: stay with the same agent (sticky), reassign only if agent is gone
   if (conv.status === 'closed') {
@@ -74,6 +88,7 @@ async function handleMessage(m, profileName) {
   }
 
   if (await bot.handle(conv, contact, msg)) {
+    wa.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     return;
   }
@@ -83,7 +98,7 @@ async function handleMessage(m, profileName) {
     if (owner && !owner.is_active) conv = (await assignConversation(conv.id, conv.team)) || conv;
   }
   rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
-  if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.name || '+' + waId, msg.body || '', { conversationId: conv.id });
+  if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id });
   await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
 }
 

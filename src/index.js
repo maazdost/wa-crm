@@ -34,6 +34,6 @@ if (MIN > 0) setInterval(async () => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-migrate().then(require('./bootstrap')).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`); require('./broadcast').start(); }))
+migrate().then(require('./bootstrap')).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`); require('./broadcast').start(); require('./drip').start(); }))
   .catch(e => { console.error(e); process.exit(1); });
 module.exports = { app, server };

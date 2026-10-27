@@ -12,6 +12,8 @@ const router = express.Router();
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const isAgent = (u) => u.role === 'agent';
 const settings = require('../settings');
+const { markPersonal } = require('../personal');
+const bot = require('../bot');
 const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
 router.post('/auth/login', wrap(async (req, res) => {
@@ -29,7 +31,7 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, ct.name AS contact_name, ${LABELS_SQL} FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, ${LABELS_SQL} FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
     [req.params.id])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
@@ -44,10 +46,11 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
   if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
   else if (!unassigned) where.push(`c.status <> 'bot'`);
+  where.push(req.query.held === 'true' ? "c.bot_step='held'" : "c.bot_step <> 'held'");
   if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
-  if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
+  if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
-    `SELECT c.*, ct.wa_id, ct.name AS contact_name, u.name AS agent_name, ${LABELS_SQL},
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, ${LABELS_SQL},
             (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body
        FROM conversations c JOIN contacts ct ON ct.id=c.contact_id LEFT JOIN users u ON u.id=c.assigned_to
       WHERE ${where.join(' AND ')} ORDER BY c.last_message_at DESC LIMIT 200`, p);
@@ -94,6 +97,22 @@ router.post('/conversations/:id/template', required(), wrap(async (req, res) => 
 router.post('/conversations/:id/read', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   await query('UPDATE conversations SET unread_count=0 WHERE id=$1', [c.id]);
+  if (c.unread_count > 0 && c.assigned_to === req.user.id) {
+    const last = (await query(`SELECT wa_message_id FROM messages WHERE conversation_id=$1 AND direction='in' AND wa_message_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [c.id])).rows[0];
+    if (last) wa.markRead(last.wa_message_id); // blue ticks: the client sees that a person has read it
+  }
+  res.json({ ok: true });
+}));
+
+// "typing..." on the client's phone while the owning agent writes (at most once every 15 s per chat)
+const typingAt = new Map();
+router.post('/conversations/:id/typing', required(), wrap(async (req, res) => {
+  const c = await loadConversation(req, res); if (!c) return;
+  if (c.assigned_to !== req.user.id || !windowInfo(c).window_open || Date.now() - (typingAt.get(c.id) || 0) < 15000) return res.json({ ok: true, skipped: true });
+  const last = (await query(`SELECT wa_message_id FROM messages WHERE conversation_id=$1 AND direction='in' AND wa_message_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [c.id])).rows[0];
+  if (!last) return res.json({ ok: true, skipped: true });
+  typingAt.set(c.id, Date.now());
+  wa.typing(last.wa_message_id).catch(() => {});
   res.json({ ok: true });
 }));
 
@@ -212,8 +231,20 @@ router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
   res.json({ totals, agents });
 }));
 
+// ---- Not a client / held senders ----
+router.post('/conversations/:id/not-client', required(), wrap(async (req, res) => {
+  const c = await loadConversation(req, res); if (!c) return;
+  await markPersonal(c.contact_id); res.json({ ok: true });
+}));
+router.post('/conversations/:id/release', required('admin', 'manager'), wrap(async (req, res) => {
+  const c = (await query(`UPDATE conversations SET status='bot', bot_step='new' WHERE id=$1 AND bot_step='held' RETURNING *`, [req.params.id])).rows[0];
+  if (!c) return res.status(404).json({ error: 'This chat is not on hold' });
+  const contact = (await query('SELECT * FROM contacts WHERE id=$1', [c.contact_id])).rows[0];
+  await bot.handle(c, contact, { type: 'text', body: '' }); res.json({ ok: true });
+}));
+
 // ---- Settings: bot wording and away message ----
-router.get('/settings', required('admin', 'manager'), wrap(async (req, res) => res.json({ bot: await settings.get('bot'), away: await settings.get('away') })));
+router.get('/settings', required('admin', 'manager'), wrap(async (req, res) => res.json({ bot: await settings.get('bot'), away: await settings.get('away'), gate: await settings.get('gate') })));
 router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res) => {
   const k = req.params.key, b = req.body || {};
   if (k === 'bot') {
@@ -226,6 +257,9 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
     const days = Array.isArray(b.days) ? b.days.map(Number).filter(n => n >= 0 && n <= 6) : cur.days;
     await settings.set('away', { ...cur, enabled: !!b.enabled, message: String(b.message || cur.message).slice(0, 600), days,
       start: /^\d\d:\d\d$/.test(b.start) ? b.start : cur.start, end: /^\d\d:\d\d$/.test(b.end) ? b.end : cur.end });
+  } else if (k === 'gate') {
+    const kw = (Array.isArray(b.keywords) ? b.keywords : String(b.keywords || '').split(',')).map(x => String(x).trim().toLowerCase()).filter(Boolean).slice(0, 50);
+    await settings.set('gate', { mode: b.mode === 'keywords' ? 'keywords' : 'all', keywords: kw });
   } else return res.status(404).json({ error: 'unknown setting' });
   res.json({ ok: true });
 }));

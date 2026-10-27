@@ -120,3 +120,15 @@ CREATE TABLE IF NOT EXISTS broadcast_recipients (
 );
 CREATE INDEX IF NOT EXISTS idx_br_b ON broadcast_recipients(broadcast_id, status);
 CREATE INDEX IF NOT EXISTS idx_br_msg ON broadcast_recipients(wa_message_id);
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS profile_name TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS is_personal BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS drips (
+  id SERIAL PRIMARY KEY, name TEXT NOT NULL, active BOOLEAN NOT NULL DEFAULT TRUE, stop_on_reply BOOLEAN NOT NULL DEFAULT TRUE,
+  steps JSONB NOT NULL DEFAULT '[]', created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS drip_enrollments (
+  id BIGSERIAL PRIMARY KEY, drip_id INT NOT NULL REFERENCES drips(id) ON DELETE CASCADE, contact_id INT NOT NULL REFERENCES contacts(id),
+  step INT NOT NULL DEFAULT 0, next_at TIMESTAMPTZ NOT NULL, status TEXT NOT NULL DEFAULT 'active',
+  enrolled_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (drip_id, contact_id)
+);

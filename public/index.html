@@ -118,10 +118,10 @@ function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove
 
 /* ---------- Shell + list ---------- */
 async function boot() {
-  const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
+  const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['held','Held'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
   $('#app').innerHTML = `<div class="shell"><aside class="side">
     <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
-    <div class="nav"><button class="ghost" id="out">Sign out</button></div></header>${isMgr() ? '<div class="nav2"><button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nb">Broadcasts</button><button class="ghost" id="nc">Contacts</button><button class="ghost" id="nm">Templates</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button></div>' : ''}
+    <div class="nav"><button class="ghost" id="out">Sign out</button></div></header>${isMgr() ? '<div class="nav2"><button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nb">Broadcasts</button><button class="ghost" id="nc">Contacts</button><button class="ghost" id="nm">Templates</button><button class="ghost" id="na">Follow-ups</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button></div>' : ''}
     <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
@@ -129,7 +129,7 @@ async function boot() {
   $('#q').oninput = debounce(loadList, 300);
   $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
-  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#ns').onclick = showSettings; $('#nb').onclick = showBroadcasts; $('#nc').onclick = showContacts; $('#nm').onclick = showTemplates; $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  if (isMgr()) { $('#nd').onclick = () => showDashboard(); $('#ns').onclick = showSettings; $('#nb').onclick = showBroadcasts; $('#nc').onclick = showContacts; $('#nm').onclick = showTemplates; $('#na').onclick = showFollowups; $('#nt').onclick = showTeam; $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
   S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter();
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
@@ -143,7 +143,7 @@ async function loadAgents() {
 }
 async function loadList() {
   const p = new URLSearchParams();
-  if (S.tab === 'unassigned') p.set('unassigned', 'true'); else { p.set('status', S.tab); if (S.agent) p.set('assigned_to', S.agent); }
+  if (S.tab === 'unassigned') p.set('unassigned', 'true'); else if (S.tab === 'held') p.set('held', 'true'); else { p.set('status', S.tab); if (S.agent) p.set('assigned_to', S.agent); }
   const q = $('#q').value.trim(); if (q) p.set('q', q);
   if (S.label) p.set('label', S.label);
   const d = await api('/conversations?' + p); if (d.error) return;
@@ -176,11 +176,19 @@ async function openConv(id) {
 function renderHead() {
   const c = S.conv, w = win(c);
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">‹</button><div class="who"><b>${esc(c.contact_name || 'Unnamed')}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}</span></div>
-  <span class="chip ${w.cls}">${w.txt}</span><button class="ghost" id="nb">Notes (${S.notes.length})</button><button class="ghost" id="st">${c.status === 'closed' ? 'Reopen' : 'Close chat'}</button></header>`;
+  <span class="chip ${w.cls}">${w.txt}</span><button class="ghost" id="notesbtn">Notes (${S.notes.length})</button>${c.bot_step === 'held' ? '' : `<button class="ghost" id="st">${c.status === 'closed' ? 'Reopen' : 'Close chat'}</button>`}${c.bot_step === 'held' && isMgr() ? '<button class="ghost" id="relbtn">Start as client</button>' : ''}<button class="ghost" id="nonclient">Not a client</button></header>`;
   $('#back').onclick = () => { document.body.classList.remove('chat-open'); S.active = null; renderList(); };
-  $('#nb').onclick = () => { const n = $('#notes'); n.hidden = !n.hidden; };
-  $('#st').onclick = async () => { const r = await api(`/conversations/${S.active}/status`, 'POST', { status: c.status === 'closed' ? 'open' : 'closed' }); if (r.error) return toast(r.error); S.conv.status = c.status === 'closed' ? 'open' : 'closed'; renderHead(); renderComposer(); loadList(); };
+  $('#notesbtn').onclick = () => { const n = $('#notes'); n.hidden = !n.hidden; };
+  $('#nonclient').onclick = async () => { if (!confirm('Mark this person as not a client? Their chat is deleted and they are ignored from now on.')) return; const r = await api(`/conversations/${S.active}/not-client`, 'POST'); if (r.error) return toast(r.error); toast('Marked as not a client'); leaveChat(); };
+  if ($('#relbtn')) $('#relbtn').onclick = async () => { const r = await api(`/conversations/${S.active}/release`, 'POST'); if (r.error) return toast(r.error); toast('The bot has greeted them'); leaveChat(); };
+  if ($('#st')) $('#st').onclick = async () => { const r = await api(`/conversations/${S.active}/status`, 'POST', { status: c.status === 'closed' ? 'open' : 'closed' }); if (r.error) return toast(r.error); S.conv.status = c.status === 'closed' ? 'open' : 'closed'; renderHead(); renderComposer(); loadList(); };
 }
+function typingPing() {
+  const t = $('#txt'); S.typingAt = S.typingAt || {};
+  if (!t || !t.value.trim() || !S.conv || S.conv.assigned_to !== S.user.id || Date.now() - (S.typingAt[S.active] || 0) < 12000) return;
+  S.typingAt[S.active] = Date.now(); api(`/conversations/${S.active}/typing`, 'POST');
+}
+function leaveChat() { S.active = null; S.conv = null; document.body.classList.remove('chat-open'); $('#chat').className = 'chat empty'; $('#chat').textContent = 'Select a chat to start'; loadList(); }
 function renderMgr() {
   const el = $('#mgr'); if (!isMgr()) return;
   const c = S.conv;
@@ -209,6 +217,7 @@ function renderMsgs(stick = true) {
 function addMsg(m) { if (S.msgs.some(x => x.id === m.id)) return; S.msgs.push(m); renderMsgs(); }
 function renderComposer() {
   const w = win(S.conv), el = $('#comp'); S.winOpen = w.open;
+  if (S.conv.bot_step === 'held') { el.innerHTML = '<div class="bar warn">On hold: the bot has not replied to this person. Choose Start as client, or Not a client.</div>'; return; }
   if (S.conv.status === 'closed') { el.innerHTML = '<div class="bar">This chat is closed. Reopen it to reply.</div>'; return; }
   if (!w.open) {
     el.innerHTML = `<div class="bar warn">The reply window is closed. Send an approved template to reopen the chat. It restarts when the client replies.</div>
@@ -223,7 +232,7 @@ function renderComposer() {
   }
   el.innerHTML = '<div id="qr" class="qr" hidden></div><div class="cmp"><button class="ghost" id="qrb">Replies</button><button class="ghost" id="clip" aria-label="Attach a file">Attach</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn" id="send">Send</button></div>';
   const t = $('#txt');
-  t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else $('#qr').hidden = true; };
+  t.oninput = () => { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else { $('#qr').hidden = true; typingPing(); } };
   $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them in Settings.'); showQr(''); };
   t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!$('#qr').hidden && t.value.startsWith('/') && S.qrList.length) return pickQr(0); sendText(); } };
   $('#send').onclick = sendText;
@@ -389,14 +398,26 @@ function showQr(filter) {
 function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt'); t.value = fillVars(q.body); $('#qr').hidden = true; t.focus(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
 
 /* ---------- Settings (managers/admins) ---------- */
+async function loadWaStatus() {
+  const r = await api('/whatsapp/status'), el = $('#ws'); if (!el) return;
+  if (r.error) { el.textContent = r.error; return; }
+  if (r.dry_run) { el.textContent = 'Test mode: messages are not sent to WhatsApp.'; return; }
+  const ok = t => `<span style="color:var(--pine2)">✓ ${t}</span>`, bad = t => `<span style="color:var(--red)">✗ ${t}</span>`;
+  el.innerHTML = [
+    r.token_ok ? ok(`Number ${esc(r.number.display_phone_number || '')} (${esc(r.number.verified_name || '')}), quality ${esc(r.number.quality_rating || 'unknown')}`) : bad(`Cannot reach Meta with the access token: ${esc(r.token_error || '')}`),
+    !r.waba_id ? bad('Account ID not set yet. Paste the IDs below.') : r.waba_error ? bad('Account ID problem: ' + esc(r.waba_error)) : r.waba_has_number ? ok('Account ID is correct and contains your number') : bad('This account ID does not contain your number'),
+    r.subscribed === undefined ? '' : r.subscribed ? ok('Messages are being delivered to this server') : bad('Not subscribed: in Meta open WhatsApp, Configuration, and subscribe to messages')].filter(Boolean).join('<br>');
+}
 async function showSettings() {
   document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
   const [st, ql, lb] = await Promise.all([api('/settings'), api('/quick-replies'), api('/labels')]); if (st.error) return toast(st.error);
   S.quick = arr(ql); S.labels = arr(lb); fillLabelFilter();
-  const b = st.bot, a = st.away, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const b = st.bot, a = st.away, g = st.gate, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
   const row = (left, attr) => `<div class="hb" style="grid-template-columns:1fr auto">${left}<button class="ghost" ${attr}>Delete</button></div>`;
   el.innerHTML = `<header class="ch"><button class="back" id="tb">‹</button><b>Settings</b></header>
+  <div class="panel" id="wp"><h3>WhatsApp connection</h3><div id="ws" class="mute">Checking…</div>
+    <label class="fld" style="margin-top:10px"><span>Account IDs to try, as shown in Meta (separate with commas)</span><input id="w1" placeholder="4572421779664202, 1472520688056945"></label><button class="btn" id="w2">Find and save my account ID</button></div>
   <form class="panel" id="bf"><h3>Bot messages</h3><p class="mute">What the bot says before a client is handed to an agent. Use {{name}} for the client's name.</p>
     ${fld('b1', 'Greeting', b.greet, 1)}${fld('b2', 'Button 1 (more info)', b.btnInfo)}${fld('b3', 'Button 2 (join the team)', b.btnTeam)}${fld('b4', 'Button 3 (classes)', b.btnClasses)}${fld('b5', 'Question asking for their name', b.askName, 1)}${fld('b6', 'Hand-off message', b.handoff, 1)}
     <p class="mute">Buttons can hold 20 characters at most.</p><button class="btn">Save bot messages</button></form>
@@ -404,6 +425,9 @@ async function showSettings() {
     <label><input type="checkbox" id="a0" ${a.enabled ? 'checked' : ''} style="width:auto"> Turn on</label>${fld('a1', 'Message', a.message, 1)}
     <div class="fld"><span>Working hours (${esc(a.tz)})</span><div style="display:flex;gap:8px"><input type="time" id="a2" value="${esc(a.start)}"><input type="time" id="a3" value="${esc(a.end)}"></div></div>
     <div class="fld"><span>Working days</span><div>${dn.map((d, i) => `<label style="margin-right:10px"><input type="checkbox" class="ad" value="${i}" ${a.days.includes(i) ? 'checked' : ''} style="width:auto"> ${d}</label>`).join('')}</div></div><button class="btn">Save away message</button></form>
+  <form class="panel" id="gf"><h3>Who can start a chat with the bot</h3><p class="mute">If friends or old contacts message this number, you can stop the bot from answering people who are not clients.</p>
+    <label class="fld"><span>Mode</span><select id="g1"><option value="all">Everyone gets the bot</option><option value="keywords">Only ad clicks, imported contacts, and messages containing these words</option></select></label>
+    ${fld('g2', 'Words, separated by commas', g.keywords.join(', '))}<p class="mute">Other senders wait in the Held tab. A manager can start the bot for them or mark them as not a client.</p><button class="btn">Save</button></form>
   <div class="panel"><h3>Quick replies</h3><p class="mute">Agents type / in a chat to use them. {{name}} becomes the client's first name and {{agent}} the agent's name.</p>
     ${S.quick.map(q => row(`<span><b>/${esc(q.shortcut)}</b> ${esc(q.title)}<br><small class="mute">${esc(q.body)}</small></span>`, `data-dq="${q.id}"`)).join('') || '<p class="mute">None yet.</p>'}
     <form id="qf" style="display:grid;gap:8px;margin-top:10px"><input id="q1" placeholder="Shortcut, e.g. fees" required><input id="q2" placeholder="Title, e.g. Course fees" required><textarea id="q3" rows="3" placeholder="Message text" required></textarea><button class="btn">Add quick reply</button></form></div>
@@ -412,6 +436,11 @@ async function showSettings() {
   $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
   $('#bf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/bot', 'PUT', { greet: $('#b1').value, btnInfo: $('#b2').value, btnTeam: $('#b3').value, btnClasses: $('#b4').value, askName: $('#b5').value, handoff: $('#b6').value }); toast(r.error || 'Bot messages saved'); };
   $('#af').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/away', 'PUT', { enabled: $('#a0').checked, message: $('#a1').value, start: $('#a2').value, end: $('#a3').value, days: [...document.querySelectorAll('.ad:checked')].map(x => +x.value) }); toast(r.error || 'Away message saved'); };
+  loadWaStatus();
+  $('#w2').onclick = async () => { const ids = $('#w1').value.split(/[,\s]+/).filter(Boolean); if (!ids.length) return toast('Paste at least one ID'); const r = await api('/whatsapp/detect', 'POST', { ids });
+    if (r.error) return toast(r.error); toast(r.saved ? 'Found it and saved it' : 'None of these IDs contains your number'); $('#ws').innerHTML += '<br>' + r.results.map(x => `${esc(x.id)}: ${x.error ? esc(x.error) : x.has_ours ? 'this one has your number' : 'numbers: ' + esc(x.numbers.join(', ') || 'none')}`).join('<br>'); if (r.saved) loadWaStatus(); };
+  $('#g1').value = g.mode;
+  $('#gf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/gate', 'PUT', { mode: $('#g1').value, keywords: $('#g2').value }); toast(r.error || 'Saved'); };
   $('#qf').onsubmit = async e => { e.preventDefault(); const r = await api('/quick-replies', 'POST', { shortcut: $('#q1').value.trim().replace(/^\//, ''), title: $('#q2').value, body: $('#q3').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That shortcut already exists' : r.error); showSettings(); };
   $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That label already exists' : r.error); showSettings(); };
   el.querySelectorAll('[data-dq]').forEach(x => x.onclick = async () => { await api('/quick-replies/' + x.dataset.dq, 'DELETE'); showSettings(); });
@@ -453,17 +482,22 @@ async function showContacts() {
   ${field('i1', 'List name, e.g. Webinar leads', '')}${field('i2', 'Country code for numbers that start with 0', '92')}
   <label class="fld"><span>Paste one person per line: name, phone</span><textarea id="i3" rows="6" placeholder="Ali Khan, 0300 1234567"></textarea></label>
   <label class="fld"><span>Or choose a CSV file</span><input type="file" id="i4" accept=".csv,.txt"></label>
-  <label><input type="checkbox" id="i5" style="width:auto"> These people agreed to receive messages from us on WhatsApp</label><br><br><button class="btn">Import</button></form>`;
+  <label><input type="checkbox" id="i5" style="width:auto"> These people agreed to receive messages from us on WhatsApp</label><br><br><button class="btn">Import</button></form>
+  <form class="panel" id="igf"><h3>Personal numbers to ignore</h3><p class="mute">Friends, family and anyone who is not a client. The system never replies to them, never stores their messages, and keeps them out of broadcasts.</p>
+  <label class="fld"><span>One number per line</span><textarea id="ig1" rows="4" placeholder="0300 1234567"></textarea></label><button class="btn">Ignore these numbers</button></form>`;
   const draw = async () => {
     const r = await api('/contacts?' + new URLSearchParams({ q: $('#cq').value, list: $('#cl').value })); if (r.error) return;
     $('#cn').textContent = `Showing ${r.rows.length} of ${r.total} contacts`;
     $('#ct').innerHTML = '<tr><th>Name</th><th>Phone</th><th>List</th><th>Source</th><th>Status</th><th></th></tr>' + r.rows.map(c => `<tr><td>${esc(c.name || '—')}</td><td>+${esc(c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(c.source || '—')}</td>
-      <td>${c.opted_out ? '<em class="chip closed">opted out</em>' : `<em class="chip">${esc(c.chat_status === 'open' ? 'with ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'new' : c.chat_status || 'no chat')}</em>`}</td>
-      <td><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button></td></tr>`).join('');
+      <td>${c.is_personal ? '<em class="chip closed">ignored</em>' : c.opted_out ? '<em class="chip closed">opted out</em>' : `<em class="chip">${esc(c.chat_status === 'open' ? 'with ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'new' : c.chat_status || 'no chat')}</em>`}</td>
+      <td><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button> <button class="ghost" data-ig="${c.id}" data-v="${c.is_personal}">${c.is_personal ? 'Stop ignoring' : 'Ignore'}</button></td></tr>`).join('');
     $('#ct').querySelectorAll('[data-oo]').forEach(b => b.onclick = async () => { await api('/contacts/' + b.dataset.oo, 'PATCH', { opted_out: b.dataset.v !== 'true' }); draw(); });
+    $('#ct').querySelectorAll('[data-ig]').forEach(b => b.onclick = async () => { if (b.dataset.v !== 'true' && !confirm('Ignore this number? Their chat is deleted and the system will never reply to them.')) return; await api('/contacts/' + b.dataset.ig, 'PATCH', { is_personal: b.dataset.v !== 'true' }); draw(); });
   };
   $('#cq').oninput = debounce(draw, 300); $('#cl').onchange = draw; draw();
   $('#i4').onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { $('#i3').value = rd.result; }; rd.readAsText(f); };
+  $('#igf').onsubmit = async e => { e.preventDefault(); const numbers = $('#ig1').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); if (!numbers.length) return toast('Add at least one number');
+    const r = await api('/contacts/ignore', 'POST', { numbers, country: $('#i2').value }); if (r.error) return toast(r.error); toast(`Ignoring ${r.ignored} numbers`); showContacts(); };
   $('#imp').onsubmit = async e => { e.preventDefault();
     const rows = $('#i3').value.split(/\r?\n/).map(l => { const parts = l.split(/[,;\t]/).map(x => x.trim()).filter(Boolean); const phone = parts.find(x => x.replace(/\D/g, '').length >= 7); return phone ? { phone, name: parts.find(x => x !== phone) || '' } : null; }).filter(Boolean);
     if (!rows.length) return toast('Add at least one phone number');
@@ -504,6 +538,23 @@ async function newBroadcast() {
     const var_map = [...document.querySelectorAll('#n4 .fld')].map(f => ({ type: f.querySelector('.vt').value, value: f.querySelector('.vv').value }));
     const r = await api('/broadcasts', 'POST', { name: $('#n1').value, template_name: $('#n2').value, var_map, segment: seg(), consent: $('#n9').checked, scheduled_at: $('#n7').value === 'later' && $('#n8').value ? new Date($('#n8').value).toISOString() : null });
     if (r.error) return toast(r.error); toast(`Broadcast started for ${r.recipients} people`); showBroadcasts(); };
+}
+
+async function showFollowups() {
+  const sc = screen('Follow-ups'); S.templates = arr(await api('/templates')); const list = arr(await api('/drips')), tpls = S.templates.filter(t => t.status === 'APPROVED');
+  const unit = h => h >= 24 && h % 24 === 0 ? `${h / 24} day${h / 24 > 1 ? 's' : ''}` : `${h} hour${h === 1 ? '' : 's'}`;
+  const row = i => `<div class="stp fld"><span>Step ${i + 1}</span><div style="display:flex;gap:8px;flex-wrap:wrap"><input type="number" class="sd" min="0" value="${i === 0 ? 24 : i === 1 ? 2 : 3}" style="width:80px"><select class="su" style="width:auto"><option value="1">hours</option><option value="24"${i ? ' selected' : ''}>days</option></select>
+    <select class="st2" style="flex:1"><option value="">${i ? '(no step)' : 'Choose a template'}</option>${tpls.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('')}</select></div><input class="sv" placeholder="Text for {{2}}, {{3}} if the template has them, separated by commas" style="margin-top:6px"></div>`;
+  sc.innerHTML = `<p class="mute" style="padding:12px 14px 0">Automatic messages sent after a client is handed to an agent. Each step is a template, sent after the delay you choose. If the client replies, the sequence stops, so nobody who is already talking to you gets nagged.</p>
+  <div class="tbl" style="margin-top:12px"><table><tr><th>Follow-up</th><th>Steps</th><th>Clients</th><th></th></tr>${list.map(d => `<tr><td>${esc(d.name)}<br>${d.active ? '<em class="chip ok">on</em>' : '<em class="chip warn">paused</em>'}</td><td><small>${d.steps.map((s, i) => `${i + 1}. after ${unit(s.delay_hours)}: ${esc(s.template)}`).join('<br>')}</small></td>
+  <td><small>In sequence ${d.running} · Finished ${d.done} · Stopped ${d.stopped}</small></td><td><button class="ghost" data-dp="${d.id}" data-a="${d.active}">${d.active ? 'Pause' : 'Resume'}</button> <button class="ghost" data-dd="${d.id}">Delete</button></td></tr>`).join('') || '<tr><td colspan="4" class="mute">No follow-ups yet.</td></tr>'}</table></div>
+  ${tpls.length ? `<form class="panel" id="dpf"><h3>New follow-up</h3>${field('d1', 'Name', '')}<label><input type="checkbox" id="d2" checked style="width:auto"> Stop when the client replies</label><br><br>${row(0)}${row(1)}${row(2)}<button class="btn">Create follow-up</button></form>` : '<p class="panel mute">You need an approved template first. Create one under Templates.</p>'}`;
+  sc.querySelectorAll('[data-dp]').forEach(b => b.onclick = async () => { await api('/drips/' + b.dataset.dp, 'PATCH', { active: b.dataset.a !== 'true' }); showFollowups(); });
+  sc.querySelectorAll('[data-dd]').forEach(b => b.onclick = async () => { if (!confirm('Delete this follow-up?')) return; await api('/drips/' + b.dataset.dd, 'DELETE'); showFollowups(); });
+  if ($('#dpf')) $('#dpf').onsubmit = async e => { e.preventDefault();
+    const steps = [...document.querySelectorAll('.stp')].map(r => { const n = r.querySelector('.st2').value; if (!n) return null; const t = tpls.find(x => x.name === n); const extra = r.querySelector('.sv').value.split(',').map(x => x.trim());
+      return { delay_hours: (+r.querySelector('.sd').value || 0) * +r.querySelector('.su').value, template: n, var_map: Array.from({ length: t.var_count }, (_, i) => i === 0 ? { type: 'name' } : { type: 'text', value: extra[i - 1] || '' }) }; }).filter(Boolean);
+    const r = await api('/drips', 'POST', { name: $('#d1').value, stop_on_reply: $('#d2').checked, steps }); if (r.error) return toast(r.error); toast('Follow-up created'); showFollowups(); };
 }
 
 /* ---------- Dashboard (managers/admins) ---------- */

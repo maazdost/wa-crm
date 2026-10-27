@@ -7,7 +7,7 @@ async function call(payload) {
     console.log('[WA dry-run]', JSON.stringify(payload));
     return { messages: [{ id: 'dry_' + crypto.randomUUID() }] };
   }
-  const res = await fetch(`https://graph.facebook.com/${WA_API_VERSION}/${WA_PHONE_NUMBER_ID}/messages`, {
+  const res = await fetch(`${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${WA_API_VERSION}/${WA_PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ messaging_product: 'whatsapp', ...payload })
@@ -39,7 +39,14 @@ const sendTemplate = (to, name, language = 'en', params = []) => call({
   }
 });
 
-const GRAPH = () => `https://graph.facebook.com/${WA_API_VERSION}`;
+const GRAPH = () => `${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${WA_API_VERSION}`;
+// The WhatsApp Business Account ID: from the server settings if present, otherwise the one found and saved from the Settings screen.
+const wabaId = async () => process.env.WA_WABA_ID || (await require('./settings').get('wa')).waba_id || '';
+async function graph(path) {
+  const r = await fetch(`${GRAPH()}/${path}`, { headers: AUTH() }); const d = await r.json();
+  if (!r.ok) throw new Error(d?.error?.message || 'Meta request failed');
+  return d;
+}
 const AUTH = () => ({ Authorization: `Bearer ${WA_ACCESS_TOKEN}` });
 const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
@@ -68,21 +75,23 @@ const sendMedia = (to, kind, id, { caption, filename } = {}) => call({
 
 async function createTemplate(payload) {
   if (DRY) return { id: 'dry_t_' + crypto.randomUUID(), status: 'APPROVED' };
-  if (!process.env.WA_WABA_ID) throw new Error('WA_WABA_ID is not set on the server');
-  const res = await fetch(`${GRAPH()}/${process.env.WA_WABA_ID}/message_templates`, { method: 'POST', headers: { ...AUTH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
+  const res = await fetch(`${GRAPH()}/${W}/message_templates`, { method: 'POST', headers: { ...AUTH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const d = await res.json();
   if (!res.ok) throw new Error(d?.error?.error_user_msg || d?.error?.message || 'Template request failed');
   return d;
 }
 async function listTemplates() {
   if (DRY) return [];
-  if (!process.env.WA_WABA_ID) throw new Error('WA_WABA_ID is not set on the server');
-  let url = `${GRAPH()}/${process.env.WA_WABA_ID}/message_templates?fields=name,status,language,category,components,rejected_reason&limit=100`; const out = [];
+  const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
+  let url = `${GRAPH()}/${W}/message_templates?fields=name,status,language,category,components,rejected_reason&limit=100`; const out = [];
   while (url) { const d = await (await fetch(url, { headers: AUTH() })).json(); if (d.error) throw new Error(d.error.message); out.push(...(d.data || [])); url = d.paging && d.paging.next; }
   return out;
 }
 
-const markRead = (waMessageId) => DRY ? null : call({ status: 'read', message_id: waMessageId }).catch(() => {});
+const markRead = (waMessageId) => DRY ? (console.log('[WA dry-run] read', waMessageId), null) : call({ status: 'read', message_id: waMessageId }).catch(() => {});
+// Marks the client's message as read and shows "typing..." on their phone until we reply (or 25 seconds pass).
+const typing = (waMessageId) => call({ status: 'read', message_id: waMessageId, typing_indicator: { type: 'text' } });
 
 function verifySignature(rawBody, header) {
   if (!WA_APP_SECRET) return true; // allow during first tests; set WA_APP_SECRET in production
@@ -92,4 +101,4 @@ function verifySignature(rawBody, header) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-module.exports = { createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead, verifySignature };
+module.exports = { graph, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead, verifySignature };
