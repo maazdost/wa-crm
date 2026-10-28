@@ -8,7 +8,15 @@ const { migrate } = require('./migrate');
 const rt = require('./realtime');
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.set('trust proxy', 1);
+app.use((req, res, next) => {
+  res.set({ 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Strict-Transport-Security': 'max-age=15552000' });
+  next();
+});
+// The web app and the Android app are served by this same server, so cross-site access stays off unless you set CORS_ORIGIN.
+if (process.env.CORS_ORIGIN) app.use(cors({ origin: process.env.CORS_ORIGIN }));
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 16) console.warn('WARNING: JWT_SECRET is missing or short. Set it to 40+ random characters.');
+if (!process.env.WA_APP_SECRET) console.warn('WARNING: WA_APP_SECRET is not set, so webhook messages are not verified as coming from Meta.');
 app.use(express.json({ limit: '2mb', verify: (req, _res, buf) => { req.rawBody = buf; } }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true }));

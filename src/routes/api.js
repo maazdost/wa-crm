@@ -16,13 +16,28 @@ const { markPersonal } = require('../personal');
 const bot = require('../bot');
 const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
+const attempts = new Map(); // "ip|email" -> { n, since }
 router.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body;
+  const key = `${req.ip}|${String(email || '').toLowerCase()}`, rec = attempts.get(key);
+  if (rec && Date.now() - rec.since > 15 * 60000) attempts.delete(key);
+  if ((attempts.get(key)?.n || 0) >= 8) return res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
   const u = (await query('SELECT * FROM users WHERE email=$1 AND is_active', [String(email || '').toLowerCase()])).rows[0];
-  if (!u || !(await bcrypt.compare(password || '', u.password_hash))) return res.status(401).json({ error: 'Invalid email or password' });
+  if (!u || !(await bcrypt.compare(password || '', u.password_hash))) {
+    const r = attempts.get(key) || { n: 0, since: Date.now() }; r.n++; attempts.set(key, r);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+  attempts.delete(key);
   res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team } });
 }));
 
+router.post('/me/password', required(), wrap(async (req, res) => {
+  const { current, password } = req.body;
+  if (!password || String(password).length < 8) return res.status(400).json({ error: 'The new password must be at least 8 characters' });
+  const u = (await query('SELECT * FROM users WHERE id=$1', [req.user.id])).rows[0];
+  if (!(await bcrypt.compare(current || '', u.password_hash))) return res.status(403).json({ error: 'Your current password is not correct' });
+  await query('UPDATE users SET password_hash=$2 WHERE id=$1', [u.id, await bcrypt.hash(password, 10)]); res.json({ ok: true });
+}));
 router.get('/me', required(), wrap(async (req, res) => {
   const u = (await query('SELECT id,name,email,role,team FROM users WHERE id=$1', [req.user.id])).rows[0];
   res.json(u);
@@ -209,6 +224,7 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   const f = ['name', 'role', 'team', 'is_active', 'max_active_chats'].filter(k => k in req.body);
+  if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [req.params.id, await bcrypt.hash(req.body.password, 10)]); }
   if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')} WHERE id=$1`, [req.params.id, ...f.map(k => req.body[k])]);
   res.json({ ok: true });

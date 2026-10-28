@@ -121,11 +121,12 @@ async function boot() {
   const tabs = isMgr() ? [['open','Open'],['unassigned','Unassigned'],['held','Held'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
   $('#app').innerHTML = `<div class="shell"><aside class="side">
     <header class="top"><div class="me"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !isMgr() ? ' · ' + esc(S.user.team) : ''}</small></div>
-    <div class="nav"><button class="ghost" id="out">Sign out</button></div></header>${isMgr() ? '<div class="nav2"><button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nb">Broadcasts</button><button class="ghost" id="nc">Contacts</button><button class="ghost" id="nm">Templates</button><button class="ghost" id="na">Follow-ups</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button></div>' : ''}
+    <div class="nav"><button class="ghost" id="pwb">Password</button><button class="ghost" id="out">Sign out</button></div></header>${isMgr() ? '<div class="nav2"><button class="ghost" id="nd">Dashboard</button><button class="ghost" id="nb">Broadcasts</button><button class="ghost" id="nc">Contacts</button><button class="ghost" id="nm">Templates</button><button class="ghost" id="na">Follow-ups</button><button class="ghost" id="ns">Settings</button><button class="ghost" id="nt">Team</button></div>' : ''}
     <div class="tools"><input id="q" placeholder="Search name or number"><div class="tabs" id="tabs">${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}</button>`).join('')}</div>
     ${isMgr() ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">Select a chat to start</div><div id="team" class="team" hidden></div></main></div>`;
   $('#out').onclick = logout;
+  $('#pwb').onclick = async () => { const cur = prompt('Your current password'); if (cur === null) return; const nw = prompt('New password (at least 8 characters)'); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
   $('#q').oninput = debounce(loadList, 300);
   $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   $('#tabs').onclick = e => { const t = e.target.dataset.t; if (!t) return; S.tab = t; document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t)); loadList(); };
@@ -167,7 +168,7 @@ async function openConv(id) {
   S.active = id; document.body.classList.add('chat-open'); $('#team').hidden = true; $('#chat').hidden = false;
   const d = await api(`/conversations/${id}/messages`); if (d.error) return toast(d.error);
   if (S.active !== id) return;
-  S.conv = d.conversation; S.msgs = d.messages; S.notes = d.notes;
+  S.conv = d.conversation; S.msgs = d.messages; S.notes = d.notes; S.more = d.messages.length >= 50;
   $('#chat').className = 'chat';
   $('#chat').innerHTML = '<div id="head"></div><div id="lbl"></div><div id="mgr"></div><section id="notes" class="notes" hidden></section><div id="msgs" class="msgs"></div><div id="comp"></div>';
   renderHead(); renderLabels(); renderMgr(); renderNotes(); renderMsgs(); renderComposer();
@@ -203,7 +204,7 @@ function renderNotes() {
 }
 function renderMsgs(stick = true) {
   const el = $('#msgs'); let last = '';
-  el.innerHTML = S.msgs.map(m => {
+  el.innerHTML = (S.more ? '<button class="ghost" id="older" style="align-self:center">Load earlier messages</button>' : '') + S.msgs.map(m => {
     const day = new Date(m.created_at).toDateString();
     const sep = day !== last ? `<div class="day">${new Date(m.created_at).toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' })}</div>` : ''; last = day;
     const cls = m.sender_type === 'customer' ? 'in' : m.sender_type === 'bot' ? 'out bot' : 'out';
@@ -213,6 +214,13 @@ function renderMsgs(stick = true) {
   }).join('');
   if (stick) el.scrollTop = el.scrollHeight;
   hydrateMedia(el, stick);
+  if ($('#older')) $('#older').onclick = loadEarlier;
+}
+async function loadEarlier() {
+  const first = S.msgs[0]; if (!first) return;
+  const d = await api(`/conversations/${S.active}/messages?before=${first.id}`); if (d.error) return toast(d.error);
+  const el = $('#msgs'), h = el.scrollHeight; S.msgs = [...d.messages, ...S.msgs]; S.more = d.messages.length >= 50;
+  renderMsgs(false); el.scrollTop = el.scrollHeight - h;
 }
 function addMsg(m) { if (S.msgs.some(x => x.id === m.id)) return; S.msgs.push(m); renderMsgs(); }
 function renderComposer() {
@@ -362,11 +370,12 @@ async function showTeam() {
   <div class="stats"><div><b>${t.open}</b>open chats</div><div><b>${t.unassigned}</b>waiting for an agent</div><div><b>${t.with_bot}</b>with the bot</div><div><b>${t.new_24h}</b>new in the last 24 hours</div></div>
   <div class="tbl"><table><tr><th>Name</th><th>Role</th><th>Team</th><th>Open chats</th><th>Status</th>${admin ? '<th></th>' : ''}</tr>
   ${us.map(u => `<tr><td>${esc(u.name)}<br><small class="mute">${esc(u.email)}</small></td><td>${esc(u.role)}</td><td>${esc(u.team)}</td><td>${u.active_chats} / ${u.max_active_chats}</td>
-  <td><span class="dot${u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td><button class="ghost" data-u="${u.id}" data-a="${u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button></td>` : ''}</tr>`).join('')}</table></div>
+  <td><span class="dot${u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td><button class="ghost" data-u="${u.id}" data-a="${u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button> <button class="ghost" data-rp="${u.id}">Reset password</button></td>` : ''}</tr>`).join('')}</table></div>
   ${admin ? `<form class="add" id="af"><h3>Add a team member</h3><input id="an" placeholder="Full name" required><input id="ae" type="email" placeholder="Email" required><input id="ap" type="password" minlength="8" placeholder="Password (8+ characters)" required>
   <select id="at"><option>sales</option><option>recruitment</option><option>classes</option><option>general</option></select><select id="ar"><option value="agent">Agent</option><option value="manager">Manager</option></select><input id="am" type="number" min="1" value="150" title="Maximum open chats"><button class="btn">Add member</button></form>` : ''}`;
   $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
   el.querySelectorAll('[data-u]').forEach(b => b.onclick = async () => { await api('/users/' + b.dataset.u, 'PATCH', { is_active: b.dataset.a !== 'true' }); showTeam(); loadAgents(); });
+  el.querySelectorAll('[data-rp]').forEach(b => b.onclick = async () => { const nw = prompt('New password for this person (at least 8 characters)'); if (!nw) return; const r = await api('/users/' + b.dataset.rp, 'PATCH', { password: nw }); toast(r.error || 'Password reset. Tell them to change it after signing in.'); });
   if (admin) $('#af').onsubmit = async e => { e.preventDefault();
     const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
     if (r.error) return toast(r.error.includes('duplicate') ? 'That email is already used' : r.error); toast('Team member added'); showTeam(); loadAgents(); };
@@ -406,6 +415,7 @@ async function loadWaStatus() {
   el.innerHTML = [
     r.token_ok ? ok(`Number ${esc(r.number.display_phone_number || '')} (${esc(r.number.verified_name || '')}), quality ${esc(r.number.quality_rating || 'unknown')}`) : bad(`Cannot reach Meta with the access token: ${esc(r.token_error || '')}`),
     !r.waba_id ? bad('Account ID not set yet. Paste the IDs below.') : r.waba_error ? bad('Account ID problem: ' + esc(r.waba_error)) : r.waba_has_number ? ok('Account ID is correct and contains your number') : bad('This account ID does not contain your number'),
+    r.signature_check ? '' : bad('App secret is not set on the server, so fake webhook messages would not be rejected. Add WA_APP_SECRET.'),
     r.subscribed === undefined ? '' : r.subscribed ? ok('Messages are being delivered to this server') : bad('Not subscribed: in Meta open WhatsApp, Configuration, and subscribe to messages')].filter(Boolean).join('<br>');
 }
 async function showSettings() {

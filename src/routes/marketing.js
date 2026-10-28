@@ -14,7 +14,7 @@ const DRY = () => process.env.WA_DRY_RUN === 'true';
 // ---- WhatsApp connection check ----
 router.get('/whatsapp/status', mgr, wrap(async (req, res) => {
   const phone = process.env.WA_PHONE_NUMBER_ID || null;
-  const out = { phone_number_id: phone, dry_run: DRY(), waba_id: process.env.WA_WABA_ID || (await settings.get('wa')).waba_id || null };
+  const out = { phone_number_id: phone, dry_run: DRY(), signature_check: !!process.env.WA_APP_SECRET, waba_id: process.env.WA_WABA_ID || (await settings.get('wa')).waba_id || null };
   if (DRY()) return res.json(out);
   try { out.number = await wa.graph(`${phone}?fields=display_phone_number,verified_name,quality_rating`); out.token_ok = true; }
   catch (e) { out.token_ok = false; out.token_error = e.message; }
