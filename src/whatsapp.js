@@ -21,7 +21,8 @@ async function call(payload) {
   return data;
 }
 
-const sendText = (to, body) => call({ to, type: 'text', text: { body, preview_url: true } });
+const withCtx = (ctx) => ctx ? { context: { message_id: ctx } } : {};
+const sendText = (to, body, ctx) => call({ to, ...withCtx(ctx), type: 'text', text: { body, preview_url: true } });
 
 const sendButtons = (to, body, buttons) => call({
   to, type: 'interactive',
@@ -68,8 +69,8 @@ async function downloadMedia(id) {
   if (!r.ok) throw new Error('Media download failed');
   return { buffer: Buffer.from(await r.arrayBuffer()), mime: meta.mime_type || r.headers.get('content-type') };
 }
-const sendMedia = (to, kind, id, { caption, filename } = {}) => call({
-  to, type: kind,
+const sendMedia = (to, kind, id, { caption, filename, ctx } = {}) => call({
+  to, ...withCtx(ctx), type: kind,
   [kind]: { id, ...(caption && kind !== 'audio' ? { caption } : {}), ...(kind === 'document' && filename ? { filename } : {}) }
 });
 

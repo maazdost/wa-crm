@@ -1,12 +1,12 @@
 const { query } = require('./db');
 const rt = require('./realtime');
 
-async function saveInbound(conv, { waMessageId, type, body, mediaId, mime, filename, referral }) {
+async function saveInbound(conv, { waMessageId, type, body, mediaId, mime, filename, referral, replyTo }) {
   const ins = await query(
-    `INSERT INTO messages(conversation_id,direction,sender_type,wa_message_id,type,body,media_id,media_mime,media_name,status)
-     VALUES($1,'in','customer',$2,$3,$4,$5,$6,$7,'received')
+    `INSERT INTO messages(conversation_id,direction,sender_type,wa_message_id,type,body,media_id,media_mime,media_name,reply_to_wa_id,status)
+     VALUES($1,'in','customer',$2,$3,$4,$5,$6,$7,$8,'received')
      ON CONFLICT (wa_message_id) DO NOTHING RETURNING *`,
-    [conv.id, waMessageId, type, body, mediaId || null, mime || null, filename || null]);
+    [conv.id, waMessageId, type, body, mediaId || null, mime || null, filename || null, replyTo || null]);
   if (!ins.rows[0]) return null; // duplicate webhook delivery
   // Click-to-WhatsApp ads give a free 72h window, otherwise the standard 24h
   const hours = referral ? 72 : 24;
@@ -18,11 +18,11 @@ async function saveInbound(conv, { waMessageId, type, body, mediaId, mime, filen
   return { message: ins.rows[0], conversation: rows[0] };
 }
 
-async function saveOutbound(conv, { senderType, senderId, body, type = 'text', templateName, waMessageId, status = 'sent', mediaId, mediaMime, mediaName }) {
+async function saveOutbound(conv, { senderType, senderId, body, type = 'text', templateName, waMessageId, status = 'sent', mediaId, mediaMime, mediaName, replyTo }) {
   const { rows } = await query(
-    `INSERT INTO messages(conversation_id,direction,sender_type,sender_id,wa_message_id,type,body,template_name,status,media_id,media_mime,media_name)
-     VALUES($1,'out',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [conv.id, senderType, senderId || null, waMessageId, type, body, templateName || null, status, mediaId || null, mediaMime || null, mediaName || null]);
+    `INSERT INTO messages(conversation_id,direction,sender_type,sender_id,wa_message_id,type,body,template_name,status,media_id,media_mime,media_name,reply_to_wa_id)
+     VALUES($1,'out',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [conv.id, senderType, senderId || null, waMessageId, type, body, templateName || null, status, mediaId || null, mediaMime || null, mediaName || null, replyTo || null]);
   await query(
     `UPDATE conversations SET last_message_at=now(),
        last_agent_reply_at = CASE WHEN $2='agent' THEN now() ELSE last_agent_reply_at END WHERE id=$1`,

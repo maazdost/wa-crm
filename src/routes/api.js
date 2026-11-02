@@ -14,6 +14,12 @@ const isAgent = (u) => u.role === 'agent';
 const settings = require('../settings');
 const { markPersonal } = require('../personal');
 const bot = require('../bot');
+const { toOggOpus } = require('../audio');
+async function replyCtx(convId, id) {
+  if (!id) return null;
+  const r = (await query('SELECT wa_message_id FROM messages WHERE id=$1 AND conversation_id=$2', [Number(id), convId])).rows[0];
+  return (r && r.wa_message_id) || null;
+}
 const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
 const attempts = new Map(); // "ip|email" -> { n, since }
@@ -46,39 +52,80 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, ${LABELS_SQL} FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
     [req.params.id])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
   return c;
 }
 
+router.get('/conversations/counts', required(), wrap(async (req, res) => {
+  const me = Number(req.user.id), own = isAgent(req.user) ? `AND c.assigned_to=${me}` : '';
+  const r = (await query(`SELECT
+      COUNT(*) FILTER (WHERE c.status='open' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND (c.unread_count>0 OR COALESCE(f.marked_unread,false)))::int AS unread,
+      COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND COALESCE(f.favorite,false))::int AS fav,
+      COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND COALESCE(f.archived,false))::int AS archived,
+      COUNT(*) FILTER (WHERE c.assigned_to IS NULL AND c.bot_step='done')::int AS unassigned,
+      COUNT(*) FILTER (WHERE c.bot_step='held')::int AS held
+    FROM conversations c LEFT JOIN chat_flags f ON f.conversation_id=c.id AND f.user_id=${me} WHERE TRUE ${own}`)).rows[0];
+  if (isAgent(req.user)) { r.unassigned = 0; r.held = 0; }
+  res.json(r);
+}));
+
 router.get('/conversations', required(), wrap(async (req, res) => {
-  const { status, assigned_to, q, unassigned } = req.query;
-  const where = ['TRUE'], p = [];
+  const { status, assigned_to, q, unassigned, view } = req.query;
+  const me = Number(req.user.id), where = ['TRUE'], p = [];
   if (isAgent(req.user)) { p.push(req.user.id); where.push(`c.assigned_to=$${p.length}`); }
   else if (assigned_to) { p.push(assigned_to); where.push(`c.assigned_to=$${p.length}`); }
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
   if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
   else if (!unassigned) where.push(`c.status <> 'bot'`);
   where.push(req.query.held === 'true' ? "c.bot_step='held'" : "c.bot_step <> 'held'");
+  where.push(view === 'archived' ? 'COALESCE(f.archived,false)' : 'NOT COALESCE(f.archived,false)');
+  if (view === 'unread') where.push('(c.unread_count>0 OR COALESCE(f.marked_unread,false))');
+  if (view === 'fav') where.push('COALESCE(f.favorite,false)');
   if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
   if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
     `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, ${LABELS_SQL},
-            (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body
+            COALESCE(f.pinned,false) AS pinned, COALESCE(f.favorite,false) AS favorite, COALESCE(f.archived,false) AS archived, COALESCE(f.marked_unread,false) AS marked_unread,
+            (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body,
+            (SELECT type FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_type
        FROM conversations c JOIN contacts ct ON ct.id=c.contact_id LEFT JOIN users u ON u.id=c.assigned_to
-      WHERE ${where.join(' AND ')} ORDER BY c.last_message_at DESC LIMIT 200`, p);
+       LEFT JOIN chat_flags f ON f.conversation_id=c.id AND f.user_id=${me}
+      WHERE ${where.join(' AND ')} ORDER BY COALESCE(f.pinned,false) DESC, f.pinned_at DESC NULLS LAST, c.last_message_at DESC LIMIT 200`, p);
   res.json(rows.map(r => ({ ...r, ...windowInfo(r) })));
+}));
+
+// Pin / favourite / archive / mark unread: kept per person, like WhatsApp
+router.post('/conversations/:id/flags', required(), wrap(async (req, res) => {
+  const c = await loadConversation(req, res); if (!c) return;
+  const me = req.user.id, b = req.body || {}, sets = [], vals = [me, c.id];
+  if (b.pinned === true) {
+    const n = (await query('SELECT COUNT(*)::int AS n FROM chat_flags WHERE user_id=$1 AND pinned AND conversation_id<>$2', [me, c.id])).rows[0].n;
+    if (n >= 3) return res.status(409).json({ error: 'You can pin up to 3 chats. Unpin one first.' });
+  }
+  await query('INSERT INTO chat_flags(user_id,conversation_id) VALUES($1,$2) ON CONFLICT DO NOTHING', [me, c.id]);
+  for (const k of ['pinned', 'favorite', 'archived', 'marked_unread']) if (typeof b[k] === 'boolean') {
+    vals.push(b[k]); sets.push(`${k}=$${vals.length}`);
+    if (k === 'pinned') sets.push(b[k] ? 'pinned_at=now()' : 'pinned_at=NULL');
+    if (k === 'archived' && b[k]) sets.push('pinned=false', 'pinned_at=NULL');
+  }
+  if (sets.length) await query(`UPDATE chat_flags SET ${sets.join(',')} WHERE user_id=$1 AND conversation_id=$2`, vals);
+  res.json({ ok: true });
 }));
 
 router.get('/conversations/:id/messages', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
-  const before = req.query.before ? Number(req.query.before) : 9e15;
+  const before = req.query.before ? Number(req.query.before) : 9e15, lim = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
   const { rows } = await query(
-    `SELECT * FROM messages WHERE conversation_id=$1 AND id<$2 ORDER BY id DESC LIMIT 50`, [c.id, before]);
+    `SELECT m.*, su.name AS agent_name, q.id AS q_id, q.body AS q_body, q.type AS q_type, q.sender_type AS q_sender, qu.name AS q_agent
+       FROM messages m LEFT JOIN messages q ON q.wa_message_id = m.reply_to_wa_id AND q.conversation_id = m.conversation_id
+       LEFT JOIN users qu ON qu.id = q.sender_id LEFT JOIN users su ON su.id = m.sender_id
+      WHERE m.conversation_id=$1 AND m.id<$2 ORDER BY m.id DESC LIMIT ${lim}`, [c.id, before]);
   const notes = (await query(`SELECT n.*, u.name AS author FROM notes n JOIN users u ON u.id=n.user_id WHERE conversation_id=$1 ORDER BY n.id`, [c.id])).rows;
-  res.json({ conversation: { ...c, ...windowInfo(c) }, messages: rows.reverse(), notes });
+  const fl = (await query('SELECT pinned,favorite,archived,marked_unread FROM chat_flags WHERE user_id=$1 AND conversation_id=$2', [req.user.id, c.id])).rows[0] || {};
+  res.json({ conversation: { ...c, ...windowInfo(c), pinned: !!fl.pinned, favorite: !!fl.favorite, archived: !!fl.archived, marked_unread: !!fl.marked_unread }, messages: rows.reverse(), notes });
 }));
 
 router.post('/conversations/:id/messages', required(), wrap(async (req, res) => {
@@ -88,8 +135,9 @@ router.post('/conversations/:id/messages', required(), wrap(async (req, res) => 
   if (!windowInfo(c).window_open)
     return res.status(409).json({ error: 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', code: 'WINDOW_CLOSED' });
   try {
-    const r = await wa.sendText(c.wa_id, text);
-    const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, body: text, waMessageId: r.messages?.[0]?.id });
+    const ctx = await replyCtx(c.id, req.body.reply_to);
+    const r = await wa.sendText(c.wa_id, text, ctx);
+    const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, body: text, waMessageId: r.messages?.[0]?.id, replyTo: ctx });
     await query('UPDATE conversations SET unread_count=0, escalated_at=NULL WHERE id=$1', [c.id]);
     res.json(m);
   } catch (e) { res.status(502).json({ error: e.message }); }
@@ -112,6 +160,7 @@ router.post('/conversations/:id/template', required(), wrap(async (req, res) => 
 router.post('/conversations/:id/read', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   await query('UPDATE conversations SET unread_count=0 WHERE id=$1', [c.id]);
+  await query('UPDATE chat_flags SET marked_unread=FALSE WHERE user_id=$1 AND conversation_id=$2', [req.user.id, c.id]);
   if (c.unread_count > 0 && c.assigned_to === req.user.id) {
     const last = (await query(`SELECT wa_message_id FROM messages WHERE conversation_id=$1 AND direction='in' AND wa_message_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [c.id])).rows[0];
     if (last) wa.markRead(last.wa_message_id); // blue ticks: the client sees that a person has read it
@@ -168,17 +217,22 @@ router.post('/conversations/:id/media', required(), express.raw({ type: () => tr
     return res.status(409).json({ error: 'The reply window is closed. Send an approved template first.', code: 'WINDOW_CLOSED' });
   const buf = req.body;
   if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'No file received' });
-  const mime = String(req.query.mime || 'application/octet-stream');
-  const filename = String(req.query.filename || 'file').slice(0, 120);
+  let mime = String(req.query.mime || 'application/octet-stream').split(';')[0].trim();
+  let filename = String(req.query.filename || 'file').slice(0, 120);
   const caption = String(req.query.caption || '').trim().slice(0, 1000);
+  let body = buf;
+  if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr|ogg)/.test(mime)) { // e.g. WebM from a browser recording
+    try { body = await toOggOpus(buf); mime = 'audio/ogg'; filename = 'voice-note.ogg'; } catch (e) { return res.status(422).json({ error: e.message }); }
+  }
   const kind = mediaStore.kindOf(mime);
   if (kind === 'image' && buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Photos must be under 5 MB' });
   try {
-    const up = await wa.uploadMedia(buf, mime, filename);
-    const sent = await wa.sendMedia(c.wa_id, kind, up.id, { caption, filename });
-    await mediaStore.store(up.id, mime, buf);
+    const ctx = await replyCtx(c.id, req.query.reply_to);
+    const up = await wa.uploadMedia(body, mime, filename);
+    const sent = await wa.sendMedia(c.wa_id, kind, up.id, { caption, filename, ctx });
+    await mediaStore.store(up.id, mime, body);
     const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, type: kind, body: caption || `[${kind}]`,
-      waMessageId: sent.messages?.[0]?.id, mediaId: up.id, mediaMime: mime, mediaName: filename });
+      waMessageId: sent.messages?.[0]?.id, mediaId: up.id, mediaMime: mime, mediaName: filename, replyTo: ctx });
     await query('UPDATE conversations SET unread_count=0, escalated_at=NULL WHERE id=$1', [c.id]);
     res.json(m);
   } catch (e) { res.status(502).json({ error: e.message }); }

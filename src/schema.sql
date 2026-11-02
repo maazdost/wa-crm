@@ -132,3 +132,12 @@ CREATE TABLE IF NOT EXISTS drip_enrollments (
   step INT NOT NULL DEFAULT 0, next_at TIMESTAMPTZ NOT NULL, status TEXT NOT NULL DEFAULT 'active',
   enrolled_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE (drip_id, contact_id)
 );
+
+CREATE TABLE IF NOT EXISTS chat_flags (
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  conversation_id INT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  pinned BOOLEAN NOT NULL DEFAULT FALSE, pinned_at TIMESTAMPTZ,
+  favorite BOOLEAN NOT NULL DEFAULT FALSE, archived BOOLEAN NOT NULL DEFAULT FALSE, marked_unread BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (user_id, conversation_id)
+);
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_wa_id TEXT;

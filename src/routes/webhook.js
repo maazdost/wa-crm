@@ -28,7 +28,7 @@ const serial = (key, fn) => {
 };
 
 function extract(m) {
-  const base = { waMessageId: m.id, type: m.type, referral: !!m.referral };
+  const base = { waMessageId: m.id, type: m.type, referral: !!m.referral, replyTo: (m.type !== 'interactive' && m.type !== 'button' && m.context) ? m.context.id : undefined };
   if (m.type === 'text') return { ...base, body: m.text.body };
   if (m.type === 'interactive') {
     const r = m.interactive.button_reply || m.interactive.list_reply || {};
@@ -53,6 +53,7 @@ async function handleMessage(m, profileName) {
 
   const saved = await saveInbound(conv, msg);
   if (!saved) return; // duplicate delivery
+  query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
   if (msg.mediaId) mediaStore.ensure(msg.mediaId).catch(e => console.error('media download', e.message));
 
