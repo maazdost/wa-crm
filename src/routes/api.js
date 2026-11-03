@@ -76,7 +76,7 @@ router.post('/auth/reset', wrap(async (req, res) => {
     `SELECT pr.user_id FROM password_resets pr JOIN users u ON u.id=pr.user_id AND u.is_active
       WHERE pr.token_hash=$1 AND pr.used_at IS NULL AND pr.expires_at > now()`, [sha(token || '')])).rows[0];
   if (!r) return res.status(400).json({ error: 'This link is invalid or has expired. Ask for a new one.' });
-  await query('UPDATE users SET password_hash=$2 WHERE id=$1', [r.user_id, await bcrypt.hash(String(password), 10)]);
+  await query('UPDATE users SET password_hash=$2, session_version = session_version + 1 WHERE id=$1', [r.user_id, await bcrypt.hash(String(password), 10)]); require('../auth').forget(r.user_id);
   await query('UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [r.user_id]);
   res.json({ ok: true });
 }));
@@ -347,7 +347,25 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
   res.json(rows[0]);
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
-  const f = ['name', 'role', 'team', 'is_active', 'max_active_chats', 'in_rotation'].filter(k => k in req.body);
+  const uid = Number(req.params.id), b = req.body;
+  const target = (await query('SELECT role, is_active FROM users WHERE id=$1', [uid])).rows[0];
+  if (!target) return res.status(404).json({ error: 'Person not found' });
+  if ('email' in b) {
+    const em = String(b.email || '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return res.status(400).json({ error: 'Enter a valid email address' });
+    if ((await query('SELECT 1 FROM users WHERE email=$1 AND id<>$2', [em, uid])).rows[0]) return res.status(409).json({ error: 'That email is already used by someone else' });
+    b.email = em;
+  }
+  if ('role' in b && !['admin', 'manager', 'agent'].includes(b.role)) return res.status(400).json({ error: 'Unknown role' });
+  const losingAdmin = target.role === 'admin' && target.is_active && (b.is_active === false || ('role' in b && b.role !== 'admin'));
+  if (losingAdmin && (await query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND is_active AND id<>$1`, [uid])).rows[0].n === 0)
+    return res.status(409).json({ error: 'There must always be one active admin. Add another admin first.' });
+  // Changing the email, password, role or active state signs that person out everywhere
+  if ('email' in b || b.password || 'role' in b || b.is_active === false) {
+    await query('UPDATE users SET session_version = session_version + 1 WHERE id=$1', [uid]); require('../auth').forget(uid);
+    if ('email' in b) await query('UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [uid]);
+  }
+  const f = ['name', 'email', 'role', 'team', 'is_active', 'max_active_chats', 'in_rotation'].filter(k => k in req.body);
   if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1', [req.body.team])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
   if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [req.params.id, await bcrypt.hash(req.body.password, 10)]); }

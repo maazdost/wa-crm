@@ -200,3 +200,6 @@ INSERT INTO departments(key,name) SELECT DISTINCT team, initcap(team) FROM users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS in_rotation BOOLEAN NOT NULL DEFAULT TRUE;
 CREATE TABLE IF NOT EXISTS rr_state (team TEXT PRIMARY KEY, last_user_id INT, given INT NOT NULL DEFAULT 0);
 ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS buttons JSONB;
+
+-- Lets an admin end a person's sessions (after an email change, password reset or deactivation)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT NOT NULL DEFAULT 0;

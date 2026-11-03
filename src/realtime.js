@@ -1,12 +1,15 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const auth = require('./auth');
 let io = null;
 
 function init(httpServer) {
   io = new Server(httpServer, process.env.CORS_ORIGIN ? { cors: { origin: process.env.CORS_ORIGIN } } : {});
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     try {
-      socket.user = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET);
+      const tok = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET), cur = await auth.current(tok.id);
+      if (!auth.valid(tok, cur)) throw new Error('ended');
+      socket.user = { ...tok, role: cur.role };
       next();
     } catch { next(new Error('unauthorized')); }
   });
