@@ -21,7 +21,8 @@ const intentFromText = (t = '') => {
 
 async function say(conv, text, buttons) {
   const wa_id = (await query('SELECT wa_id FROM contacts WHERE id=$1', [conv.contact_id])).rows[0].wa_id;
-  const r = buttons ? await wa.sendButtons(wa_id, text, buttons) : await wa.sendText(wa_id, text);
+  const w = wa.forConversation(conv);
+  const r = buttons ? await w.sendButtons(wa_id, text, buttons) : await w.sendText(wa_id, text);
   await saveOutbound(conv, { senderType: 'bot', body: text, waMessageId: r.messages?.[0]?.id });
 }
 

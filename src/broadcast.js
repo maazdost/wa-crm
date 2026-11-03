@@ -17,8 +17,8 @@ async function audience(seg = {}) {
 }
 const paramsFor = (varMap, contact) => (varMap || []).map(m => m.type === 'name' ? first(contact.name) : String(m.value || ''));
 
-async function ensureConversation(contactId) {
-  await query(`INSERT INTO conversations(contact_id,status,bot_step) VALUES($1,'bot','new') ON CONFLICT (contact_id) DO NOTHING`, [contactId]);
+async function ensureConversation(contactId, numId) {
+  await query(`INSERT INTO conversations(contact_id,status,bot_step,wa_number_id) VALUES($1,'bot','new',$2) ON CONFLICT (contact_id) DO NOTHING`, [contactId, numId || null]);
   return (await query('SELECT * FROM conversations WHERE contact_id=$1', [contactId])).rows[0];
 }
 
@@ -32,12 +32,13 @@ async function runBatch(b) {
     if (!left) await query(`UPDATE broadcasts SET status='done', finished_at=now() WHERE id=$1`, [b.id]);
     return;
   }
+  const w = wa.forNumber(b.wa_number_id); // the number chosen for this broadcast (default number if none)
   for (const r of rows) {
     try {
-      const sent = await wa.sendTemplate(r.wa_id, b.template_name, b.language, r.params);
+      const sent = await w.sendTemplate(r.wa_id, b.template_name, b.language, r.params);
       const id = sent.messages?.[0]?.id;
       await query(`UPDATE broadcast_recipients SET status='sent', wa_message_id=$2, sent_at=now() WHERE id=$1`, [r.id, id]);
-      const conv = await ensureConversation(r.contact_id);
+      const conv = await ensureConversation(r.contact_id, b.wa_number_id);
       const body = (tpl?.body || '').replace(/\{\{(\d+)\}\}/g, (_, i) => r.params[i - 1] ?? '');
       await saveOutbound(conv, { senderType: 'bot', type: 'template', body, templateName: b.template_name, waMessageId: id });
     } catch (e) {

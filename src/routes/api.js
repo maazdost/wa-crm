@@ -52,7 +52,7 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
     [req.params.id])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
@@ -87,7 +87,7 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
   if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, ${LABELS_SQL},
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL},
             COALESCE(f.pinned,false) AS pinned, COALESCE(f.favorite,false) AS favorite, COALESCE(f.archived,false) AS archived, COALESCE(f.marked_unread,false) AS marked_unread,
             (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body,
             (SELECT type FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_type
@@ -136,7 +136,7 @@ router.post('/conversations/:id/messages', required(), wrap(async (req, res) => 
     return res.status(409).json({ error: 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', code: 'WINDOW_CLOSED' });
   try {
     const ctx = await replyCtx(c.id, req.body.reply_to);
-    const r = await wa.sendText(c.wa_id, text, ctx);
+    const r = await wa.forConversation(c).sendText(c.wa_id, text, ctx);
     const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, body: text, waMessageId: r.messages?.[0]?.id, replyTo: ctx });
     await query('UPDATE conversations SET unread_count=0, escalated_at=NULL WHERE id=$1', [c.id]);
     res.json(m);
@@ -150,7 +150,7 @@ router.post('/conversations/:id/template', required(), wrap(async (req, res) => 
   if (t.status !== 'APPROVED' && process.env.WA_DRY_RUN !== 'true') return res.status(409).json({ error: 'Meta has not approved this template yet' });
   const params = t.var_count === 0 ? [] : (req.body.params?.length ? req.body.params : [(c.contact_name || 'there').split(' ')[0]]);
   try {
-    const r = await wa.sendTemplate(c.wa_id, t.name, t.language, params);
+    const r = await wa.forConversation(c).sendTemplate(c.wa_id, t.name, t.language, params);
     const body = params.reduce((s, v, i) => s.replace(`{{${i + 1}}}`, v), t.body);
     const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, type: 'template', body, templateName: t.name, waMessageId: r.messages?.[0]?.id });
     res.json(m);
@@ -163,7 +163,7 @@ router.post('/conversations/:id/read', required(), wrap(async (req, res) => {
   await query('UPDATE chat_flags SET marked_unread=FALSE WHERE user_id=$1 AND conversation_id=$2', [req.user.id, c.id]);
   if (c.unread_count > 0 && c.assigned_to === req.user.id) {
     const last = (await query(`SELECT wa_message_id FROM messages WHERE conversation_id=$1 AND direction='in' AND wa_message_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [c.id])).rows[0];
-    if (last) wa.markRead(last.wa_message_id); // blue ticks: the client sees that a person has read it
+    if (last) wa.forConversation(c).markRead(last.wa_message_id); // blue ticks: the client sees that a person has read it
   }
   res.json({ ok: true });
 }));
@@ -176,7 +176,7 @@ router.post('/conversations/:id/typing', required(), wrap(async (req, res) => {
   const last = (await query(`SELECT wa_message_id FROM messages WHERE conversation_id=$1 AND direction='in' AND wa_message_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [c.id])).rows[0];
   if (!last) return res.json({ ok: true, skipped: true });
   typingAt.set(c.id, Date.now());
-  wa.typing(last.wa_message_id).catch(() => {});
+  wa.forConversation(c).typing(last.wa_message_id).catch(() => {});
   res.json({ ok: true });
 }));
 
@@ -228,8 +228,9 @@ router.post('/conversations/:id/media', required(), express.raw({ type: () => tr
   if (kind === 'image' && buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Photos must be under 5 MB' });
   try {
     const ctx = await replyCtx(c.id, req.query.reply_to);
-    const up = await wa.uploadMedia(body, mime, filename);
-    const sent = await wa.sendMedia(c.wa_id, kind, up.id, { caption, filename, ctx });
+    const w = wa.forConversation(c);
+    const up = await w.uploadMedia(body, mime, filename);
+    const sent = await w.sendMedia(c.wa_id, kind, up.id, { caption, filename, ctx });
     await mediaStore.store(up.id, mime, body);
     const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, type: kind, body: caption || `[${kind}]`,
       waMessageId: sent.messages?.[0]?.id, mediaId: up.id, mediaMime: mime, mediaName: filename, replyTo: ctx });
@@ -239,11 +240,11 @@ router.post('/conversations/:id/media', required(), express.raw({ type: () => tr
 }));
 
 router.get('/messages/:id/media', required(), wrap(async (req, res) => {
-  const m = (await query(`SELECT m.*, c.assigned_to FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1`, [req.params.id])).rows[0];
+  const m = (await query(`SELECT m.*, c.assigned_to, c.wa_number_id FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1`, [req.params.id])).rows[0];
   if (!m || !m.media_id) return res.status(404).json({ error: 'not found' });
   if (isAgent(req.user) && m.assigned_to !== req.user.id) return res.status(403).json({ error: 'not your conversation' });
   try {
-    const f = await mediaStore.ensure(m.media_id);
+    const f = await mediaStore.ensure(m.media_id, wa.forConversation(m));
     res.set({ 'Content-Type': f.mime || m.media_mime || 'application/octet-stream', 'Cache-Control': 'private, max-age=86400',
       'Content-Disposition': `inline; filename*=UTF-8''${encodeURIComponent(m.media_name || 'file')}` });
     res.send(f.data);

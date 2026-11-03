@@ -1,98 +1,112 @@
 const crypto = require('crypto');
-const { WA_PHONE_NUMBER_ID, WA_ACCESS_TOKEN, WA_API_VERSION = 'v21.0', WA_DRY_RUN, WA_APP_SECRET } = process.env;
+const numbers = require('./numbers');
+const { WA_API_VERSION = 'v21.0', WA_DRY_RUN, WA_APP_SECRET } = process.env;
 const DRY = WA_DRY_RUN === 'true';
-
-async function call(payload) {
-  if (DRY) {
-    console.log('[WA dry-run]', JSON.stringify(payload));
-    return { messages: [{ id: 'dry_' + crypto.randomUUID() }] };
-  }
-  const res = await fetch(`${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${WA_API_VERSION}/${WA_PHONE_NUMBER_ID}/messages`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messaging_product: 'whatsapp', ...payload })
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    const err = new Error(data?.error?.message || 'WhatsApp API error');
-    err.code = data?.error?.code;
-    throw err;
-  }
-  return data;
-}
-
-const withCtx = (ctx) => ctx ? { context: { message_id: ctx } } : {};
-const sendText = (to, body, ctx) => call({ to, ...withCtx(ctx), type: 'text', text: { body, preview_url: true } });
-
-const sendButtons = (to, body, buttons) => call({
-  to, type: 'interactive',
-  interactive: {
-    type: 'button', body: { text: body },
-    action: { buttons: buttons.slice(0, 3).map(b => ({ type: 'reply', reply: { id: b.id, title: b.title.slice(0, 20) } })) }
-  }
-});
-
-const sendTemplate = (to, name, language = 'en', params = []) => call({
-  to, type: 'template',
-  template: {
-    name, language: { code: language },
-    components: params.length ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }] : []
-  }
-});
-
 const GRAPH = () => `${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${WA_API_VERSION}`;
-// The WhatsApp Business Account ID: from the server settings if present, otherwise the one found and saved from the Settings screen.
-const wabaId = async () => process.env.WA_WABA_ID || (await require('./settings').get('wa')).waba_id || '';
-async function graph(path) {
-  const r = await fetch(`${GRAPH()}/${path}`, { headers: AUTH() }); const d = await r.json();
+const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+const withCtx = (ctx) => ctx ? { context: { message_id: ctx } } : {};
+
+// Same call against Meta with an explicit token (used to check a number before it is saved).
+async function graphWith(token, path) {
+  const r = await fetch(`${GRAPH()}/${path}`, { headers: { Authorization: `Bearer ${token}` } }); const d = await r.json();
   if (!r.ok) throw new Error(d?.error?.message || 'Meta request failed');
   return d;
 }
-const AUTH = () => ({ Authorization: `Bearer ${WA_ACCESS_TOKEN}` });
-const TINY_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
-async function uploadMedia(buffer, mime, filename) {
-  if (DRY) return { id: 'dryM_' + crypto.randomUUID() };
-  const fd = new FormData();
-  fd.append('messaging_product', 'whatsapp'); fd.append('type', mime);
-  fd.append('file', new Blob([buffer], { type: mime }), filename);
-  const res = await fetch(`${GRAPH()}/${WA_PHONE_NUMBER_ID}/media`, { method: 'POST', headers: AUTH(), body: fd });
-  const d = await res.json();
-  if (!res.ok) throw new Error(d?.error?.message || 'Media upload failed');
-  return d;
-}
-async function downloadMedia(id) {
-  if (DRY) return { buffer: Buffer.from(TINY_PNG, 'base64'), mime: 'image/png' };
-  const meta = await (await fetch(`${GRAPH()}/${id}`, { headers: AUTH() })).json();
-  if (!meta.url) throw new Error(meta.error?.message || 'Media not found');
-  const r = await fetch(meta.url, { headers: AUTH() });
-  if (!r.ok) throw new Error('Media download failed');
-  return { buffer: Buffer.from(await r.arrayBuffer()), mime: meta.mime_type || r.headers.get('content-type') };
-}
-const sendMedia = (to, kind, id, { caption, filename, ctx } = {}) => call({
-  to, ...withCtx(ctx), type: kind,
-  [kind]: { id, ...(caption && kind !== 'audio' ? { caption } : {}), ...(kind === 'document' && filename ? { filename } : {}) }
-});
+// A client bound to one WhatsApp number (by wa_numbers.id). null means the default number.
+function client(numId) {
+  const N = () => numbers.resolve(numId);
+  const AUTH = (n) => ({ Authorization: `Bearer ${n.token}` });
 
-async function createTemplate(payload) {
-  if (DRY) return { id: 'dry_t_' + crypto.randomUUID(), status: 'APPROVED' };
-  const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
-  const res = await fetch(`${GRAPH()}/${W}/message_templates`, { method: 'POST', headers: { ...AUTH(), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  const d = await res.json();
-  if (!res.ok) throw new Error(d?.error?.error_user_msg || d?.error?.message || 'Template request failed');
-  return d;
-}
-async function listTemplates() {
-  if (DRY) return [];
-  const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
-  let url = `${GRAPH()}/${W}/message_templates?fields=name,status,language,category,components,rejected_reason&limit=100`; const out = [];
-  while (url) { const d = await (await fetch(url, { headers: AUTH() })).json(); if (d.error) throw new Error(d.error.message); out.push(...(d.data || [])); url = d.paging && d.paging.next; }
-  return out;
-}
+  async function call(payload) {
+    if (DRY) {
+      console.log('[WA dry-run]', JSON.stringify(payload));
+      return { messages: [{ id: 'dry_' + crypto.randomUUID() }] };
+    }
+    const n = await N();
+    const res = await fetch(`${GRAPH()}/${n.phone_number_id}/messages`, {
+      method: 'POST',
+      headers: { ...AUTH(n), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', ...payload })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data?.error?.message || 'WhatsApp API error');
+      err.code = data?.error?.code;
+      throw err;
+    }
+    return data;
+  }
 
-const markRead = (waMessageId) => DRY ? (console.log('[WA dry-run] read', waMessageId), null) : call({ status: 'read', message_id: waMessageId }).catch(() => {});
-// Marks the client's message as read and shows "typing..." on their phone until we reply (or 25 seconds pass).
-const typing = (waMessageId) => call({ status: 'read', message_id: waMessageId, typing_indicator: { type: 'text' } });
+  const sendText = (to, body, ctx) => call({ to, ...withCtx(ctx), type: 'text', text: { body, preview_url: true } });
+  const sendButtons = (to, body, buttons) => call({
+    to, type: 'interactive',
+    interactive: {
+      type: 'button', body: { text: body },
+      action: { buttons: buttons.slice(0, 3).map(b => ({ type: 'reply', reply: { id: b.id, title: b.title.slice(0, 20) } })) }
+    }
+  });
+  const sendTemplate = (to, name, language = 'en', params = []) => call({
+    to, type: 'template',
+    template: {
+      name, language: { code: language },
+      components: params.length ? [{ type: 'body', parameters: params.map(p => ({ type: 'text', text: String(p) })) }] : []
+    }
+  });
+  const sendMedia = (to, kind, id, { caption, filename, ctx } = {}) => call({
+    to, ...withCtx(ctx), type: kind,
+    [kind]: { id, ...(caption && kind !== 'audio' ? { caption } : {}), ...(kind === 'document' && filename ? { filename } : {}) }
+  });
+
+  async function graph(path) { const n = await N(); return graphWith(n.token, path); }
+  // The WhatsApp Business Account ID: server setting first, then this number's own, then the one saved from Settings.
+  const wabaId = async () => process.env.WA_WABA_ID || (await N()).waba_id || (await require('./settings').get('wa')).waba_id || '';
+
+  async function uploadMedia(buffer, mime, filename) {
+    if (DRY) return { id: 'dryM_' + crypto.randomUUID() };
+    const n = await N();
+    const fd = new FormData();
+    fd.append('messaging_product', 'whatsapp'); fd.append('type', mime);
+    fd.append('file', new Blob([buffer], { type: mime }), filename);
+    const res = await fetch(`${GRAPH()}/${n.phone_number_id}/media`, { method: 'POST', headers: AUTH(n), body: fd });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d?.error?.message || 'Media upload failed');
+    return d;
+  }
+  async function downloadMedia(id) {
+    if (DRY) return { buffer: Buffer.from(TINY_PNG, 'base64'), mime: 'image/png' };
+    const n = await N();
+    const meta = await (await fetch(`${GRAPH()}/${id}`, { headers: AUTH(n) })).json();
+    if (!meta.url) throw new Error(meta.error?.message || 'Media not found');
+    const r = await fetch(meta.url, { headers: AUTH(n) });
+    if (!r.ok) throw new Error('Media download failed');
+    return { buffer: Buffer.from(await r.arrayBuffer()), mime: meta.mime_type || r.headers.get('content-type') };
+  }
+
+  async function createTemplate(payload) {
+    if (DRY) return { id: 'dry_t_' + crypto.randomUUID(), status: 'APPROVED' };
+    const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
+    const n = await N();
+    const res = await fetch(`${GRAPH()}/${W}/message_templates`, { method: 'POST', headers: { ...AUTH(n), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d?.error?.error_user_msg || d?.error?.message || 'Template request failed');
+    return d;
+  }
+  async function listTemplates() {
+    if (DRY) return [];
+    const W = await wabaId(); if (!W) throw new Error('The WhatsApp account ID is not set. Open Settings, WhatsApp connection, and let the app find it.');
+    const n = await N();
+    let url = `${GRAPH()}/${W}/message_templates?fields=name,status,language,category,components,rejected_reason&limit=100`; const out = [];
+    while (url) { const d = await (await fetch(url, { headers: AUTH(n) })).json(); if (d.error) throw new Error(d.error.message); out.push(...(d.data || [])); url = d.paging && d.paging.next; }
+    return out;
+  }
+
+  const markRead = (waMessageId) => DRY ? (console.log('[WA dry-run] read', waMessageId), null) : call({ status: 'read', message_id: waMessageId }).catch(() => {});
+  // Marks the client's message as read and shows "typing..." on their phone until we reply (or 25 seconds pass).
+  const typing = (waMessageId) => call({ status: 'read', message_id: waMessageId, typing_indicator: { type: 'text' } });
+
+  return { graph, wabaId, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead };
+}
 
 function verifySignature(rawBody, header) {
   if (!WA_APP_SECRET) return true; // allow during first tests; set WA_APP_SECRET in production
@@ -102,4 +116,9 @@ function verifySignature(rawBody, header) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-module.exports = { graph, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead, verifySignature };
+module.exports = {
+  ...client(null), // the default number, so older code keeps working
+  forNumber: (id) => client(id || null),
+  forConversation: (conv) => client(conv && conv.wa_number_id),
+  graphWith, verifySignature
+};

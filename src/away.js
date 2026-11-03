@@ -11,7 +11,7 @@ async function maybeAway(conv, waId) {
   const local = new Date(new Date().toLocaleString('en-US', { timeZone: a.tz }));
   const mins = local.getHours() * 60 + local.getMinutes();
   if (a.days.includes(local.getDay()) && mins >= toMin(a.start) && mins < toMin(a.end)) return;
-  const r = await wa.sendText(waId, a.message);
+  const r = await wa.forConversation(conv).sendText(waId, a.message);
   await saveOutbound(conv, { senderType: 'bot', body: a.message, waMessageId: r.messages?.[0]?.id });
   await query('UPDATE conversations SET last_away_at=now() WHERE id=$1', [conv.id]);
 }

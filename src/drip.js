@@ -30,8 +30,8 @@ async function runDue() {
       const t = (await query('SELECT * FROM templates WHERE name=$1', [s.template])).rows[0];
       if (!t || (t.status !== 'APPROVED' && process.env.WA_DRY_RUN !== 'true')) { await query(`UPDATE drip_enrollments SET status='stopped' WHERE id=$1`, [e.id]); continue; }
       const params = (s.var_map || []).map(m => m.type === 'name' ? first(e.cname) : String(m.value || ''));
-      const sent = await wa.sendTemplate(e.wa_id, t.name, t.language, params);
       const conv = (await query('SELECT * FROM conversations WHERE contact_id=$1', [e.contact_id])).rows[0];
+      const sent = await wa.forConversation(conv).sendTemplate(e.wa_id, t.name, t.language, params); // same number the client wrote to
       if (conv) await saveOutbound(conv, { senderType: 'bot', type: 'template', templateName: t.name, waMessageId: sent.messages?.[0]?.id,
         body: t.body.replace(/\{\{(\d+)\}\}/g, (_, i) => params[i - 1] ?? '') });
       const nxt = e.steps[e.step + 1];

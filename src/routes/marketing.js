@@ -5,33 +5,96 @@ const wa = require('../whatsapp');
 const { audience, paramsFor } = require('../broadcast');
 const { markPersonal } = require('../personal');
 const settings = require('../settings');
+const numbers = require('../numbers');
 const router = express.Router();
 const mgr = required('admin', 'manager');
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const varCount = (b) => Math.max(0, ...[...String(b).matchAll(/\{\{(\d+)\}\}/g)].map(m => +m[1]));
 const DRY = () => process.env.WA_DRY_RUN === 'true';
 
-// ---- WhatsApp connection check ----
-router.get('/whatsapp/status', mgr, wrap(async (req, res) => {
-  const phone = process.env.WA_PHONE_NUMBER_ID || null;
-  const out = { phone_number_id: phone, dry_run: DRY(), signature_check: !!process.env.WA_APP_SECRET, waba_id: process.env.WA_WABA_ID || (await settings.get('wa')).waba_id || null };
-  if (DRY()) return res.json(out);
-  try { out.number = await wa.graph(`${phone}?fields=display_phone_number,verified_name,quality_rating`); out.token_ok = true; }
-  catch (e) { out.token_ok = false; out.token_error = e.message; }
-  if (out.waba_id) {
-    try { out.waba_has_number = (await wa.graph(`${out.waba_id}/phone_numbers?fields=id`)).data.some(x => x.id === phone); } catch (e) { out.waba_error = e.message; }
-    try { out.subscribed = ((await wa.graph(`${out.waba_id}/subscribed_apps`)).data || []).length > 0; } catch (e) { /* shown as unknown */ }
+// ---- WhatsApp numbers (add, check, switch default, remove) ----
+const admin = required('admin');
+const sanitizeId = (x) => String(x || '').replace(/\D/g, '');
+
+router.get('/whatsapp/numbers', mgr, wrap(async (req, res) => res.json(await numbers.list())));
+
+router.post('/whatsapp/numbers', admin, wrap(async (req, res) => {
+  const label = String(req.body.label || '').trim().slice(0, 40), pid = sanitizeId(req.body.phone_number_id);
+  const token = String(req.body.access_token || '').trim(), waba = sanitizeId(req.body.waba_id);
+  if (!label) return res.status(400).json({ error: 'Give the number a name, for example "Sales" or "Support"' });
+  if (pid.length < 8) return res.status(400).json({ error: 'Paste the Phone number ID from Meta (a long number, not the phone number itself)' });
+  if (await numbers.byPhoneId(pid)) return res.status(409).json({ error: 'This number is already added' });
+  let info = {};
+  if (!DRY()) {
+    const tk = token || process.env.WA_ACCESS_TOKEN;
+    if (!tk) return res.status(400).json({ error: 'Paste an access token for this number' });
+    try { info = await wa.graphWith(tk, `${pid}?fields=display_phone_number,verified_name`); }
+    catch (e) { return res.status(400).json({ error: 'Meta did not accept this Phone number ID and token: ' + e.message }); }
   }
+  const row = await numbers.add({ label, phone_number_id: pid, token, waba_id: waba, display_phone: info.display_phone_number, verified_name: info.verified_name, make_default: !!req.body.make_default });
+  let subscribed = null; // best effort: make sure Meta sends this account's messages to our webhook
+  if (waba && !DRY()) {
+    try { await fetch(`${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${process.env.WA_API_VERSION || 'v21.0'}/${waba}/subscribed_apps`, { method: 'POST', headers: { Authorization: `Bearer ${token || process.env.WA_ACCESS_TOKEN}` } }).then(r => { subscribed = r.ok; }); }
+    catch { subscribed = false; }
+  }
+  res.json({ ...row, subscribed });
+}));
+
+router.patch('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  const cur = (await query('SELECT id FROM wa_numbers WHERE id=$1', [id])).rows[0];
+  if (!cur) return res.status(404).json({ error: 'Number not found' });
+  const { label, access_token, clear_token, waba_id, make_default } = req.body;
+  if (label !== undefined) { if (!String(label).trim()) return res.status(400).json({ error: 'The name cannot be empty' }); await query('UPDATE wa_numbers SET label=$2 WHERE id=$1', [id, String(label).trim().slice(0, 40)]); }
+  if (waba_id !== undefined) await query('UPDATE wa_numbers SET waba_id=$2 WHERE id=$1', [id, sanitizeId(waba_id) || null]);
+  if (clear_token) await query('UPDATE wa_numbers SET access_token=NULL WHERE id=$1', [id]);
+  else if (access_token && String(access_token).trim()) await query('UPDATE wa_numbers SET access_token=$2 WHERE id=$1', [id, numbers.encrypt(String(access_token).trim())]);
+  if (make_default) await numbers.makeDefault(id);
+  res.json({ ok: true });
+}));
+
+router.delete('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
+  const id = Number(req.params.id);
+  const n = (await query('SELECT id, label, is_default FROM wa_numbers WHERE id=$1', [id])).rows[0];
+  if (!n) return res.status(404).json({ error: 'Number not found' });
+  if (n.is_default) return res.status(409).json({ error: 'This is the default number. Make another number the default first.' });
+  const used = (await query('SELECT (SELECT COUNT(*) FROM conversations WHERE wa_number_id=$1)::int AS c, (SELECT COUNT(*) FROM broadcasts WHERE wa_number_id=$1)::int AS b', [id])).rows[0];
+  if (used.c || used.b) return res.status(409).json({ error: `${used.c} chat(s) and ${used.b} broadcast(s) use this number. Keep it here so they can still send and receive.` });
+  await query('DELETE FROM wa_numbers WHERE id=$1', [id]);
+  res.json({ ok: true });
+}));
+
+// ---- WhatsApp connection check (one result per number) ----
+async function checkNumber(n) {
+  const out = { id: n.id, label: n.label, phone_number_id: n.phone_number_id, is_default: n.is_default, waba_id: n.waba_id || process.env.WA_WABA_ID || null };
+  let w; try { w = wa.forNumber(n.id); } catch (e) { return { ...out, token_ok: false, token_error: e.message }; }
+  try { out.number = await w.graph(`${n.phone_number_id}?fields=display_phone_number,verified_name,quality_rating`); out.token_ok = true;
+        if (out.number.display_phone_number && out.number.display_phone_number !== n.display_phone) await query('UPDATE wa_numbers SET display_phone=$2, verified_name=$3 WHERE id=$1', [n.id, out.number.display_phone_number, out.number.verified_name || null]); }
+  catch (e) { out.token_ok = false; out.token_error = e.message; }
+  if (!out.waba_id && n.is_default) out.waba_id = (await settings.get('wa')).waba_id || null;
+  if (out.waba_id) {
+    try { out.waba_has_number = (await w.graph(`${out.waba_id}/phone_numbers?fields=id`)).data.some(x => x.id === n.phone_number_id); } catch (e) { out.waba_error = e.message; }
+    try { out.subscribed = ((await w.graph(`${out.waba_id}/subscribed_apps`)).data || []).length > 0; } catch (e) { /* shown as unknown */ }
+  }
+  return out;
+}
+router.get('/whatsapp/status', mgr, wrap(async (req, res) => {
+  const out = { dry_run: DRY(), signature_check: !!process.env.WA_APP_SECRET, numbers: [] };
+  const list = await numbers.list();
+  if (DRY()) { out.numbers = list; return res.json(out); }
+  out.numbers = await Promise.all(list.map(checkNumber));
   res.json(out);
 }));
 router.post('/whatsapp/detect', mgr, wrap(async (req, res) => {
-  const ids = (req.body.ids || []).map(x => String(x).replace(/\D/g, '')).filter(Boolean).slice(0, 10), phone = process.env.WA_PHONE_NUMBER_ID, results = [];
+  const ids = (req.body.ids || []).map(sanitizeId).filter(Boolean).slice(0, 10), results = [];
+  const n = req.body.number_id ? (await query('SELECT * FROM wa_numbers WHERE id=$1', [Number(req.body.number_id)])).rows[0] : (await query('SELECT * FROM wa_numbers WHERE is_default')).rows[0];
+  const phone = n ? n.phone_number_id : process.env.WA_PHONE_NUMBER_ID, w = wa.forNumber(n && n.id);
   for (const id of ids) {
-    try { const n = (await wa.graph(`${id}/phone_numbers?fields=id,display_phone_number`)).data || []; results.push({ id, numbers: n.map(x => x.display_phone_number), has_ours: n.some(x => x.id === phone) }); }
+    try { const d = (await w.graph(`${id}/phone_numbers?fields=id,display_phone_number`)).data || []; results.push({ id, numbers: d.map(x => x.display_phone_number), has_ours: d.some(x => x.id === phone) }); }
     catch (e) { results.push({ id, error: e.message }); }
   }
   const hit = results.filter(r => r.has_ours);
-  if (hit.length === 1) await settings.set('wa', { waba_id: hit[0].id });
+  if (hit.length === 1) { if (n) await query('UPDATE wa_numbers SET waba_id=$2 WHERE id=$1', [n.id, hit[0].id]); if (!n || n.is_default) await settings.set('wa', { waba_id: hit[0].id }); }
   res.json({ results, saved: hit.length === 1 ? hit[0].id : null });
 }));
 
@@ -136,7 +199,7 @@ router.get('/broadcasts', mgr, wrap(async (req, res) => res.json((await query(
                                           WHERE c.contact_id=r.contact_id AND m.direction='in' AND m.created_at > r.sent_at))::int AS replied
      FROM broadcasts b LEFT JOIN broadcast_recipients r ON r.broadcast_id=b.id GROUP BY b.id ORDER BY b.id DESC LIMIT 50`)).rows)));
 router.post('/broadcasts', mgr, wrap(async (req, res) => {
-  const { name, template_name, var_map = [], segment = {}, scheduled_at, consent } = req.body;
+  const { name, template_name, var_map = [], segment = {}, scheduled_at, consent, wa_number_id } = req.body;
   if (!consent) return res.status(400).json({ error: 'Please confirm everyone in this audience agreed to receive these messages' });
   if (!String(name || '').trim()) return res.status(400).json({ error: 'Give the broadcast a name' });
   const t = (await query('SELECT * FROM templates WHERE name=$1', [template_name])).rows[0];
@@ -144,12 +207,14 @@ router.post('/broadcasts', mgr, wrap(async (req, res) => {
   if (t.status !== 'APPROVED' && !DRY()) return res.status(409).json({ error: 'Meta has not approved this template yet' });
   const vm = Array.isArray(var_map) ? var_map.slice(0, t.var_count) : [];
   if (vm.length < t.var_count || vm.some(m => m.type === 'text' && !String(m.value || '').trim())) return res.status(400).json({ error: `Fill in all ${t.var_count} template variables` });
+  let numId = null;
+  if (wa_number_id) { numId = Number(wa_number_id); if (!(await query('SELECT 1 FROM wa_numbers WHERE id=$1', [numId])).rows[0]) return res.status(400).json({ error: 'That WhatsApp number does not exist' }); }
   const people = await audience(segment);
   if (!people.length) return res.status(400).json({ error: 'No contacts match this audience' });
   const when = scheduled_at && new Date(scheduled_at) > new Date() ? new Date(scheduled_at) : new Date();
   const b = (await query(
-    `INSERT INTO broadcasts(name,template_name,language,segment,var_map,scheduled_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [String(name).trim().slice(0, 80), t.name, t.language, JSON.stringify(segment), JSON.stringify(vm), when, req.user.id])).rows[0];
+    `INSERT INTO broadcasts(name,template_name,language,segment,var_map,scheduled_at,created_by,wa_number_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [String(name).trim().slice(0, 80), t.name, t.language, JSON.stringify(segment), JSON.stringify(vm), when, req.user.id, numId])).rows[0];
   await query(
     `INSERT INTO broadcast_recipients(broadcast_id,contact_id,wa_id,params) SELECT $1, x.id, x.w, x.p::jsonb FROM unnest($2::int[], $3::text[], $4::text[]) AS x(id, w, p)`,
     [b.id, people.map(p => p.id), people.map(p => p.wa_id), people.map(p => JSON.stringify(paramsFor(vm, p)))]);

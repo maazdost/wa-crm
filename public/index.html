@@ -165,7 +165,7 @@ th{font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut
 const API = window.API_BASE || '';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const S = { token:null, user:null, convs:[], active:null, conv:null, msgs:[], notes:[], tab:'open', agent:'', templates:[], agents:[], winOpen:null };
+const S = { token:null, user:null, convs:[], active:null, conv:null, msgs:[], notes:[], tab:'open', agent:'', templates:[], agents:[], winOpen:null, waNumbers:[] };
 const arr = x => Array.isArray(x) ? x : [];
 const isMgr = () => S.user && S.user.role !== 'agent';
 
@@ -431,7 +431,7 @@ function renderHead() {
     ['fav', 'star', c.favorite ? 'Remove from favourites' : 'Add to favourites'], ['pin', 'pin', c.pinned ? 'Unpin chat' : 'Pin chat'], ['unread', 'mail', 'Mark as unread'], ['archive', 'archive', c.archived ? 'Unarchive chat' : 'Archive chat'], '-',
     ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']]), ['nonclient', 'ban', 'Not a client', true]];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
-  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}</span></div>
+  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
   <button class="ib" id="notesbtn" aria-label="Notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <div class="menuwrap"><button class="ib" id="morebtn" aria-label="More actions">${ico('more')}</button><div class="menu" id="cm" hidden>${items.map(i => i === '-' ? '<hr class="sep">' : `<button data-act="${i[0]}"${i[3] ? ' class="danger"' : ''}>${ico(i[1], 18)}<span>${i[2]}</span></button>`).join('')}</div></div></header>` + strip;
   $('#back').onclick = () => { document.body.classList.remove('chat-open'); S.active = null; renderList(); };
@@ -816,13 +816,24 @@ function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt');
 async function loadWaStatus() {
   const r = await api('/whatsapp/status'), el = $('#ws'); if (!el) return;
   if (r.error) { el.textContent = r.error; return; }
-  if (r.dry_run) { el.textContent = 'Test mode: messages are not sent to WhatsApp.'; return; }
-  const ok = t => `<span style="color:var(--pine2)">✓ ${t}</span>`, bad = t => `<span style="color:var(--red)">✗ ${t}</span>`;
-  el.innerHTML = [
-    r.token_ok ? ok(`Number ${esc(r.number.display_phone_number || '')} (${esc(r.number.verified_name || '')}), quality ${esc(r.number.quality_rating || 'unknown')}`) : bad(`Cannot reach Meta with the access token: ${esc(r.token_error || '')}`),
-    !r.waba_id ? bad('Account ID not set yet. Paste the IDs below.') : r.waba_error ? bad('Account ID problem: ' + esc(r.waba_error)) : r.waba_has_number ? ok('Account ID is correct and contains your number') : bad('This account ID does not contain your number'),
-    r.signature_check ? '' : bad('App secret is not set on the server, so fake webhook messages would not be rejected. Add WA_APP_SECRET.'),
-    r.subscribed === undefined ? '' : r.subscribed ? ok('Messages are being delivered to this server') : bad('Not subscribed: in Meta open WhatsApp, Configuration, and subscribe to messages')].filter(Boolean).join('<br>');
+  const ok = t => `<span style="color:var(--pine2)">✓ ${t}</span>`, bad = t => `<span style="color:var(--red)">✗ ${t}</span>`, adm = S.user && S.user.role === 'admin';
+  const acts = n => adm ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${n.is_default ? '' : `<button class="ghost" data-wd="${n.id}">Make default</button>`}<button class="ghost" data-wr="${n.id}">Rename</button><button class="ghost" data-wt="${n.id}">New token</button>${n.is_default ? '' : `<button class="ghost" data-wx="${n.id}">Remove</button>`}</div>` : '';
+  const head = n => `<b>${esc(n.label)}</b>${n.is_default ? ' <em class="tag">default</em>' : ''}`;
+  if (r.dry_run) { el.innerHTML = '<p class="mute">Test mode: messages are not sent to WhatsApp.</p>' + (r.numbers || []).map(n => `<div class="hb" style="display:block">${head(n)} <span class="mute">${esc(n.display_phone || n.phone_number_id)}</span>${acts(n)}</div>`).join(''); bindWaActions(); return; }
+  const warn = r.signature_check ? '' : '<p>' + bad('App secret is not set on the server, so fake webhook messages would not be rejected. Add WA_APP_SECRET.') + '</p>';
+  el.innerHTML = warn + (r.numbers.length ? r.numbers.map(n => `<div class="hb" style="display:block;border-top:1px solid var(--line,#0001);padding-top:10px">${head(n)}<br>` + [
+    n.token_ok ? ok(`${esc(n.number.display_phone_number || '')} (${esc(n.number.verified_name || '')}), quality ${esc(n.number.quality_rating || 'unknown')}`) : bad(`Cannot reach Meta: ${esc(n.token_error || '')}`),
+    !n.waba_id ? bad('Account ID not set yet (needed only for templates). Use the box below.') : n.waba_error ? bad('Account ID problem: ' + esc(n.waba_error)) : n.waba_has_number ? ok('Account ID is correct and contains this number') : bad('This account ID does not contain this number'),
+    n.subscribed === undefined ? '' : n.subscribed ? ok('Messages are being delivered to this server') : bad('Not subscribed: in Meta open WhatsApp, Configuration, and subscribe to messages')].filter(Boolean).join('<br>') + acts(n) + '</div>').join('') : '<p class="mute">No number added yet. Add your first one below.</p>');
+  bindWaActions();
+}
+function bindWaActions() {
+  const el = $('#ws'); if (!el) return;
+  const run = async (p, m, b, msg) => { const r = await api(p, m, b); if (r.error) return toast(r.error); toast(msg); loadWaStatus(); };
+  el.querySelectorAll('[data-wd]').forEach(x => x.onclick = () => run('/whatsapp/numbers/' + x.dataset.wd, 'PATCH', { make_default: true }, 'Default number changed'));
+  el.querySelectorAll('[data-wr]').forEach(x => x.onclick = () => { const v = prompt('New name for this number'); if (v && v.trim()) run('/whatsapp/numbers/' + x.dataset.wr, 'PATCH', { label: v.trim() }, 'Renamed'); });
+  el.querySelectorAll('[data-wt]').forEach(x => x.onclick = () => { const v = prompt('Paste the new access token for this number'); if (v && v.trim()) run('/whatsapp/numbers/' + x.dataset.wt, 'PATCH', { access_token: v.trim() }, 'Token saved'); });
+  el.querySelectorAll('[data-wx]').forEach(x => x.onclick = () => { if (confirm('Remove this number from the app? (This does not delete it from Meta.)')) run('/whatsapp/numbers/' + x.dataset.wx, 'DELETE', null, 'Number removed'); });
 }
 async function showSettings() {
   document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
@@ -832,8 +843,13 @@ async function showSettings() {
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
   const row = (left, attr) => `<div class="hb" style="grid-template-columns:1fr auto">${left}<button class="ghost" ${attr}>Delete</button></div>`;
   el.innerHTML = `<header class="ch"><button class="back" id="tb">${ico('back')}</button><b>Settings</b></header>
-  <div class="panel" id="wp"><h3>WhatsApp connection</h3><div id="ws" class="mute">Checking…</div>
-    <label class="fld" style="margin-top:10px"><span>Account IDs to try, as shown in Meta (separate with commas)</span><input id="w1" placeholder="4572421779664202, 1472520688056945"></label><button class="btn" id="w2">Find and save my account ID</button></div>
+  <div class="panel" id="wp"><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>
+    ${S.user.role === 'admin' ? `<form id="wnf" style="display:grid;gap:8px;margin-top:14px;border-top:1px solid var(--line,#0001);padding-top:12px"><b>Add another number</b>
+      <input id="wn1" placeholder="Name, e.g. Support" required><input id="wn2" placeholder="Phone number ID (from Meta, WhatsApp, API Setup)" required>
+      <input id="wn3" placeholder="Access token (leave empty to use the server's token)" autocomplete="off"><input id="wn4" placeholder="WhatsApp Business Account ID (optional)">
+      <label><input type="checkbox" id="wn5" style="width:auto"> Make this the default number</label><button class="btn">Add number</button></form>` : '<p class="mute">Only an admin can add or remove numbers.</p>'}
+    <details style="margin-top:12px"><summary class="mute">Find the account ID of the default number</summary>
+    <label class="fld" style="margin-top:10px"><span>Account IDs to try, as shown in Meta (separate with commas)</span><input id="w1" placeholder="4572421779664202, 1472520688056945"></label><button class="btn" id="w2">Find and save my account ID</button></details></div>
   <form class="panel" id="bf"><h3>Bot messages</h3><p class="mute">What the bot says before a client is handed to an agent. Use {{name}} for the client's name.</p>
     ${fld('b1', 'Greeting', b.greet, 1)}${fld('b2', 'Button 1 (more info)', b.btnInfo)}${fld('b3', 'Button 2 (join the team)', b.btnTeam)}${fld('b4', 'Button 3 (classes)', b.btnClasses)}${fld('b5', 'Question asking for their name', b.askName, 1)}${fld('b6', 'Hand-off message', b.handoff, 1)}
     <p class="mute">Buttons can hold 20 characters at most.</p><button class="btn">Save bot messages</button></form>
@@ -853,6 +869,10 @@ async function showSettings() {
   $('#bf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/bot', 'PUT', { greet: $('#b1').value, btnInfo: $('#b2').value, btnTeam: $('#b3').value, btnClasses: $('#b4').value, askName: $('#b5').value, handoff: $('#b6').value }); toast(r.error || 'Bot messages saved'); };
   $('#af').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/away', 'PUT', { enabled: $('#a0').checked, message: $('#a1').value, start: $('#a2').value, end: $('#a3').value, days: [...document.querySelectorAll('.ad:checked')].map(x => +x.value) }); toast(r.error || 'Away message saved'); };
   loadWaStatus();
+  if ($('#wnf')) $('#wnf').onsubmit = async e => { e.preventDefault();
+    const r = await api('/whatsapp/numbers', 'POST', { label: $('#wn1').value, phone_number_id: $('#wn2').value, access_token: $('#wn3').value, waba_id: $('#wn4').value, make_default: $('#wn5').checked });
+    if (r.error) return toast(r.error);
+    toast(r.subscribed === false ? 'Number added, but Meta did not confirm message delivery. Check the account ID and subscription.' : 'Number added'); showSettings(); };
   $('#w2').onclick = async () => { const ids = $('#w1').value.split(/[,\s]+/).filter(Boolean); if (!ids.length) return toast('Paste at least one ID'); const r = await api('/whatsapp/detect', 'POST', { ids });
     if (r.error) return toast(r.error); toast(r.saved ? 'Found it and saved it' : 'None of these IDs contains your number'); $('#ws').innerHTML += '<br>' + r.results.map(x => `${esc(x.id)}: ${x.error ? esc(x.error) : x.has_ours ? 'this one has your number' : 'numbers: ' + esc(x.numbers.join(', ') || 'none')}`).join('<br>'); if (r.saved) loadWaStatus(); };
   $('#g1').value = g.mode;
@@ -922,7 +942,7 @@ async function showContacts() {
 }
 async function showBroadcasts() {
   const sc = screen('Broadcasts', '<span style="flex:1"></span><button class="ghost" id="br">Refresh</button><button class="btn" id="bn">New broadcast</button>');
-  S.templates = arr(await api('/templates')); const list = arr(await api('/broadcasts'));
+  S.templates = arr(await api('/templates')); S.waNumbers = arr(await api('/whatsapp/numbers')); const list = arr(await api('/broadcasts'));
   const chip = st => `<em class="chip ${st === 'done' ? 'ok' : st === 'cancelled' ? 'closed' : 'warn'}">${esc(st)}</em>`;
   sc.innerHTML = `<div class="tbl" style="margin-top:12px"><table><tr><th>Broadcast</th><th>Status</th><th>Results</th><th></th></tr>
   ${list.map(b => `<tr><td>${esc(b.name)}<br><small class="mute">${esc(b.template_name)} · ${b.status === 'scheduled' ? 'starts ' + new Date(b.scheduled_at).toLocaleString() : new Date(b.scheduled_at).toLocaleDateString()}</small></td><td>${chip(b.status)}</td>
@@ -936,6 +956,7 @@ async function newBroadcast() {
   if (!tpls.length) { box.innerHTML = '<p class="panel mute">You need an approved template first. Create one under Templates.</p>'; return; }
   const chk = (cls, items) => items.map(i => `<label style="margin-right:12px;white-space:nowrap"><input type="checkbox" class="${cls}" value="${esc(i.v)}" style="width:auto"> ${esc(i.t)}</label>`).join('') || '<span class="mute">none yet</span>';
   box.innerHTML = `<form class="panel" id="nbf"><h3>New broadcast</h3>${field('n1', 'Name (only your team sees this)', '')}
+  ${S.waNumbers.length > 1 ? `<label class="fld"><span>Send from</span><select id="n0">${S.waNumbers.map(n => `<option value="${n.id}"${n.is_default ? ' selected' : ''}>${esc(n.label)}${n.display_phone ? ' (' + esc(n.display_phone) + ')' : ''}</option>`).join('')}</select></label>` : ''}
   <label class="fld"><span>Template</span><select id="n2">${tpls.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('')}</select></label><p class="mute" id="n3"></p><div id="n4"></div>
   <div class="fld"><span>Audience. Leave everything unticked to message everyone who has not opted out.</span>
    <div><b>Lists</b> ${chk('sl', lists.map(l => ({ v: l.list_name, t: `${l.list_name} (${l.n})` })))}</div><div><b>Labels</b> ${chk('sb', S.labels.map(l => ({ v: l.id, t: l.name })))}</div>
@@ -952,7 +973,7 @@ async function newBroadcast() {
   $('#n5').onclick = async () => { const r = await api('/broadcasts/preview', 'POST', { segment: seg() }); $('#n6').textContent = r.error || `${r.count} people${r.count ? ', for example ' + r.sample.join(', ') : ''}`; };
   $('#nbf').onsubmit = async e => { e.preventDefault();
     const var_map = [...document.querySelectorAll('#n4 .fld')].map(f => ({ type: f.querySelector('.vt').value, value: f.querySelector('.vv').value }));
-    const r = await api('/broadcasts', 'POST', { name: $('#n1').value, template_name: $('#n2').value, var_map, segment: seg(), consent: $('#n9').checked, scheduled_at: $('#n7').value === 'later' && $('#n8').value ? new Date($('#n8').value).toISOString() : null });
+    const r = await api('/broadcasts', 'POST', { name: $('#n1').value, template_name: $('#n2').value, var_map, segment: seg(), consent: $('#n9').checked, wa_number_id: $('#n0') ? Number($('#n0').value) : null, scheduled_at: $('#n7').value === 'later' && $('#n8').value ? new Date($('#n8').value).toISOString() : null });
     if (r.error) return toast(r.error); toast(`Broadcast started for ${r.recipients} people`); showBroadcasts(); };
 }
 

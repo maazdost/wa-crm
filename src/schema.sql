@@ -141,3 +141,19 @@ CREATE TABLE IF NOT EXISTS chat_flags (
   PRIMARY KEY (user_id, conversation_id)
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_wa_id TEXT;
+
+-- Several WhatsApp Business numbers. Add or remove them from Settings; no redeploy needed.
+CREATE TABLE IF NOT EXISTS wa_numbers (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL,
+  phone_number_id TEXT UNIQUE NOT NULL,
+  display_phone TEXT,
+  verified_name TEXT,
+  access_token TEXT,            -- encrypted; empty means "use the WA_ACCESS_TOKEN of the server"
+  waba_id TEXT,
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS one_default_wa_number ON wa_numbers(is_default) WHERE is_default;
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);
+ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);

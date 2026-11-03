@@ -9,6 +9,7 @@ const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
 const settings = require('../settings');
+const numbers = require('../numbers');
 const router = express.Router();
 
 // Meta webhook verification
@@ -39,7 +40,7 @@ function extract(m) {
   return { ...base, body: media.caption || `[${m.type}]`, mediaId: media.id, mime: media.mime_type, filename: media.filename };
 }
 
-async function handleMessage(m, profileName) {
+async function handleMessage(m, profileName, numId) {
   const msg = extract(m);
   const waId = m.from;
   const contact = (await query(
@@ -48,14 +49,15 @@ async function handleMessage(m, profileName) {
     [waId, profileName || null, m.referral ? 'ad' : 'organic'])).rows[0];
   if (contact.is_personal) return; // marked "not a client": nothing is stored and nothing is sent
   let conv = (await query(
-    `INSERT INTO conversations(contact_id) VALUES($1) ON CONFLICT (contact_id) DO UPDATE SET contact_id=EXCLUDED.contact_id RETURNING *`,
-    [contact.id])).rows[0];
+    `INSERT INTO conversations(contact_id, wa_number_id) VALUES($1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`,
+    [contact.id, numId || null])).rows[0];
+  const w = wa.forConversation(conv); // replies leave from the number the client wrote to
 
   const saved = await saveInbound(conv, msg);
   if (!saved) return; // duplicate delivery
   query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
-  if (msg.mediaId) mediaStore.ensure(msg.mediaId).catch(e => console.error('media download', e.message));
+  if (msg.mediaId) mediaStore.ensure(msg.mediaId, w).catch(e => console.error('media download', e.message));
 
   // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)
   const word = (msg.type === 'text' ? (msg.body || '') : '').trim().toLowerCase();
@@ -63,9 +65,9 @@ async function handleMessage(m, profileName) {
   if (optWord) {
     await query('UPDATE contacts SET opted_out=$2 WHERE id=$1', [contact.id, optWord === 'out']);
     const t = optWord === 'out' ? 'You have been unsubscribed from our promotional messages. Reply START to receive them again.' : 'Welcome back! You will receive our messages again.';
-    const sent = await wa.sendText(waId, t);
+    const sent = await w.sendText(waId, t);
     await saveOutbound(conv, { senderType: 'bot', body: t, waMessageId: sent.messages?.[0]?.id });
-    wa.markRead(m.id);
+    w.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     return;
   }
@@ -89,7 +91,7 @@ async function handleMessage(m, profileName) {
   }
 
   if (await bot.handle(conv, contact, msg)) {
-    wa.markRead(m.id);
+    w.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     return;
   }
@@ -114,7 +116,12 @@ router.post('/', (req, res) => {
     const v = change.value || {};
     for (const m of v.messages || []) {
       const name = v.contacts?.find(c => c.wa_id === m.from)?.profile?.name;
-      serial(m.from, () => handleMessage(m, name));
+      const pid = v.metadata?.phone_number_id; // which of your numbers the client wrote to
+      serial(m.from, async () => {
+        const num = pid ? await numbers.byPhoneId(pid) : null;
+        if (pid && !num) { console.warn(`[webhook] message for phone number id ${pid}, which is not added in Settings > WhatsApp numbers; ignored`); return; }
+        return handleMessage(m, name, num && num.id);
+      });
     }
     for (const s of v.statuses || []) {
       query(`UPDATE broadcast_recipients SET status=$2, error=COALESCE($3, error) WHERE wa_message_id=$1 AND status <> 'read' AND NOT (status='delivered' AND $2='sent')`,
