@@ -7,6 +7,8 @@ const DEFAULTS = {
     btnInfo: 'More info', btnTeam: 'Join our team', btnClasses: 'Join classes'
   },
   wa: { waba_id: '' },
+  assign: { mode: 'least', batch: 1 },
+  routing: { info: 'sales', team: 'recruitment', classes: 'classes' }, // which department each bot button sends clients to
   gate: { mode: 'all', keywords: ['info', 'class', 'course', 'join', 'trading', 'price', 'fees', 'team', 'learn'] },
   away: {
     enabled: false, message: 'Thanks for your message! Our team is offline right now and will reply as soon as we are back.',

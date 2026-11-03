@@ -157,3 +157,46 @@ CREATE TABLE IF NOT EXISTS wa_numbers (
 CREATE UNIQUE INDEX IF NOT EXISTS one_default_wa_number ON wa_numbers(is_default) WHERE is_default;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);
 ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);
+
+-- Password reset links (only a hash of the link token is stored)
+CREATE TABLE IF NOT EXISTS password_resets (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT UNIQUE NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- WhatsApp calling: off by default, switched per number from Settings
+ALTER TABLE wa_numbers ADD COLUMN IF NOT EXISTS calls_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS calls (
+  id SERIAL PRIMARY KEY,
+  wa_call_id TEXT UNIQUE,
+  conversation_id INT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  wa_number_id INT REFERENCES wa_numbers(id),
+  direction TEXT NOT NULL CHECK (direction IN ('in','out')),
+  status TEXT NOT NULL DEFAULT 'ringing',
+  agent_id INT REFERENCES users(id),
+  sdp_offer TEXT,
+  sdp_answer TEXT,
+  error TEXT,
+  started_at TIMESTAMPTZ,
+  ended_at TIMESTAMPTZ,
+  duration INT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_calls_conv ON calls(conversation_id, id DESC);
+
+-- Departments (shown in Settings, used by the bot and by team members), and turn-taking assignment
+CREATE TABLE IF NOT EXISTS departments (
+  id SERIAL PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO departments(key,name) VALUES ('general','General'),('sales','Sales'),('recruitment','Recruitment'),('classes','Classes') ON CONFLICT (key) DO NOTHING;
+INSERT INTO departments(key,name) SELECT DISTINCT team, initcap(team) FROM users WHERE team IS NOT NULL AND team <> '' ON CONFLICT (key) DO NOTHING;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS in_rotation BOOLEAN NOT NULL DEFAULT TRUE;
+CREATE TABLE IF NOT EXISTS rr_state (team TEXT PRIMARY KEY, last_user_id INT, given INT NOT NULL DEFAULT 0);
+ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS buttons JSONB;

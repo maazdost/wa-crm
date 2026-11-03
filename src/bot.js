@@ -38,7 +38,8 @@ async function handle(conv, contact, msg) {
   }
   if (conv.bot_step === 'ask_intent') {
     const intent = INTENTS[msg.buttonId] ? msg.buttonId : intentFromText(msg.body);
-    await query(`UPDATE conversations SET intent=$2, team=$3, bot_step='ask_name' WHERE id=$1`, [conv.id, intent, INTENTS[intent].team]);
+    const routing = await settings.get('routing');
+    await query(`UPDATE conversations SET intent=$2, team=$3, bot_step='ask_name' WHERE id=$1`, [conv.id, intent, routing[intent] || INTENTS[intent].team]);
     await say(conv, cfg.askName);
     return true;
   }

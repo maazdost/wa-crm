@@ -23,6 +23,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 app.use('/webhook', require('./routes/webhook'));
 app.use('/api', require('./routes/api'));
 app.use('/api', require('./routes/marketing'));
+app.use('/api', require('./routes/calls'));
 
 const server = http.createServer(app);
 rt.init(server);

@@ -18,7 +18,7 @@ function decrypt(s) {
   } catch { return null; }
 }
 
-const PUBLIC = `id, label, phone_number_id, display_phone, verified_name, waba_id, is_default, created_at, (access_token IS NOT NULL AND access_token <> '') AS has_token`;
+const PUBLIC = `id, label, phone_number_id, display_phone, verified_name, waba_id, is_default, calls_enabled, created_at, (access_token IS NOT NULL AND access_token <> '') AS has_token`;
 const list = async () => (await query(`SELECT ${PUBLIC}, (SELECT COUNT(*)::int FROM conversations c WHERE c.wa_number_id=n.id) AS chats FROM wa_numbers n ORDER BY is_default DESC, id`)).rows;
 const count = async () => (await query('SELECT COUNT(*)::int AS n FROM wa_numbers')).rows[0].n;
 const byPhoneId = async (pid) => (await query('SELECT id, label FROM wa_numbers WHERE phone_number_id=$1', [String(pid)])).rows[0] || null;

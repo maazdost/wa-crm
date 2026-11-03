@@ -166,6 +166,12 @@ th{font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mut
   .login{grid-template-columns:minmax(0,1fr);align-content:start}.lbrand{padding:24px 20px 28px;gap:16px}.lbrand h2{font-size:23px;margin-bottom:8px}.lb-feat{margin-top:14px;gap:10px}.lb-feat span{display:none}.lb-steps{display:none}.lbrand small{display:none}.lform{padding:18px 16px 28px}
   .msgs{padding:12px 3%}.b{max-width:84%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bx{display:grid}
 }
+.ringbox{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 24px));background:#0b3d36;color:#fff;border-radius:16px;padding:14px 16px;z-index:150;box-shadow:0 8px 30px #0006;display:grid;gap:12px}
+.ringbox small{color:#bfe6dc}.ringbox .acts{display:flex;gap:10px}.ringbox button{flex:1;border:0;border-radius:999px;padding:11px;font-weight:700;color:#fff;cursor:pointer}.ringbox .ok{background:#12a150}.ringbox .no{background:#d93a3a}
+.callbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:150;background:#0b3d36;color:#fff;border-radius:999px;padding:8px 10px 8px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px #0006;max-width:calc(100% - 20px)}
+.callbar small{color:#bfe6dc}.callbar button{border:0;border-radius:999px;padding:9px 14px;font-weight:700;color:#fff;cursor:pointer;background:#ffffff26}.callbar .end{background:#d93a3a}
+.callpill{align-self:center;background:var(--card);border-radius:999px;padding:6px 14px;font-size:13px;margin:6px 0;box-shadow:var(--sh);display:flex;align-items:center;gap:6px}.callpill.miss{color:#d93a3a}.callpill time{color:var(--icon);margin-left:6px;font-size:11.5px}
+.okm{color:#0a7c5a;font-size:13.5px}.qbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 12px;font-size:12.5px;color:var(--icon)}.qbtns i{font-style:normal;border:1px solid #8884;border-radius:999px;padding:3px 10px}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -193,6 +199,7 @@ function win(c) {
 
 /* ---------- Icons + small UI helpers ---------- */
 const ICONS = {
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
@@ -297,6 +304,29 @@ async function copyToClipboard(text) {
 }
 
 /* ---------- Login ---------- */
+const postPublic = (path, body) => fetch(API + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }).then(r => r.json()).catch(() => ({ error: 'Cannot reach the server. Check your connection.' }));
+function showForgot() {
+  showLogin(); const box = document.querySelector('.lform > div');
+  box.innerHTML = `<form id="ff" style="width:100%"><h1>Forgot your password?</h1><p class="mute">Enter the email you sign in with. We will send you a link to choose a new password.</p>
+    <input id="fe" type="email" placeholder="Email" autocomplete="username" required><button class="btn">Send reset link</button><div class="err" id="fm"></div></form><p class="lb-note"><a href="#" id="fb">Back to sign in</a></p>`;
+  $('#fb').onclick = e => { e.preventDefault(); showLogin(); };
+  $('#ff').onsubmit = async e => { e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    const r = await postPublic('/api/auth/forgot', { email: $('#fe').value }); b.disabled = false;
+    const m = $('#fm'); m.className = r.error ? 'err' : 'okm'; m.textContent = r.error || r.message; };
+}
+function showReset(token) {
+  showLogin(); const box = document.querySelector('.lform > div');
+  box.innerHTML = `<form id="rf" style="width:100%"><h1>Choose a new password</h1><p class="mute">Use at least 8 characters.</p>
+    <input id="r1" type="password" minlength="8" placeholder="New password" autocomplete="new-password" required><input id="r2" type="password" minlength="8" placeholder="Repeat the new password" autocomplete="new-password" required>
+    <button class="btn">Save password</button><div class="err" id="rm"></div></form><p class="lb-note"><a href="#" id="rb">Back to sign in</a></p>`;
+  const done = () => { history.replaceState(null, '', location.pathname); showLogin(); };
+  $('#rb').onclick = e => { e.preventDefault(); done(); };
+  $('#rf').onsubmit = async e => { e.preventDefault(); const m = $('#rm'); m.className = 'err';
+    if ($('#r1').value !== $('#r2').value) { m.textContent = 'The two passwords do not match'; return; }
+    const r = await postPublic('/api/auth/reset', { token, password: $('#r1').value });
+    if (r.error) { m.textContent = r.error; return; }
+    done(); const o = document.querySelector('#lf .err'); if (o) { o.className = 'okm'; o.textContent = 'Password changed. Sign in with your new password.'; } };
+}
 function showLogin(err) {
   $('#app').innerHTML = `<div class="login"><aside class="lbrand">
     <div class="lb-top"><div class="logo">TI</div>Team Inbox</div>
@@ -312,7 +342,8 @@ function showLogin(err) {
   <main class="lform"><div style="display:grid;gap:12px;width:min(380px,100%)"><form id="lf" style="width:100%"><h1>Welcome back</h1><p class="mute">Sign in with the account your manager created for you.</p>
   <input id="em" type="email" placeholder="Email" autocomplete="username" required><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
   <button class="btn">Sign in</button><div class="err">${esc(err || '')}</div></form>
-  <p class="lb-note">Forgot your password? Ask your manager to reset it.</p></div></main></div>`;
+  <p class="lb-note"><a href="#" id="fg">Forgot your password?</a></p></div></main></div>`;
+  $('#fg').onclick = e => { e.preventDefault(); showForgot(); };
   $('#lf').onsubmit = async e => {
     e.preventDefault();
     const r = await fetch(API + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:$('#em').value, password:$('#pw').value }) });
@@ -450,10 +481,12 @@ function renderHead() {
     ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']]), ['nonclient', 'ban', 'Not a client', true]];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
   <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
+  ${c.calls_enabled && c.bot_step !== 'held' ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
   <button class="ib" id="notesbtn" aria-label="Notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <div class="menuwrap"><button class="ib" id="morebtn" aria-label="More actions">${ico('more')}</button><div class="menu" id="cm" hidden>${items.map(i => i === '-' ? '<hr class="sep">' : `<button data-act="${i[0]}"${i[3] ? ' class="danger"' : ''}>${ico(i[1], 18)}<span>${i[2]}</span></button>`).join('')}</div></div></header>` + strip;
   $('#back').onclick = () => { document.body.classList.remove('chat-open'); S.active = null; renderList(); };
   $('#morebtn').onclick = () => { const m = $('#cm'), was = m.hidden; closeOverlays(); m.hidden = !was; };
+  if ($('#callbtn')) $('#callbtn').onclick = startCall;
   $('#notesbtn').onclick = () => { const n = $('#notes'); n.hidden = !n.hidden; };
   $('#cm').onclick = e => { const b = e.target.closest('button'); if (b) { closeOverlays(); chatAct(b.dataset.act); } };
 }
@@ -571,6 +604,7 @@ function renderMsgs(stick = true) {
   el.innerHTML = (S.more ? '<button class="ghost" id="older" style="align-self:center">Load earlier messages</button>' : '') + S.msgs.map(m => {
     const day = new Date(m.created_at).toDateString();
     const sep = day !== last ? `<div class="day">${new Date(m.created_at).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</div>` : ''; last = day;
+    if (m.type === 'call') return sep + `<div class="callpill${/missed|failed|not answered|declined/i.test(m.body || '') ? ' miss' : ''}">${ico('phone', 14)} ${esc(m.body || 'Call')}<time>${fmtT(m.created_at)}</time></div>`;
     const cls = m.sender_type === 'customer' ? 'in' : m.sender_type === 'bot' ? 'out bot' : 'out', tail = (m.direction !== prev || sep) ? ' tail' : ''; prev = m.direction;
     const tick = m.direction === 'out' ? `<span class="tk ${m.status}">${m.status === 'failed' ? 'Failed' : m.status === 'sent' ? '✓' : '✓✓'}</span>` : '';
     const tag = m.sender_type === 'bot' ? '<span class="tg">Bot</span>' : m.type === 'template' ? '<span class="tg">Template</span>' : '';
@@ -611,7 +645,7 @@ function renderComposer() {
     };
     return;
   }
-  el.innerHTML = `<div id="qr" class="qr" hidden></div><div class="cmp"><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
+  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
   const t = $('#txt');
   t.oninput = () => { syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else { $('#qr').hidden = true; typingPing(); } };
   $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them in Settings.'); showQr(''); };
@@ -625,9 +659,10 @@ function syncSend() { const t = $('#txt'), s = $('#send'), m = $('#mic'); if (!t
 async function sendText() {
   const t = $('#txt'), text = t.value.trim(); if (!text) return;
   const id = S.active, rt = S.replyTo, body = { text }; if (rt) body.reply_to = rt.id;
+  if (S.qrBtns) { body.buttons = S.qrBtns; S.qrBtns = null; renderBtnChips(); }
   t.value = ''; t.style.height = 'auto'; syncSend();
   const r = await api(`/conversations/${id}/messages`, 'POST', body);
-  if (r.error) { toast(r.error); if ($('#txt')) { $('#txt').value = text; syncSend(); } if (r.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } return; }
+  if (r.error) { toast(r.error); if (body.buttons) { S.qrBtns = body.buttons; renderBtnChips(); } if ($('#txt')) { $('#txt').value = text; syncSend(); } if (r.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } return; }
   S.replyTo = null; renderReply(); if (S.active === id) addMsg(withQuote(r, rt)); loadList();
 }
 async function refreshActive() {
@@ -781,6 +816,11 @@ function connect() {
     sock.on('conversation:unassigned', () => { if (isMgr()) toast('A client is waiting and no agent is available'); loadList(); });
     sock.on('conversation:escalated', () => { if (isMgr()) toast('A client has been waiting for a reply too long'); loadList(); });
     sock.on('conversation:updated', loadList);
+    sock.on('call:incoming', showRing);
+    sock.on('call:taken', e => { if (e.by !== S.user.id) { CALL.ring.delete(e.id); drawRing(); } });
+    sock.on('call:answer', e => { const a = CALL.active; if (!a || a.dir !== 'out' || a.answered || (a.id && a.id !== e.id)) return; a.id = a.id || e.id; a.answered = true; a.status = 'Ringing…'; a.pc.setRemoteDescription({ type: 'answer', sdp: e.sdp }).catch(() => { toast('Could not connect the call'); hangUp(); }); drawBar(); });
+    sock.on('call:status', e => { const a = CALL.active; if (!a || (a.id && a.id !== e.id)) return; if (e.status === 'accepted') callConnected(); else if (e.status === 'rejected') { toast('The client declined the call'); endLocal(); } else if (e.status === 'ringing') { a.status = 'Ringing…'; drawBar(); } });
+    sock.on('call:ended', e => { CALL.ring.delete(e.id); drawRing(); const a = CALL.active; if (a && a.id === e.id) { endLocal(); if (e.status !== 'completed') toast(e.status === 'failed' ? 'The call could not be connected' : e.status === 'no_answer' ? 'No answer' : 'Call ended'); } });
   };
   document.head.appendChild(s);
 }
@@ -788,17 +828,20 @@ function connect() {
 /* ---------- Team (managers/admins) ---------- */
 async function showTeam() {
   document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
-  const [st, us] = await Promise.all([api('/stats'), api('/users')]); if (st.error || us.error) return toast(st.error || us.error);
+  const [st, us, ds] = await Promise.all([api('/stats'), api('/users'), api('/departments')]); if (st.error || us.error) return toast(st.error || us.error);
+  const dopt = v => arr(ds).map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join(''), dname = k => (arr(ds).find(d => d.key === k) || { name: k }).name;
   const t = st.totals, admin = S.user.role === 'admin';
   el.innerHTML = `<header class="ch"><button class="back" id="tb">${ico('back')}</button><b>Team</b></header>
   <div class="stats"><div><b>${t.open}</b>open chats</div><div><b>${t.unassigned}</b>waiting for an agent</div><div><b>${t.with_bot}</b>with the bot</div><div><b>${t.new_24h}</b>new in the last 24 hours</div></div>
-  <div class="tbl"><table><tr><th>Name</th><th>Role</th><th>Team</th><th>Open chats</th><th>Status</th>${admin ? '<th></th>' : ''}</tr>
-  ${us.map(u => `<tr><td>${esc(u.name)}<br><small class="mute">${esc(u.email)}</small></td><td>${esc(u.role)}</td><td>${esc(u.team)}</td><td>${u.active_chats} / ${u.max_active_chats}</td>
-  <td><span class="dot${u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td><button class="ghost" data-u="${u.id}" data-a="${u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button> <button class="ghost" data-rp="${u.id}">Reset password</button></td>` : ''}</tr>`).join('')}</table></div>
+  <div class="tbl"><table><tr><th>Name</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>Rotation</th><th></th>' : ''}</tr>
+  ${us.map(u => `<tr><td>${esc(u.name)}<br><small class="mute">${esc(u.email)}</small></td><td>${esc(u.role)}</td><td>${admin ? `<select data-ut="${u.id}">${dopt(u.team)}</select>` : esc(dname(u.team))}</td><td>${u.active_chats} / ${u.max_active_chats}</td>
+  <td><span class="dot${u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''} style="width:auto"> gets new chats</label>` : ''}</td><td><button class="ghost" data-u="${u.id}" data-a="${u.is_active}">${u.is_active ? 'Deactivate' : 'Activate'}</button> <button class="ghost" data-rp="${u.id}">Reset password</button></td>` : ''}</tr>`).join('')}</table></div>
   ${admin ? `<form class="add" id="af"><h3>Add a team member</h3><input id="an" placeholder="Full name" required><input id="ae" type="email" placeholder="Email" required><input id="ap" type="password" minlength="8" placeholder="Password (8+ characters)" required>
-  <select id="at"><option>sales</option><option>recruitment</option><option>classes</option><option>general</option></select><select id="ar"><option value="agent">Agent</option><option value="manager">Manager</option></select><input id="am" type="number" min="1" value="150" title="Maximum open chats"><button class="btn">Add member</button></form>` : ''}`;
+  <select id="at">${dopt('general')}</select><select id="ar"><option value="agent">Agent</option><option value="manager">Manager</option></select><input id="am" type="number" min="1" value="150" title="Maximum open chats"><button class="btn">Add member</button></form>` : ''}`;
   $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
   el.querySelectorAll('[data-u]').forEach(b => b.onclick = async () => { await api('/users/' + b.dataset.u, 'PATCH', { is_active: b.dataset.a !== 'true' }); showTeam(); loadAgents(); });
+  el.querySelectorAll('[data-ut]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ut, 'PATCH', { team: x.value }); toast(r.error || 'Department changed'); });
+  el.querySelectorAll('[data-ur]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ur, 'PATCH', { in_rotation: x.checked }); toast(r.error || (x.checked ? 'Now gets new chats' : 'Will not get new chats automatically')); });
   el.querySelectorAll('[data-rp]').forEach(b => b.onclick = async () => { const nw = prompt('New password for this person (at least 8 characters)'); if (!nw) return; const r = await api('/users/' + b.dataset.rp, 'PATCH', { password: nw }); toast(r.error || 'Password reset. Tell them to change it after signing in.'); });
   if (admin) $('#af').onsubmit = async e => { e.preventDefault();
     const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
@@ -825,18 +868,19 @@ function showQr(filter) {
   S.qrList = S.quick.filter(q => !f || q.shortcut.toLowerCase().includes(f) || q.title.toLowerCase().includes(f));
   if (!S.qrList.length) { box.hidden = true; return; }
   box.hidden = false;
-  box.innerHTML = S.qrList.map((q, i) => `<button data-i="${i}"><b>/${esc(q.shortcut)}</b> ${esc(q.title)}<small>${esc(q.body)}</small></button>`).join('');
+  box.innerHTML = S.qrList.map((q, i) => `<button data-i="${i}"><b>/${esc(q.shortcut)}</b> ${esc(q.title)}${q.buttons ? ' 🔘' : ''}<small>${esc(q.body)}</small></button>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => pickQr(+b.dataset.i));
 }
-function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt'); t.value = fillVars(q.body); $('#qr').hidden = true; t.focus(); syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
+function renderBtnChips() { const b = $('#qbtns'); if (!b) return; b.hidden = !S.qrBtns; b.innerHTML = S.qrBtns ? `Buttons: ${S.qrBtns.map(x => `<i>${esc(x)}</i>`).join('')} <button class="ghost" id="qbx">Remove</button>` : ''; if ($('#qbx')) $('#qbx').onclick = () => { S.qrBtns = null; renderBtnChips(); }; }
+function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt'); t.value = fillVars(q.body); S.qrBtns = q.buttons && q.buttons.length ? q.buttons : null; renderBtnChips(); $('#qr').hidden = true; t.focus(); syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
 
 /* ---------- Settings (managers/admins) ---------- */
 async function loadWaStatus() {
   const r = await api('/whatsapp/status'), el = $('#ws'); if (!el) return;
   if (r.error) { el.textContent = r.error; return; }
   const ok = t => `<span style="color:var(--pine2)">✓ ${t}</span>`, bad = t => `<span style="color:var(--red)">✗ ${t}</span>`, adm = S.user && S.user.role === 'admin';
-  const acts = n => adm ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${n.is_default ? '' : `<button class="ghost" data-wd="${n.id}">Make default</button>`}<button class="ghost" data-wr="${n.id}">Rename</button><button class="ghost" data-wt="${n.id}">New token</button>${n.is_default ? '' : `<button class="ghost" data-wx="${n.id}">Remove</button>`}</div>` : '';
-  const head = n => `<b>${esc(n.label)}</b>${n.is_default ? ' <em class="tag">default</em>' : ''}`;
+  const acts = n => adm ? `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${n.is_default ? '' : `<button class="ghost" data-wd="${n.id}">Make default</button>`}<button class="ghost" data-wc="${n.id}" data-on="${n.calls_enabled ? 1 : 0}">${n.calls_enabled ? 'Turn calls off' : 'Turn calls on'}</button><button class="ghost" data-wr="${n.id}">Rename</button><button class="ghost" data-wt="${n.id}">New token</button>${n.is_default ? '' : `<button class="ghost" data-wx="${n.id}">Remove</button>`}</div>` : '';
+  const head = n => `<b>${esc(n.label)}</b>${n.is_default ? ' <em class="tag">default</em>' : ''}${n.calls_enabled ? ' <em class="tag">calls on</em>' : ''}`;
   if (r.dry_run) { el.innerHTML = '<p class="mute">Test mode: messages are not sent to WhatsApp.</p>' + (r.numbers || []).map(n => `<div class="hb" style="display:block">${head(n)} <span class="mute">${esc(n.display_phone || n.phone_number_id)}</span>${acts(n)}</div>`).join(''); bindWaActions(); return; }
   const warn = r.signature_check ? '' : '<p>' + bad('App secret is not set on the server, so fake webhook messages would not be rejected. Add WA_APP_SECRET.') + '</p>';
   el.innerHTML = warn + (r.numbers.length ? r.numbers.map(n => `<div class="hb" style="display:block;border-top:1px solid var(--line,#0001);padding-top:10px">${head(n)}<br>` + [
@@ -849,13 +893,15 @@ function bindWaActions() {
   const el = $('#ws'); if (!el) return;
   const run = async (p, m, b, msg) => { const r = await api(p, m, b); if (r.error) return toast(r.error); toast(msg); loadWaStatus(); };
   el.querySelectorAll('[data-wd]').forEach(x => x.onclick = () => run('/whatsapp/numbers/' + x.dataset.wd, 'PATCH', { make_default: true }, 'Default number changed'));
+  el.querySelectorAll('[data-wc]').forEach(x => x.onclick = () => { const on = x.dataset.on === '1'; if (!on && !confirm('Turn WhatsApp calling ON for this number? This also switches it on in Meta, so WhatsApp shows the call button for this number. If another system (such as Wati) uses the same number, check with them first.')) return; run('/whatsapp/numbers/' + x.dataset.wc, 'PATCH', { calls_enabled: !on }, on ? 'Calls turned off' : 'Calls turned on'); });
   el.querySelectorAll('[data-wr]').forEach(x => x.onclick = () => { const v = prompt('New name for this number'); if (v && v.trim()) run('/whatsapp/numbers/' + x.dataset.wr, 'PATCH', { label: v.trim() }, 'Renamed'); });
   el.querySelectorAll('[data-wt]').forEach(x => x.onclick = () => { const v = prompt('Paste the new access token for this number'); if (v && v.trim()) run('/whatsapp/numbers/' + x.dataset.wt, 'PATCH', { access_token: v.trim() }, 'Token saved'); });
   el.querySelectorAll('[data-wx]').forEach(x => x.onclick = () => { if (confirm('Remove this number from the app? (This does not delete it from Meta.)')) run('/whatsapp/numbers/' + x.dataset.wx, 'DELETE', null, 'Number removed'); });
 }
 async function showSettings() {
   document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
-  const [st, ql, lb] = await Promise.all([api('/settings'), api('/quick-replies'), api('/labels')]); if (st.error) return toast(st.error);
+  const [st, ql, lb, ds] = await Promise.all([api('/settings'), api('/quick-replies'), api('/labels'), api('/departments')]); if (st.error) return toast(st.error);
+  S.depts = arr(ds); const dsel = (id, v) => `<select id="${id}">${S.depts.map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
   S.quick = arr(ql); S.labels = arr(lb); fillLabelFilter();
   const b = st.bot, a = st.away, g = st.gate, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
@@ -868,6 +914,14 @@ async function showSettings() {
       <label><input type="checkbox" id="wn5" style="width:auto"> Make this the default number</label><button class="btn">Add number</button></form>` : '<p class="mute">Only an admin can add or remove numbers.</p>'}
     <details style="margin-top:12px"><summary class="mute">Find the account ID of the default number</summary>
     <label class="fld" style="margin-top:10px"><span>Account IDs to try, as shown in Meta (separate with commas)</span><input id="w1" placeholder="4572421779664202, 1472520688056945"></label><button class="btn" id="w2">Find and save my account ID</button></details></div>
+  ${S.user.role === 'admin' ? `<div class="panel" id="dp"><h3>Departments</h3><p class="mute">Team members belong to a department, and the bot sends each kind of client to one. Add, rename or remove them here.</p>
+    ${S.depts.map(d => `<div class="hb" style="grid-template-columns:1fr auto auto"><div><b>${esc(d.name)}</b> <small class="mute">${d.members} member(s)</small></div><button class="ghost" data-dr="${d.id}">Rename</button><button class="ghost" data-dd="${d.id}">Delete</button></div>`).join('')}
+    <form id="df" style="display:flex;gap:8px;margin-top:10px"><input id="d1" placeholder="New department, e.g. Support" required style="flex:1"><button class="btn">Add</button></form></div>
+  <form class="panel" id="asf"><h3>Chat assignment</h3><p class="mute">How new chats are given to agents. You can always assign a chat by hand from the chat's menu. Agents who are switched off "In rotation" on the Team screen, deactivated, or already full are skipped.</p>
+    <label class="fld"><span>Who gets the next chat</span><select id="as1"><option value="least"${st.assign.mode !== 'turns' ? ' selected' : ''}>The agent with the fewest open chats</option><option value="turns"${st.assign.mode === 'turns' ? ' selected' : ''}>Agents take turns</option></select></label>
+    <label class="fld"><span>Chats for each agent before the next agent's turn (1 to 20, used for "take turns")</span><input id="as2" type="number" min="1" max="20" value="${esc(st.assign.batch)}"></label>
+    <label class="fld"><span>Clients who tap "More info" go to</span>${dsel('rt1', st.routing.info)}</label><label class="fld"><span>Clients who tap "Join our team" go to</span>${dsel('rt2', st.routing.team)}</label><label class="fld"><span>Clients who tap "Join classes" go to</span>${dsel('rt3', st.routing.classes)}</label>
+    <button class="btn">Save assignment</button></form>` : ''}
   <form class="panel" id="bf"><h3>Bot messages</h3><p class="mute">What the bot says before a client is handed to an agent. Use {{name}} for the client's name.</p>
     ${fld('b1', 'Greeting', b.greet, 1)}${fld('b2', 'Button 1 (more info)', b.btnInfo)}${fld('b3', 'Button 2 (join the team)', b.btnTeam)}${fld('b4', 'Button 3 (classes)', b.btnClasses)}${fld('b5', 'Question asking for their name', b.askName, 1)}${fld('b6', 'Hand-off message', b.handoff, 1)}
     <p class="mute">Buttons can hold 20 characters at most.</p><button class="btn">Save bot messages</button></form>
@@ -880,12 +934,20 @@ async function showSettings() {
     ${fld('g2', 'Words, separated by commas', g.keywords.join(', '))}<p class="mute">Other senders wait in the Held tab. A manager can start the bot for them or mark them as not a client.</p><button class="btn">Save</button></form>
   <div class="panel"><h3>Quick replies</h3><p class="mute">Agents type / in a chat to use them. {{name}} becomes the client's first name and {{agent}} the agent's name.</p>
     ${S.quick.map(q => row(`<span><b>/${esc(q.shortcut)}</b> ${esc(q.title)}<br><small class="mute">${esc(q.body)}</small></span>`, `data-dq="${q.id}"`)).join('') || '<p class="mute">None yet.</p>'}
-    <form id="qf" style="display:grid;gap:8px;margin-top:10px"><input id="q1" placeholder="Shortcut, e.g. fees" required><input id="q2" placeholder="Title, e.g. Course fees" required><textarea id="q3" rows="3" placeholder="Message text" required></textarea><button class="btn">Add quick reply</button></form></div>
+    <form id="qf" style="display:grid;gap:8px;margin-top:10px"><input id="q1" placeholder="Shortcut, e.g. fees" required><input id="q2" placeholder="Title, e.g. Course fees" required><textarea id="q3" rows="3" placeholder="Message text" required></textarea><input id="q4" placeholder="Buttons (optional, up to 3, separated by commas, e.g. Yes, No)"><button class="btn">Add quick reply</button></form></div>
   <div class="panel"><h3>Labels</h3>${S.labels.map(l => row(`<span><i style="display:inline-block;width:12px;height:12px;border-radius:6px;background:${esc(l.color)};margin-right:8px"></i>${esc(l.name)}</span>`, `data-dl="${l.id}"`)).join('') || '<p class="mute">None yet.</p>'}
     <form id="lf2" style="display:flex;gap:8px;margin-top:10px"><input id="l1" placeholder="Label name, e.g. Hot lead" required><input type="color" id="l2" value="#0e5a4a" style="width:60px;padding:2px"><button class="btn">Add</button></form></div>`;
   $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
   $('#bf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/bot', 'PUT', { greet: $('#b1').value, btnInfo: $('#b2').value, btnTeam: $('#b3').value, btnClasses: $('#b4').value, askName: $('#b5').value, handoff: $('#b6').value }); toast(r.error || 'Bot messages saved'); };
   $('#af').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/away', 'PUT', { enabled: $('#a0').checked, message: $('#a1').value, start: $('#a2').value, end: $('#a3').value, days: [...document.querySelectorAll('.ad:checked')].map(x => +x.value) }); toast(r.error || 'Away message saved'); };
+  if ($('#df')) {
+    $('#df').onsubmit = async e => { e.preventDefault(); const r = await api('/departments', 'POST', { name: $('#d1').value }); if (r.error) return toast(r.error); toast('Department added'); showSettings(); };
+    el.querySelectorAll('[data-dr]').forEach(x => x.onclick = async () => { const v = prompt('New name for this department'); if (!v || !v.trim()) return; const r = await api('/departments/' + x.dataset.dr, 'PATCH', { name: v.trim() }); toast(r.error || 'Renamed'); showSettings(); });
+    el.querySelectorAll('[data-dd]').forEach(x => x.onclick = async () => { if (!confirm('Delete this department?')) return; const r = await api('/departments/' + x.dataset.dd, 'DELETE'); toast(r.error || 'Department deleted'); showSettings(); });
+    $('#asf').onsubmit = async e => { e.preventDefault();
+      const a = await api('/settings/assign', 'PUT', { mode: $('#as1').value, batch: +$('#as2').value }); if (a.error) return toast(a.error);
+      const r = await api('/settings/routing', 'PUT', { info: $('#rt1').value, team: $('#rt2').value, classes: $('#rt3').value }); toast(r.error || 'Assignment saved'); };
+  }
   loadWaStatus();
   if ($('#wnf')) $('#wnf').onsubmit = async e => { e.preventDefault();
     const r = await api('/whatsapp/numbers', 'POST', { label: $('#wn1').value, phone_number_id: $('#wn2').value, access_token: $('#wn3').value, waba_id: $('#wn4').value, make_default: $('#wn5').checked });
@@ -895,7 +957,7 @@ async function showSettings() {
     if (r.error) return toast(r.error); toast(r.saved ? 'Found it and saved it' : 'None of these IDs contains your number'); $('#ws').innerHTML += '<br>' + r.results.map(x => `${esc(x.id)}: ${x.error ? esc(x.error) : x.has_ours ? 'this one has your number' : 'numbers: ' + esc(x.numbers.join(', ') || 'none')}`).join('<br>'); if (r.saved) loadWaStatus(); };
   $('#g1').value = g.mode;
   $('#gf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/gate', 'PUT', { mode: $('#g1').value, keywords: $('#g2').value }); toast(r.error || 'Saved'); };
-  $('#qf').onsubmit = async e => { e.preventDefault(); const r = await api('/quick-replies', 'POST', { shortcut: $('#q1').value.trim().replace(/^\//, ''), title: $('#q2').value, body: $('#q3').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That shortcut already exists' : r.error); showSettings(); };
+  $('#qf').onsubmit = async e => { e.preventDefault(); const r = await api('/quick-replies', 'POST', { shortcut: $('#q1').value.trim().replace(/^\//, ''), title: $('#q2').value, body: $('#q3').value, buttons: $('#q4').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That shortcut already exists' : r.error); showSettings(); };
   $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That label already exists' : r.error); showSettings(); };
   el.querySelectorAll('[data-dq]').forEach(x => x.onclick = async () => { await api('/quick-replies/' + x.dataset.dq, 'DELETE'); showSettings(); });
   el.querySelectorAll('[data-dl]').forEach(x => x.onclick = async () => { await api('/labels/' + x.dataset.dl, 'DELETE'); showSettings(); });
@@ -1033,7 +1095,102 @@ async function showDashboard(days = 14) {
   $('#dr').onchange = e => showDashboard(+e.target.value);
 }
 
+/* ---------- Calls (WhatsApp voice calls through the browser) ---------- */
+const CALL = { active: null, ring: new Map(), tone: null, timer: null };
+function callAudio() { let a = $('#callaudio'); if (!a) { a = document.createElement('audio'); a.id = 'callaudio'; a.autoplay = true; a.setAttribute('playsinline', ''); document.body.appendChild(a); } return a; }
+function ringStop() { if (CALL.tone) { clearInterval(CALL.tone); CALL.tone = null; } }
+function ringStart() {
+  ringStop();
+  const beep = () => { try { const c = CALL.ctx || (CALL.ctx = new (window.AudioContext || window.webkitAudioContext)()), o = c.createOscillator(), g = c.createGain(); o.frequency.value = 520; g.gain.value = .15; o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + .35); } catch {} };
+  beep(); CALL.tone = setInterval(beep, 1500);
+}
+const iceDone = pc => new Promise(res => { if (pc.iceGatheringState === 'complete') return res(); const t = setTimeout(res, 4000); pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); res(); } }); });
+function newPc() {
+  const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  pc.ontrack = e => { const a = callAudio(); a.srcObject = e.streams[0]; a.play().catch(() => {}); };
+  pc.onconnectionstatechange = () => { if (CALL.active && CALL.active.pc === pc && ['failed', 'closed'].includes(pc.connectionState)) { toast('The call connection was lost'); hangUp(); } };
+  return pc;
+}
+function endLocal() {
+  const a = CALL.active; CALL.active = null;
+  if (a) { try { a.stream.getTracks().forEach(t => t.stop()); } catch {} try { a.pc.close(); } catch {} }
+  const au = $('#callaudio'); if (au) au.srcObject = null; drawBar();
+}
+function hangUp() { const a = CALL.active; if (!a) return; if (a.id) api('/calls/' + a.id + '/hangup', 'POST'); endLocal(); }
+function callConnected() { if (CALL.active) { CALL.active.t0 = Date.now(); drawBar(); } }
+function drawBar() {
+  let bar = $('#callbar'), a = CALL.active;
+  if (!a) { if (bar) bar.remove(); clearInterval(CALL.timer); return; }
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'callbar'; bar.className = 'callbar'; document.body.appendChild(bar);
+    bar.innerHTML = `${ico('phone', 18)}<div><b id="cbn"></b><br><small id="cbs"></small></div><button id="cbm">Mute</button><button class="end" id="cbe">End</button>`;
+    $('#cbm').onclick = () => { const cur = CALL.active; if (!cur) return; const on = cur.stream.getAudioTracks().some(t => t.enabled); cur.stream.getAudioTracks().forEach(t => t.enabled = !on); $('#cbm').textContent = on ? 'Unmute' : 'Mute'; };
+    $('#cbe').onclick = hangUp;
+  }
+  $('#cbn').textContent = a.name;
+  const tick = () => { const c = CALL.active; if (!c || !$('#cbs')) return; const sec = c.t0 ? Math.floor((Date.now() - c.t0) / 1000) : null; $('#cbs').textContent = sec === null ? c.status : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; };
+  clearInterval(CALL.timer); CALL.timer = setInterval(tick, 500); tick();
+}
+function drawRing() {
+  let box = $('#ringbox'); const e = [...CALL.ring.values()][0];
+  if (!e) { if (box) box.remove(); ringStop(); return; }
+  if (!box) { box = document.createElement('div'); box.id = 'ringbox'; box.className = 'ringbox'; document.body.appendChild(box); }
+  const mine = !e.assignedTo || e.assignedTo === S.user.id;
+  box.innerHTML = `<div><small>Incoming WhatsApp call${e.numberLabel ? ' · ' + esc(e.numberLabel) : ''}</small><br><b>${esc(e.name)}</b> <small>${esc(e.phone)}</small></div><div class="acts"><button class="no" id="rno">${mine ? 'Decline' : 'Dismiss'}</button><button class="ok" id="rok">Answer</button></div>`;
+  $('#rok').onclick = () => answerCall(e);
+  $('#rno').onclick = () => { CALL.ring.delete(e.id); drawRing(); if (mine) api('/calls/' + e.id + '/reject', 'POST'); };
+}
+function showRing(e) {
+  if (CALL.active) return;
+  CALL.ring.set(e.id, e); drawRing(); ringStart();
+  if (document.hidden) alertUser('Incoming WhatsApp call', e.name);
+  setTimeout(() => { if (CALL.ring.delete(e.id)) drawRing(); }, 60000);
+}
+async function answerCall(e) {
+  if (CALL.active) return toast('You are already on a call');
+  CALL.ring.delete(e.id); drawRing();
+  if (!navigator.mediaDevices || !window.RTCPeerConnection) return toast('Calls need a secure (https) page and a microphone');
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return toast('Allow microphone access to take calls'); }
+  const d = await api('/calls/' + e.id);
+  if (d.error || !d.sdp_offer) { stream.getTracks().forEach(t => t.stop()); return toast(d.error || 'This call has already ended'); }
+  const pc = newPc(); CALL.active = { id: e.id, dir: 'in', name: e.name, pc, stream, status: 'Connecting…', t0: null }; drawBar();
+  try {
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    await pc.setRemoteDescription({ type: 'offer', sdp: d.sdp_offer });
+    await pc.setLocalDescription(await pc.createAnswer()); await iceDone(pc);
+    const r = await api('/calls/' + e.id + '/accept', 'POST', { sdp: pc.localDescription.sdp });
+    if (r.error) throw new Error(r.error);
+    callConnected();
+  } catch (err) { toast(err.message || 'Could not connect the call'); endLocal(); }
+}
+async function startCall() {
+  const c = S.conv; if (!c) return;
+  if (CALL.active) return toast('You are already on a call');
+  if (!navigator.mediaDevices || !window.RTCPeerConnection) return toast('Calls need a secure (https) page and a microphone');
+  let stream; try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { return toast('Allow microphone access to make calls'); }
+  const pc = newPc(); CALL.active = { id: null, dir: 'out', name: c.contact_name || '+' + c.wa_id, pc, stream, status: 'Calling…', t0: null }; drawBar();
+  try {
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    await pc.setLocalDescription(await pc.createOffer()); await iceDone(pc);
+    const r = await api(`/conversations/${c.id}/call`, 'POST', { sdp: pc.localDescription.sdp });
+    if (r.error) {
+      endLocal();
+      if (r.code === 'NO_PERMISSION') { if (confirm('This client has not allowed calls yet. Send them a request on WhatsApp? When they tap Allow, press the call button again.')) askCallPermission(c.id); }
+      else toast(r.error);
+      return;
+    }
+    if (CALL.active) CALL.active.id = CALL.active.id || r.id;
+  } catch (err) { toast(err.message || 'Could not start the call'); endLocal(); }
+}
+async function askCallPermission(id) {
+  const r = await api(`/conversations/${id}/call-permission`, 'POST');
+  if (r.error) return toast(r.error);
+  toast('Request sent. When the client taps Allow, press the call button again.'); if (S.active === id) addMsg(r);
+}
+
 /* ---------- Start ---------- */
 applyTheme();
-try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; boot(); } else showLogin(); } catch { showLogin(); }
+const resetTok = new URLSearchParams(location.search).get('reset');
+if (resetTok) showReset(resetTok);
+else try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; boot(); } else showLogin(); } catch { showLogin(); }
 </script></body></html>

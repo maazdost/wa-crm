@@ -38,6 +38,26 @@ function client(numId) {
     return data;
   }
 
+  // Calling API (same number): connect / pre_accept / accept / reject / terminate
+  async function callAction(payload) {
+    if (DRY) { console.log('[WA dry-run] call', JSON.stringify({ ...payload, session: payload.session ? { ...payload.session, sdp: '(sdp)' } : undefined })); return { success: true, calls: [{ id: 'dry_call_' + crypto.randomUUID() }] }; }
+    const n = await N();
+    const res = await fetch(`${GRAPH()}/${n.phone_number_id}/calls`, { method: 'POST', headers: { ...AUTH(n), 'Content-Type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', ...payload }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const err = new Error(data?.error?.error_data?.details || data?.error?.message || 'Call request failed'); err.code = data?.error?.code; throw err; }
+    return data;
+  }
+  // Turns calling on or off for this number in Meta (the call button inside WhatsApp follows this).
+  async function setCalling(enabled) {
+    if (DRY) return { success: true };
+    const n = await N();
+    const res = await fetch(`${GRAPH()}/${n.phone_number_id}/settings`, { method: 'POST', headers: { ...AUTH(n), 'Content-Type': 'application/json' }, body: JSON.stringify({ calling: { status: enabled ? 'ENABLED' : 'DISABLED' } }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d?.error?.error_user_msg || d?.error?.message || 'Meta refused the calling setting');
+    return d;
+  }
+  const sendCallPermission = (to, text) => call({ to, type: 'interactive', interactive: { type: 'call_permission_request', action: { name: 'call_permission_request' }, body: { text } } });
+
   const sendText = (to, body, ctx) => call({ to, ...withCtx(ctx), type: 'text', text: { body, preview_url: true } });
   const sendButtons = (to, body, buttons) => call({
     to, type: 'interactive',
@@ -105,7 +125,7 @@ function client(numId) {
   // Marks the client's message as read and shows "typing..." on their phone until we reply (or 25 seconds pass).
   const typing = (waMessageId) => call({ status: 'read', message_id: waMessageId, typing_indicator: { type: 'text' } });
 
-  return { graph, wabaId, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead };
+  return { graph, wabaId, callAction, setCalling, sendCallPermission, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead };
 }
 
 function verifySignature(rawBody, header) {

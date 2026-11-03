@@ -44,12 +44,17 @@ router.patch('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
   const id = Number(req.params.id);
   const cur = (await query('SELECT id FROM wa_numbers WHERE id=$1', [id])).rows[0];
   if (!cur) return res.status(404).json({ error: 'Number not found' });
-  const { label, access_token, clear_token, waba_id, make_default } = req.body;
+  const { label, access_token, clear_token, waba_id, make_default, calls_enabled } = req.body;
   if (label !== undefined) { if (!String(label).trim()) return res.status(400).json({ error: 'The name cannot be empty' }); await query('UPDATE wa_numbers SET label=$2 WHERE id=$1', [id, String(label).trim().slice(0, 40)]); }
   if (waba_id !== undefined) await query('UPDATE wa_numbers SET waba_id=$2 WHERE id=$1', [id, sanitizeId(waba_id) || null]);
   if (clear_token) await query('UPDATE wa_numbers SET access_token=NULL WHERE id=$1', [id]);
   else if (access_token && String(access_token).trim()) await query('UPDATE wa_numbers SET access_token=$2 WHERE id=$1', [id, numbers.encrypt(String(access_token).trim())]);
   if (make_default) await numbers.makeDefault(id);
+  if (calls_enabled !== undefined) { // switch calling on/off in Meta first, then remember it here
+    const want = !!calls_enabled;
+    try { await wa.forNumber(id).setCalling(want); } catch (e) { return res.status(502).json({ error: 'Meta did not change calling: ' + e.message }); }
+    await query('UPDATE wa_numbers SET calls_enabled=$2 WHERE id=$1', [id, want]);
+  }
   res.json({ ok: true });
 }));
 
@@ -66,7 +71,7 @@ router.delete('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
 
 // ---- WhatsApp connection check (one result per number) ----
 async function checkNumber(n) {
-  const out = { id: n.id, label: n.label, phone_number_id: n.phone_number_id, is_default: n.is_default, waba_id: n.waba_id || process.env.WA_WABA_ID || null };
+  const out = { id: n.id, label: n.label, phone_number_id: n.phone_number_id, is_default: n.is_default, calls_enabled: n.calls_enabled, waba_id: n.waba_id || process.env.WA_WABA_ID || null };
   let w; try { w = wa.forNumber(n.id); } catch (e) { return { ...out, token_ok: false, token_error: e.message }; }
   try { out.number = await w.graph(`${n.phone_number_id}?fields=display_phone_number,verified_name,quality_rating`); out.token_ok = true;
         if (out.number.display_phone_number && out.number.display_phone_number !== n.display_phone) await query('UPDATE wa_numbers SET display_phone=$2, verified_name=$3 WHERE id=$1', [n.id, out.number.display_phone_number, out.number.verified_name || null]); }

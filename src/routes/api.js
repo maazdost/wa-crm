@@ -37,6 +37,50 @@ router.post('/auth/login', wrap(async (req, res) => {
   res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team } });
 }));
 
+// ---- Forgot / reset password (link sent by email, valid for 1 hour, single use) ----
+const crypto = require('crypto');
+const mail = require('../mail');
+const sha = (t) => crypto.createHash('sha256').update(String(t)).digest('hex');
+const resetHits = new Map();
+const allow = (key, max, windowMs) => {
+  const now = Date.now(), a = (resetHits.get(key) || []).filter(t => now - t < windowMs);
+  if (a.length >= max) { resetHits.set(key, a); return false; }
+  a.push(now); resetHits.set(key, a); return true;
+};
+router.post('/auth/forgot', wrap(async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  // Same answer whether or not the email exists, sent before any work, so nobody can probe which emails have accounts.
+  res.json({ ok: true, message: 'If that email belongs to an account, a reset link is on its way. It works for 1 hour.' });
+  if (!email || !allow('ip|' + req.ip, 20, 3600e3) || !allow('em|' + email, 3, 3600e3)) return;
+  try {
+    const u = (await query('SELECT id, name, email FROM users WHERE email=$1 AND is_active', [email])).rows[0];
+    if (!u) return;
+    const base = String(process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+    if (!base) throw new Error('APP_URL is not set, so the reset link cannot be built');
+    const raw = crypto.randomBytes(32).toString('hex');
+    await query('UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [u.id]);
+    await query(`INSERT INTO password_resets(user_id, token_hash, expires_at) VALUES($1,$2, now() + interval '1 hour')`, [u.id, sha(raw)]);
+    const link = `${base}/?reset=${raw}`;
+    await mail.send({
+      to: u.email, subject: 'Reset your Team Inbox password',
+      text: `Hi ${u.name},\n\nUse this link to choose a new password. It works once and expires in 1 hour:\n${link}\n\nIf you did not ask for this, ignore this email. Your password stays the same.`,
+      html: `<p>Hi ${String(u.name).replace(/[<>&]/g, '')},</p><p>Use the button below to choose a new password. The link works once and expires in 1 hour.</p><p><a href="${link}" style="background:#00a884;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Choose a new password</a></p><p style="color:#667781;font-size:13px">If the button does not work, paste this into your browser:<br>${link}</p><p style="color:#667781;font-size:13px">If you did not ask for this, ignore this email. Your password stays the same.</p>`
+    });
+  } catch (e) { console.error('password reset email:', e.message); }
+}));
+router.post('/auth/reset', wrap(async (req, res) => {
+  if (!allow('rs|' + req.ip, 30, 3600e3)) return res.status(429).json({ error: 'Too many attempts. Try again later.' });
+  const { token, password } = req.body;
+  if (!password || String(password).length < 8) return res.status(400).json({ error: 'The new password must be at least 8 characters' });
+  const r = (await query(
+    `SELECT pr.user_id FROM password_resets pr JOIN users u ON u.id=pr.user_id AND u.is_active
+      WHERE pr.token_hash=$1 AND pr.used_at IS NULL AND pr.expires_at > now()`, [sha(token || '')])).rows[0];
+  if (!r) return res.status(400).json({ error: 'This link is invalid or has expired. Ask for a new one.' });
+  await query('UPDATE users SET password_hash=$2 WHERE id=$1', [r.user_id, await bcrypt.hash(String(password), 10)]);
+  await query('UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [r.user_id]);
+  res.json({ ok: true });
+}));
+
 router.post('/me/password', required(), wrap(async (req, res) => {
   const { current, password } = req.body;
   if (!password || String(password).length < 8) return res.status(400).json({ error: 'The new password must be at least 8 characters' });
@@ -52,7 +96,7 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, COALESCE((SELECT n.calls_enabled FROM wa_numbers n WHERE n.id = COALESCE(c.wa_number_id, (SELECT id FROM wa_numbers WHERE is_default LIMIT 1))), false) AS calls_enabled, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
     [req.params.id])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
@@ -136,8 +180,10 @@ router.post('/conversations/:id/messages', required(), wrap(async (req, res) => 
     return res.status(409).json({ error: 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', code: 'WINDOW_CLOSED' });
   try {
     const ctx = await replyCtx(c.id, req.body.reply_to);
-    const r = await wa.forConversation(c).sendText(c.wa_id, text, ctx);
-    const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, body: text, waMessageId: r.messages?.[0]?.id, replyTo: ctx });
+    const btns = (Array.isArray(req.body.buttons) ? req.body.buttons : []).map(x => String(x).trim().slice(0, 20)).filter(Boolean).slice(0, 3);
+    const w = wa.forConversation(c);
+    const r = btns.length ? await w.sendButtons(c.wa_id, text.slice(0, 1024), btns.map((t, i) => ({ id: 'qr_' + (i + 1), title: t }))) : await w.sendText(c.wa_id, text, ctx);
+    const m = await saveOutbound(c, { senderType: 'agent', senderId: req.user.id, body: btns.length ? `${text}\n\n🔘 ${btns.join('  ·  ')}` : text, waMessageId: r.messages?.[0]?.id, replyTo: btns.length ? null : ctx });
     await query('UPDATE conversations SET unread_count=0, escalated_at=NULL WHERE id=$1', [c.id]);
     res.json(m);
   } catch (e) { res.status(502).json({ error: e.message }); }
@@ -261,10 +307,33 @@ router.post('/devices/remove', required(), wrap(async (req, res) => {
   await query('DELETE FROM devices WHERE token=$1 AND user_id=$2', [req.body.token, req.user.id]); res.json({ ok: true });
 }));
 
+// ---- Departments (admin adds, renames and removes them) ----
+router.get('/departments', required(), wrap(async (req, res) => res.json((await query(
+  `SELECT d.id, d.key, d.name, (SELECT COUNT(*) FROM users u WHERE u.team=d.key)::int AS members FROM departments d ORDER BY d.name`)).rows)));
+router.post('/departments', required('admin'), wrap(async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 40); if (!name) return res.status(400).json({ error: 'Give the department a name' });
+  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30); if (!key) return res.status(400).json({ error: 'Use letters or numbers in the name' });
+  if ((await query('SELECT 1 FROM departments WHERE key=$1 OR lower(name)=lower($2)', [key, name])).rows[0]) return res.status(409).json({ error: 'A department with this name already exists' });
+  res.json((await query('INSERT INTO departments(key,name) VALUES($1,$2) RETURNING *', [key, name])).rows[0]);
+}));
+router.patch('/departments/:id', required('admin'), wrap(async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 40); if (!name) return res.status(400).json({ error: 'Give the department a name' });
+  await query('UPDATE departments SET name=$2 WHERE id=$1', [req.params.id, name]); res.json({ ok: true });
+}));
+router.delete('/departments/:id', required('admin'), wrap(async (req, res) => {
+  const d = (await query('SELECT * FROM departments WHERE id=$1', [req.params.id])).rows[0]; if (!d) return res.status(404).json({ error: 'Not found' });
+  if (d.key === 'general') return res.status(409).json({ error: 'The General department cannot be removed' });
+  const used = (await query(`SELECT (SELECT COUNT(*) FROM users WHERE team=$1)::int AS u, (SELECT COUNT(*) FROM conversations WHERE team=$1 AND status IN ('open','bot'))::int AS c`, [d.key])).rows[0];
+  const routing = await settings.get('routing');
+  if (Object.values(routing).includes(d.key)) return res.status(409).json({ error: 'The bot sends clients to this department. Pick another one in "Chat assignment" first.' });
+  if (used.u || used.c) return res.status(409).json({ error: `${used.u} team member(s) and ${used.c} open chat(s) use this department. Move them first.` });
+  await query('DELETE FROM departments WHERE id=$1', [d.id]); res.json({ ok: true });
+}));
+
 // ---- Admin: users, templates, stats ----
 router.get('/users', required('admin', 'manager'), wrap(async (req, res) => {
   const { rows } = await query(
-    `SELECT u.id,u.name,u.email,u.role,u.team,u.is_active,u.is_online,u.max_active_chats,
+    `SELECT u.id,u.name,u.email,u.role,u.team,u.is_active,u.is_online,u.in_rotation,u.max_active_chats,
             (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active_chats
        FROM users u ORDER BY u.id`);
   res.json(rows);
@@ -278,7 +347,8 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
   res.json(rows[0]);
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
-  const f = ['name', 'role', 'team', 'is_active', 'max_active_chats'].filter(k => k in req.body);
+  const f = ['name', 'role', 'team', 'is_active', 'max_active_chats', 'in_rotation'].filter(k => k in req.body);
+  if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1', [req.body.team])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
   if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [req.params.id, await bcrypt.hash(req.body.password, 10)]); }
   if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')} WHERE id=$1`, [req.params.id, ...f.map(k => req.body[k])]);
@@ -315,7 +385,7 @@ router.post('/conversations/:id/release', required('admin', 'manager'), wrap(asy
 }));
 
 // ---- Settings: bot wording and away message ----
-router.get('/settings', required('admin', 'manager'), wrap(async (req, res) => res.json({ bot: await settings.get('bot'), away: await settings.get('away'), gate: await settings.get('gate') })));
+router.get('/settings', required('admin', 'manager'), wrap(async (req, res) => res.json({ bot: await settings.get('bot'), away: await settings.get('away'), gate: await settings.get('gate'), assign: await settings.get('assign'), routing: await settings.get('routing') })));
 router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res) => {
   const k = req.params.key, b = req.body || {};
   if (k === 'bot') {
@@ -331,17 +401,26 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
   } else if (k === 'gate') {
     const kw = (Array.isArray(b.keywords) ? b.keywords : String(b.keywords || '').split(',')).map(x => String(x).trim().toLowerCase()).filter(Boolean).slice(0, 50);
     await settings.set('gate', { mode: b.mode === 'keywords' ? 'keywords' : 'all', keywords: kw });
+  } else if (k === 'assign') {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
+    await settings.set('assign', { mode: b.mode === 'turns' ? 'turns' : 'least', batch: Math.min(20, Math.max(1, Math.round(Number(b.batch)) || 1)) });
+  } else if (k === 'routing') {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
+    const keys = new Set((await query('SELECT key FROM departments')).rows.map(r => r.key)), v = {};
+    for (const f of ['info', 'team', 'classes']) { if (b[f] !== undefined) { if (!keys.has(b[f])) return res.status(400).json({ error: 'Unknown department' }); v[f] = b[f]; } }
+    await settings.set('routing', { ...(await settings.get('routing')), ...v });
   } else return res.status(404).json({ error: 'unknown setting' });
   res.json({ ok: true });
 }));
 
 // ---- Quick replies ----
-router.get('/quick-replies', required(), wrap(async (req, res) => res.json((await query('SELECT id,shortcut,title,body FROM quick_replies ORDER BY shortcut')).rows)));
+router.get('/quick-replies', required(), wrap(async (req, res) => res.json((await query('SELECT id,shortcut,title,body,buttons FROM quick_replies ORDER BY shortcut')).rows)));
 router.post('/quick-replies', required('admin', 'manager'), wrap(async (req, res) => {
   const { shortcut, title, body } = req.body;
   if (!shortcut || !title || !body) return res.status(400).json({ error: 'Shortcut, title and text are required' });
-  res.json((await query('INSERT INTO quick_replies(shortcut,title,body) VALUES($1,$2,$3) RETURNING *',
-    [String(shortcut).trim().replace(/^\/+/, '').slice(0, 30).replace(/\s+/g, '-'), String(title).slice(0, 80), String(body).slice(0, 1000)])).rows[0]);
+  const btns = (Array.isArray(req.body.buttons) ? req.body.buttons : String(req.body.buttons || '').split(',')).map(x => String(x).trim().slice(0, 20)).filter(Boolean).slice(0, 3);
+  res.json((await query('INSERT INTO quick_replies(shortcut,title,body,buttons) VALUES($1,$2,$3,$4) RETURNING *',
+    [String(shortcut).trim().replace(/^\/+/, '').slice(0, 30).replace(/\s+/g, '-'), String(title).slice(0, 80), String(body).slice(0, 1000), btns.length ? JSON.stringify(btns) : null])).rows[0]);
 }));
 router.delete('/quick-replies/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM quick_replies WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
 

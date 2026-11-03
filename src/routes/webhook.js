@@ -10,6 +10,7 @@ const push = require('../push');
 const { maybeAway } = require('../away');
 const settings = require('../settings');
 const numbers = require('../numbers');
+const calls = require('../calls');
 const router = express.Router();
 
 // Meta webhook verification
@@ -31,6 +32,10 @@ const serial = (key, fn) => {
 function extract(m) {
   const base = { waMessageId: m.id, type: m.type, referral: !!m.referral, replyTo: (m.type !== 'interactive' && m.type !== 'button' && m.context) ? m.context.id : undefined };
   if (m.type === 'text') return { ...base, body: m.text.body };
+  if (m.type === 'interactive' && m.interactive.type === 'call_permission_reply') {
+    const r = m.interactive.call_permission_reply || {};
+    return { ...base, body: r.response === 'accept' ? '✅ Client allowed calls' : '🚫 Client declined calls', callPermission: true };
+  }
   if (m.type === 'interactive') {
     const r = m.interactive.button_reply || m.interactive.list_reply || {};
     return { ...base, body: r.title, buttonId: r.id };
@@ -58,6 +63,7 @@ async function handleMessage(m, profileName, numId) {
   query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
   if (msg.mediaId) mediaStore.ensure(msg.mediaId, w).catch(e => console.error('media download', e.message));
+  if (msg.callPermission) { rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message }); return; } // answer to "May we call you?": not a chat message for the bot
 
   // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)
   const word = (msg.type === 'text' ? (msg.body || '') : '').trim().toLowerCase();
@@ -123,7 +129,16 @@ router.post('/', (req, res) => {
         return handleMessage(m, name, num && num.id);
       });
     }
+    for (const ev of v.calls || []) {
+      const pid = v.metadata?.phone_number_id;
+      (async () => {
+        const num = pid ? await numbers.byPhoneId(pid) : null;
+        if (pid && !num) return console.warn(`[webhook] call for phone number id ${pid}, which is not added in Settings > WhatsApp numbers; ignored`);
+        await calls.onEvent(ev, v, num && num.id);
+      })().catch(e => console.error('call event', e.message));
+    }
     for (const s of v.statuses || []) {
+      if (s.type === 'call') { calls.onStatus(s).catch(e => console.error('call status', e.message)); continue; }
       query(`UPDATE broadcast_recipients SET status=$2, error=COALESCE($3, error) WHERE wa_message_id=$1 AND status <> 'read' AND NOT (status='delivered' AND $2='sent')`,
         [s.id, s.status, s.errors?.[0]?.title || null]).catch(() => {});
       query(`UPDATE messages SET status=$2, error=$3 WHERE wa_message_id=$1
