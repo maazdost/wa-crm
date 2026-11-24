@@ -148,7 +148,7 @@ async function loadConversation(req, res) {
 router.get('/conversations/counts', required(), wrap(async (req, res) => {
   const me = Number(req.user.id), own = (isAgent(req.user) ? `AND c.assigned_to=${me}` : '') + ` AND c.company_id=${Number(C())}`;
   const r = (await query(`SELECT
-      COUNT(*) FILTER (WHERE c.status='open' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND (c.unread_count>0 OR COALESCE(f.marked_unread,false)))::int AS unread,
+      COUNT(*) FILTER (WHERE (c.status='open' OR (c.status='bot' AND c.bot_step='done' AND c.assigned_to IS NULL)) AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND (c.unread_count>0 OR COALESCE(f.marked_unread,false)))::int AS unread,
       COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND COALESCE(f.favorite,false))::int AS fav,
       COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND COALESCE(f.archived,false))::int AS archived,
       COUNT(*) FILTER (WHERE c.assigned_to IS NULL AND c.bot_step='done')::int AS unassigned,
@@ -164,7 +164,9 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (isAgent(req.user)) { p.push(req.user.id); where.push(`c.assigned_to=$${p.length}`); }
   else if (assigned_to) { p.push(assigned_to); where.push(`c.assigned_to=$${p.length}`); }
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
-  if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
+  // "All" also shows clients who finished the bot but got no agent (for example when the company has no agents yet), so nobody is missed.
+  if (status === 'open') where.push("(c.status='open' OR (c.status='bot' AND c.bot_step='done' AND c.assigned_to IS NULL))");
+  else if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
   else if (!unassigned) where.push(`c.status <> 'bot'`);
   where.push(req.query.held === 'true' ? "c.bot_step='held'" : "c.bot_step <> 'held'");
   where.push(view === 'archived' ? 'COALESCE(f.archived,false)' : 'NOT COALESCE(f.archived,false)');

@@ -98,5 +98,11 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'active' } }, A.token);
   check('resumed company works again', (await j('/api/conversations', {}, Bt)).status === 200);
 
+  // A company with no agents: a client who finished the bot must show under All, not only under Unassigned
+  await inbound(sharedPhone, 'more info please', pid); await sleep(300); await inbound(sharedPhone, 'Bilal', pid); await sleep(600);
+  const allB = (await j('/api/conversations?status=open', {}, Bt)).data, unB = (await j('/api/conversations?unassigned=true', {}, Bt)).data;
+  check('a waiting chat with no agent shows under All and Unread', unB.length === 1 && allB.length === 1 && allB[0].id === unB[0].id
+    && (await j('/api/conversations?status=open&view=unread', {}, Bt)).data.length === 1 && (await j('/api/conversations/counts', {}, Bt)).data.unread === 1);
+
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
 })();
