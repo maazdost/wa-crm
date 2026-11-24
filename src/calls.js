@@ -34,7 +34,7 @@ async function incoming(ev, value, numId) {
   const label = (await query('SELECT label FROM wa_numbers WHERE id=$1', [nid])).rows[0];
   rt.toConversation(conv, 'call:incoming', { id: c.id, conversationId: conv.id, assignedTo: conv.assigned_to || null, name: contact.profile_name || contact.name || '+' + waId, phone: '+' + waId, numberLabel: label && label.label });
   const targets = conv.assigned_to ? [conv.assigned_to] : (await query(`SELECT id FROM users WHERE is_active AND role <> 'agent' AND company_id=$1`, [cid])).rows.map(r => r.id);
-  targets.forEach(id => push.notifyUser(id, 'Incoming WhatsApp call', contact.profile_name || contact.name || '+' + waId, { conversationId: conv.id }));
+  targets.forEach(id => push.notifyUser(id, 'Incoming WhatsApp call', contact.profile_name || contact.name || '+' + waId, { conversationId: conv.id }, 'calls'));
   setTimeout(async () => { // safety net if Meta's end-of-call event never arrives; only touches calls nobody picked up
     const r = (await query('SELECT status FROM calls WHERE id=$1', [c.id])).rows[0];
     if (r && r.status === 'ringing') await settle(c.id, 'missed');
@@ -65,7 +65,7 @@ async function settle(callId, wanted, ev = {}) {
   const fresh = await convOf(conv.id);
   rt.toConversation(fresh, 'call:ended', { id: c.id, status, conversationId: conv.id });
   if (m) rt.toConversation(fresh, 'message:new', { conversationId: conv.id, message: m });
-  if (inbound && status === 'missed' && fresh.assigned_to) push.notifyUser(fresh.assigned_to, 'Missed WhatsApp call', '', { conversationId: conv.id });
+  if (inbound && status === 'missed' && fresh.assigned_to) push.notifyUser(fresh.assigned_to, 'Missed WhatsApp call', '', { conversationId: conv.id }, 'missed');
 }
 
 async function onEvent(ev, value, numId) {

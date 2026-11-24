@@ -64,6 +64,12 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await j('/api/settings/bot', { method: 'PUT', body: { greet: 'Beta changed greeting' } }, Bt);
   check('settings are separate', (await j('/api/settings', {}, A.token)).data.bot.greet !== 'Beta changed greeting');
 
+  // Permissions and the Activity Log stay inside each company
+  await j('/api/permissions', { method: 'PUT', body: { manager: { reports: false } } }, A.token);
+  const bLog = (await j('/api/activity-log', {}, Bt)).data.rows;
+  check('other company keeps its own permissions and activity log', (await j('/api/permissions', {}, Bt)).data.manager.find(x => x.key === 'reports').on === true
+    && bLog.length > 0 && bLog.every(r => r.user_name === 'Bea') && !bLog.some(r => r.action === 'Changed permissions'));
+  await j('/api/permissions', { method: 'PUT', body: { manager: { reports: true } } }, A.token);
   // Media Library and Quick Message stay inside each company
   const lf = await (await fetch(B + '/api/media-library?filename=a.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + A.token }, body: Buffer.from('x') })).json();
   const ar = (await j('/api/auto-replies', { method: 'POST', body: { name: 'A rule', keywords: ['hello'], steps: [{ type: 'text', text: 'Hi from A' }] } }, A.token)).data;

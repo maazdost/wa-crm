@@ -51,7 +51,7 @@ async function handle(conv, contact, msg) {
     await query(`UPDATE conversations SET bot_step='done' WHERE id=$1`, [conv.id]);
     require('./drip').enroll(contact.id).catch(e => console.error('follow-up enroll', e.message));
     if (assigned) {
-      push.notifyUser(assigned.assigned_to, 'New client assigned', `${name}: ${INTENTS[conv.intent]?.label || 'new chat'}`, { conversationId: assigned.id });
+      push.notifyUser(assigned.assigned_to, 'New client assigned', `${name}: ${INTENTS[conv.intent]?.label || 'new chat'}`, { conversationId: assigned.id }, 'assigned');
       rt.toUser(assigned.assigned_to, 'conversation:assigned', { conversationId: assigned.id, name, intent: conv.intent });
       rt.toConversation(assigned, 'conversation:updated', { conversationId: assigned.id });
     } else {

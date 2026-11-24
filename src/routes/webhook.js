@@ -90,8 +90,8 @@ async function handleMessage(m, profileName, numId) {
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     if (conv.assigned_to) {
       const who = contact.profile_name || contact.name || '+' + waId;
-      if (out.newlyAssigned) { push.notifyUser(conv.assigned_to, 'New client assigned', `${who}: ${rule.name}`, { conversationId: conv.id }); rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: conv.id, name: who }); }
-      else push.notifyUser(conv.assigned_to, who, msg.body || '', { conversationId: conv.id });
+      if (out.newlyAssigned) { push.notifyUser(conv.assigned_to, 'New client assigned', `${who}: ${rule.name}`, { conversationId: conv.id }, 'assigned'); rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: conv.id, name: who }); }
+      else push.notifyUser(conv.assigned_to, who, msg.body || '', { conversationId: conv.id }, 'message');
       rt.toConversation(conv, 'conversation:updated', { conversationId: conv.id });
     } else rt.toConversation({}, 'conversation:unassigned', { conversationId: conv.id });
     return;
@@ -126,7 +126,7 @@ async function handleMessage(m, profileName, numId) {
     if (owner && !owner.is_active) conv = (await assignConversation(conv.id, conv.team)) || conv;
   }
   rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
-  if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id });
+  if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id }, 'message');
   await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
 }
 

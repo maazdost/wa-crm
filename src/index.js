@@ -21,15 +21,17 @@ app.use(express.json({ limit: '2mb', verify: (req, _res, buf) => { req.rawBody =
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 // Each page of the app has its own address; all of them open the same app file.
-const PAGES = ['dashboard', 'live-chat', 'contacts', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'follow-ups', 'bot', 'reports', 'health-audit', 'agents', 'tags', 'settings', 'companies'];
+const PAGES = ['dashboard', 'live-chat', 'contacts', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'follow-ups', 'bot', 'reports', 'health-audit', 'agents', 'permissions', 'notifications', 'activity-log', 'tags', 'settings', 'companies'];
 app.get(PAGES.map(p => '/' + p), (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 app.use('/webhook', require('./routes/webhook'));
+app.use('/api', require('./access').gate); // permissions and the activity log, in front of every route
 app.use('/api', require('./routes/api'));
 app.use('/api', require('./routes/marketing'));
 app.use('/api', require('./routes/calls'));
 app.use('/api', require('./routes/embedded'));
 app.use('/api', require('./routes/library'));
 app.use('/api', require('./routes/reports'));
+app.use('/api', require('./routes/manage'));
 
 const server = http.createServer(app);
 rt.init(server);

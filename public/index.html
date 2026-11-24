@@ -355,6 +355,36 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .chart.dense{gap:3px}
 .chart.dense .col:not(:nth-child(5n+1)) small{visibility:hidden}
 }
+/* Permissions, Notification Preferences, Activity Log */
+.pmp{padding-bottom:8px}
+.pmh{display:flex;align-items:flex-start;gap:12px;margin-bottom:8px}
+.pmh>span:first-child{width:40px;height:40px;border-radius:12px;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center;flex:none}
+.pmh>div{flex:1;min-width:0}
+.pmh h3{margin:0 0 2px}
+.pmh p{margin:0;font-size:13px;line-height:1.4}
+.pmh .chip{margin:4px 0 0}
+.pmh>.tog{margin-top:9px}
+.pmrow{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid var(--line);cursor:pointer}
+.pmrow>div{flex:1;min-width:0;display:grid;gap:2px}
+.pmrow b{font-size:14.5px;font-weight:600}
+.pmrow small{color:var(--mute);font-size:12.5px;line-height:1.4}
+.pmnote{margin:0;padding:12px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.45}
+.pmnote .ghost{margin-left:6px}
+.rpc.npq{margin:0 0 12px;border:0;padding:12px 0 0;border-top:1px solid var(--line);border-radius:0;background:none}
+.alf .search{flex:1;min-width:200px}
+.alt td{vertical-align:middle}
+.alw{white-space:nowrap;color:var(--mute);font-size:13px}
+.chip.alc{display:inline-flex;align-items:center;gap:5px;margin:0;white-space:nowrap}
+.almore{padding:14px;text-align:center;border-top:1px solid var(--line)}
+@media (max-width:760px){
+.alf .search{flex-basis:100%;max-width:none}
+.alf select{flex:1 1 0;min-width:0;width:100%}
+.alt thead{display:none}
+.alt,.alt tbody,.alt tr,.alt td{display:block;width:100%}
+.alt tr{padding:12px 14px;border-top:1px solid var(--line)}
+.alt td{padding:3px 0;border:0}
+.alw{font-size:12px}
+}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -428,7 +458,7 @@ const ICONS = {
   panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
   userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
-  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   check: '<polyline points="20 6 9 17 4 12"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
@@ -441,15 +471,15 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
-  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 // Every page has its own address, so refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', tg: 'tags', st: 'settings', co: 'companies' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
 const routeKey = p => Object.keys(ROUTES).find(k => '/' + ROUTES[k] === String(p).replace(/\/+$/, ''));
 function setUrl(k) { const p = '/' + ROUTES[k], n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, rp: showReports, ha: showHealth })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -617,7 +647,7 @@ function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove
 /* ---------- Shell + list ---------- */
 async function boot() {
   const mgr = isMgr(), tabs = mgr ? [['open','Open'],['unassigned','Unassigned'],['held','Held'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
-  const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super)), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
+  const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super) && navAllowed(n)), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
   const badge = k => k === 'inbox' ? '<i class="nb" hidden></i>' : '';
   const groups = []; items.forEach(n => { if (!groups.length || groups[groups.length - 1][0] !== n[5]) groups.push([n[5], []]); groups[groups.length - 1][1].push(n); });
   const navmin = navIsMin(false);
@@ -637,7 +667,7 @@ async function boot() {
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${k === 'inbox' ? 'Chats' : n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
-    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
+    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button><hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
     ${mgr ? `<div class="sheet" id="sheet" hidden><div class="sheetbody">${more.map(n => `<button data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span></button>`).join('')}</div></div>` : ''}</div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
@@ -651,6 +681,7 @@ async function boot() {
   if (mgr) api('/whatsapp/numbers').then(ns => { const n = arr(ns).find(x => x.is_default) || arr(ns)[0], p = $('#numpill'); if (!p) return; p.hidden = false; p.classList.toggle('off', !n); p.innerHTML = n ? `${ico('phone', 13)}<span>${esc(n.display_phone || n.label)}${arr(ns).length > 1 ? ' +' + (arr(ns).length - 1) : ''}</span>` : '<i></i><span>No WhatsApp number yet</span>'; if (!n) p.onclick = () => goNav('st'); });
   S.urlReady = false; const first = routeKey(location.pathname), go = first && items.some(n => n[0] === first) ? first : mgr && innerWidth > 760 ? 'dash' : 'inbox'; if (go === 'inbox') syncNav(); else goNav(go);
   $('#themebtn').onclick = () => { closeOverlays(); themeDialog(null); };
+  $('#npb').onclick = () => { closeOverlays(); goNav('np'); }; loadNotif();
   document.removeEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
   $('#pwb').onclick = async () => { closeOverlays(); const cur = await ask('Change password', { note: 'First, type your current password.', type: 'password', ok: 'Next' }); if (cur === null) return; const nw = await ask('New password', { note: 'At least 8 characters.', type: 'password', min: 8, ok: 'Change password' }); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
   $('#q').oninput = debounce(loadList, 300);
@@ -754,10 +785,10 @@ function renderHead() {
   }
   const items = [['info', 'info', 'Contact info'], ['search', 'search', 'Search'], ['select', 'select', 'Select messages'], ['theme', 'palette', 'Chat theme'], ['export', 'download', 'Export chat'], '-',
     ['fav', 'star', c.favorite ? 'Remove from favourites' : 'Add to favourites'], ['pin', 'pin', c.pinned ? 'Unpin chat' : 'Pin chat'], ['unread', 'mail', 'Mark as unread'], ['archive', 'archive', c.archived ? 'Unarchive chat' : 'Archive chat'], '-',
-    ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']]), ['nonclient', 'ban', 'Not a client', true]];
+    ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : (can('close') ? [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']] : [])), ...(can('not_client') ? [['nonclient', 'ban', 'Not a client', true]] : [])];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
   <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
-  ${c.calls_enabled && c.bot_step !== 'held' ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
+  ${c.calls_enabled && c.bot_step !== 'held' && can('calls') ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
   <button class="ib" id="notesbtn" aria-label="Notes" title="Internal notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <button class="ib" id="cpbtn" aria-label="Contact details" title="Contact details">${ico('panel')}</button>
   <div class="menuwrap"><button class="ib" id="morebtn" aria-label="More actions">${ico('more')}</button><div class="menu" id="cm" hidden>${items.map(i => i === '-' ? '<hr class="sep">' : `<button data-act="${i[0]}"${i[3] ? ' class="danger"' : ''}>${ico(i[1], 18)}<span>${i[2]}</span></button>`).join('')}</div></div></header>` + strip;
@@ -940,7 +971,7 @@ function renderComposer() {
     };
     return;
   }
-  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><div class="menuwrap"><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><div class="menu clipm" id="clipm" hidden><button data-a="dev">${ico('clip', 18)}<span>From this device</span></button><button data-a="lib">${ico('image', 18)}<span>From Media Library</span></button></div></div><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
+  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><div class="menuwrap"${can('media') ? '' : ' hidden'}><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><div class="menu clipm" id="clipm" hidden><button data-a="dev">${ico('clip', 18)}<span>From this device</span></button><button data-a="lib">${ico('image', 18)}<span>From Media Library</span></button></div></div><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
   const t = $('#txt');
   t.oninput = () => { syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else { $('#qr').hidden = true; typingPing(); } };
   $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them on the Quick Replies page.'); showQr(''); };
@@ -1095,8 +1126,8 @@ async function initPush() {
 
 /* ---------- Realtime ---------- */
 function alertUser(title, body) {
-  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); o.stop(a.currentTime + .12); } catch {}
-  if (window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(title, { body });
+  if (npOn('sound')) try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); o.stop(a.currentTime + .12); } catch {}
+  if (npOn('desktop') && window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(title, { body });
 }
 function connect() {
   const s = document.createElement('script'); s.src = API + '/socket.io/socket.io.js';
@@ -1634,6 +1665,83 @@ async function showHealth() {
   <div class="tbl"><div class="tbl-h"><b>Why messages failed</b><small class="mute">Last 30 days</small></div>${d.errors.length ? `<table><thead><tr><th>Reason from WhatsApp</th><th>Messages</th><th>Last time</th></tr></thead><tbody>${d.errors.map(e => `<tr><td>${esc(e.reason)}</td><td>${e.n}</td><td>${esc(e.last)}</td></tr>`).join('')}</tbody></table>` : emptyState('check', 'No failed messages', 'Nothing failed in the last 30 days.')}</div>`;
 }
 
+/* ---------- Permissions ---------- */
+// What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
+const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
+async function showPerms() {
+  const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
+  sc.innerHTML = '<p class="mute">Loading…</p>';
+  let d = await api('/permissions'); if (S.nav !== 'pm') return; if (d.error) { sc.innerHTML = emptyState('lock', 'Could not load permissions', esc(d.error)); return; }
+  const WHO = { manager: ['Managers', 'users', 'Managers run the team. Switch off the pages they should not open.'], agent: ['Agents', 'user', 'Agents reply to clients. Switch off the actions they should not use in a chat.'] };
+  const draw = () => {
+    sc.innerHTML = `<div class="two">${Object.keys(WHO).map(role => { const on = d[role].filter(x => x.on).length; return `<div class="panel pmp"><div class="pmh"><span>${ico(WHO[role][1], 20)}</span><div><h3>${WHO[role][0]}</h3><p class="mute">${WHO[role][2]}</p></div><em class="chip ${on === d[role].length ? 'ok' : 'warn'}">${on} of ${d[role].length} on</em></div>
+      ${d[role].map(x => `<label class="pmrow"><div><b>${esc(x.label)}</b><small>${esc(x.hint)}</small></div><span class="tog"><input type="checkbox" data-pr="${role}" data-pk="${x.key}"${x.on ? ' checked' : ''} aria-label="${esc(x.label)}"><i></i></span></label>`).join('')}</div>`; }).join('')}</div>`;
+    sc.querySelectorAll('[data-pk]').forEach(t => t.onchange = async () => {
+      const r = await api('/permissions', 'PUT', { [t.dataset.pr]: { [t.dataset.pk]: t.checked } });
+      if (r.error) { t.checked = !t.checked; return toast(r.error); }
+      d = r; toast(t.checked ? 'Switched on' : 'Switched off'); if (S.nav === 'pm') draw();
+    });
+  };
+  draw();
+}
+
+/* ---------- Notification Preferences ---------- */
+async function loadNotif() { const p = await api('/me/notifications'); if (!p.error) S.np = p; return p; }
+const npOn = k => !S.np || S.np[k] !== false;
+async function showNotif() {
+  const sc = screen('Notification Preferences', 'Choose which alerts you get. These choices are yours only, every person sets their own.');
+  sc.innerHTML = '<p class="mute">Loading…</p>';
+  const p = await loadNotif(); if (S.nav !== 'np') return; if (p.error) { sc.innerHTML = emptyState('bell', 'Could not load your preferences', esc(p.error)); return; }
+  const row = (k, title, hint) => `<label class="pmrow"><div><b>${title}</b><small>${hint}</small></div><span class="tog"><input type="checkbox" data-nk="${k}"${p[k] ? ' checked' : ''} aria-label="${title}"><i></i></span></label>`;
+  const perm = window.Notification ? Notification.permission : 'none';
+  sc.innerHTML = `<div class="two"><div class="panel pmp"><div class="pmh"><span>${ico('phone', 20)}</span><div><h3>Alerts on your phone</h3><p class="mute">Sent by the Android app, even when the app is closed.</p></div></div>
+      ${row('assigned', 'New chat assigned to me', 'When a new client or a manager gives you a chat')}${row('message', 'New message from my clients', 'When a client writes in one of your chats')}${row('calls', 'Incoming WhatsApp calls', 'When a client calls the business number')}${row('missed', 'Missed calls', 'When a call was not answered')}
+      ${p.push_ready ? '' : '<p class="mute pmnote">Phone alerts are not switched on for this system yet. Your choices are saved and will apply when they are.</p>'}</div>
+    <div class="panel pmp"><div class="pmh"><span>${ico('chat', 20)}</span><div><h3>Alerts in this browser</h3><p class="mute">While TeamInbox Pro is open on your computer.</p></div></div>
+      ${row('sound', 'Sound', 'A short beep for a new message or a new chat')}${row('desktop', 'Desktop pop-up', 'A small pop-up when this tab is in the background')}
+      ${perm === 'granted' || perm === 'none' ? '' : `<p class="mute pmnote">${perm === 'denied' ? 'Your browser is blocking pop-ups for this site. Allow notifications in the browser address bar to get them.' : 'Your browser has not allowed pop-ups yet.'} ${perm === 'default' ? '<button class="ghost" id="npask">Allow pop-ups</button>' : ''}</p>`}</div></div>
+    <div class="panel pmp"><div class="pmh"><span>${ico('clock', 20)}</span><div><h3>Quiet hours</h3><p class="mute">No phone alerts between these times. Chats still arrive and wait for you. Time zone: ${esc(p.tz)}.</p></div><span class="tog"><input type="checkbox" id="npq"${p.quiet.on ? ' checked' : ''} aria-label="Quiet hours"><i></i></span></div>
+      <div class="rpc npq"><label>From <input type="time" id="npf" value="${p.quiet.from}"></label><label>To <input type="time" id="npt" value="${p.quiet.to}"></label></div></div>`;
+  const save = async body => { const r = await api('/me/notifications', 'PUT', body); if (r.error) { toast(r.error); return false; } S.np = r; toast('Saved'); return true; };
+  sc.querySelectorAll('[data-nk]').forEach(t => t.onchange = async () => { if (!await save({ [t.dataset.nk]: t.checked })) t.checked = !t.checked; });
+  const quiet = () => save({ quiet: { on: $('#npq').checked, from: $('#npf').value, to: $('#npt').value } });
+  $('#npq').onchange = quiet; $('#npf').onchange = quiet; $('#npt').onchange = quiet;
+  if ($('#npask')) $('#npask').onclick = async () => { await Notification.requestPermission(); if (S.nav === 'np') showNotif(); };
+}
+
+/* ---------- Activity Log ---------- */
+async function showActivity() {
+  const F = S.al = S.al || { preset: '7', q: '', user_id: '', area: '' };
+  const PRE = [['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['all', 'All time']];
+  const sc = screen('Activity Log', 'Who did what, and when. Sign-ins, team changes, closed and reassigned chats, settings, templates, broadcasts and automatic messages are written here.',
+    `<button class="btn" id="alx">${ico('download', 16)}Export</button>`);
+  sc.innerHTML = `<div class="tbl"><div class="tbl-h alf"><div class="search">${ico('search', 16)}<input id="alq" placeholder="Search the log" value="${esc(F.q)}"></div>
+    <select id="alp" aria-label="Dates">${PRE.map(x => `<option value="${x[0]}"${x[0] === F.preset ? ' selected' : ''}>${x[1]}</option>`).join('')}</select>
+    <select id="alu" aria-label="Person"><option value="">Everyone</option></select><select id="ala" aria-label="Area"><option value="">All areas</option></select></div><div id="alb"><p class="mute" style="padding:16px">Loading…</p></div></div>`;
+  const qs = extra => { const p = new URLSearchParams(extra || {}); if (F.preset !== 'all') { const [a, b] = rpRange(F.preset); p.set('from', a); p.set('to', b); } for (const k of ['q', 'user_id', 'area']) if (F[k]) p.set(k, F[k]); return p.toString(); };
+  let rows = [], more = false;
+  const AREA = { Account: 'user', Agents: 'users', Chats: 'chat', Permissions: 'lock', Settings: 'sliders', Templates: 'file', Broadcasts: 'megaphone', Tags: 'tag', 'Quick Message': 'reply', 'Quick Replies': 'zap', 'Media Library': 'image', 'Follow-ups': 'clock', Contacts: 'users', 'WhatsApp numbers': 'phone', Company: 'building', Companies: 'building' };
+  const draw = () => {
+    $('#alb').innerHTML = rows.length ? `<table class="alt"><thead><tr><th>When</th><th>Who</th><th>What happened</th><th>Area</th></tr></thead><tbody>${rows.map(r => `<tr><td class="alw">${esc(r.at)}</td><td>${userCell(r.user_name, r.role, 32)}</td><td><b>${esc(r.action)}</b>${r.detail ? `<br><small class="mute">${esc(r.detail)}</small>` : ''}</td><td><em class="chip alc">${ico(AREA[r.area] || 'info', 13)}${esc(r.area)}</em></td></tr>`).join('')}</tbody></table>
+      ${more ? '<div class="almore"><button class="ghost" id="alm">Show older</button></div>' : ''}` : emptyState('clock', 'Nothing here yet', F.q || F.user_id || F.area || F.preset !== 'all' ? 'Nothing matches these filters. Try other dates or clear the search.' : 'Actions will appear here as your team works.');
+    if ($('#alm')) $('#alm').onclick = async () => { $('#alm').disabled = true; const d = await api('/activity-log?' + qs({ before: rows[rows.length - 1].id })); if (d.error) return toast(d.error); rows = rows.concat(d.rows); more = d.more; if (S.nav === 'al') draw(); };
+  };
+  const load = async () => {
+    const d = await api('/activity-log?' + qs()); if (S.nav !== 'al') return; if (d.error) { $('#alb').innerHTML = emptyState('clock', 'Could not load the log', esc(d.error)); return; }
+    rows = d.rows; more = d.more;
+    $('#alu').innerHTML = '<option value="">Everyone</option>' + arr(d.people).map(u => `<option value="${u.id}"${String(u.id) === String(F.user_id) ? ' selected' : ''}>${esc(u.name)}</option>`).join('');
+    $('#ala').innerHTML = '<option value="">All areas</option>' + arr(d.areas).map(a => `<option${a === F.area ? ' selected' : ''}>${esc(a)}</option>`).join('');
+    draw();
+  };
+  let t; $('#alq').oninput = e => { clearTimeout(t); t = setTimeout(() => { F.q = e.target.value.trim(); load(); }, 300); };
+  $('#alp').onchange = e => { F.preset = e.target.value; load(); }; $('#alu').onchange = e => { F.user_id = e.target.value; load(); }; $('#ala').onchange = e => { F.area = e.target.value; load(); };
+  $('#alx').onclick = async () => { const d = await api('/activity-log?' + qs({ limit: 5000 })); if (d.error) return toast(d.error); if (!d.rows.length) return toast('Nothing to export');
+    downloadCsv(`teaminbox-activity-log-${ymd(new Date())}.csv`, [['When', 'Who', 'Role', 'Area', 'What happened', 'Detail', 'IP address'], ...d.rows.map(r => [r.at, r.user_name, r.role, r.area, r.action, r.detail, r.ip])]); };
+  load();
+}
+
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
     `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="btn" data-open="m-imp">${ico('plus', 16)}Import contacts</button>`);
@@ -1859,8 +1967,10 @@ else try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.tok
 // Older sign-ins do not know the company name or super-admin access yet: fetch them once and redraw if anything changed.
 async function refreshMe() {
   const me = await api('/me'); if (me.error || !S.token) return;
-  const changed = me.company !== S.user.company || !!me.is_super !== !!S.user.is_super;
-  S.user = { ...S.user, company: me.company, company_id: me.company_id, is_super: !!me.is_super }; localStorage.setItem('wa_auth', JSON.stringify({ token: S.token, user: S.user }));
+  const changed = me.company !== S.user.company || !!me.is_super !== !!S.user.is_super || me.role !== S.user.role || JSON.stringify(me.perms || null) !== JSON.stringify(S.user.perms || null);
+  S.user = { ...S.user, role: me.role, company: me.company, company_id: me.company_id, is_super: !!me.is_super, perms: me.perms }; localStorage.setItem('wa_auth', JSON.stringify({ token: S.token, user: S.user }));
   if (changed) boot();
 }
+// When you come back to the tab, pick up permission changes the admin made meanwhile.
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.token && $('.shell')) refreshMe(); });
 </script></body></html>

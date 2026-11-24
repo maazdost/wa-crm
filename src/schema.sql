@@ -306,3 +306,23 @@ CREATE TABLE IF NOT EXISTS auto_reply_log (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_auto_reply_log ON auto_reply_log(auto_reply_id, conversation_id, sent_at DESC);
+
+-- ============================================================================
+-- Activity Log (who did what) and each person's Notification Preferences.
+-- Permissions are kept in the settings table, so they need nothing new here.
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS activity_log (
+  id BIGSERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  user_name TEXT NOT NULL DEFAULT '',
+  role TEXT,
+  area TEXT NOT NULL,
+  action TEXT NOT NULL,
+  detail TEXT NOT NULL DEFAULT '',
+  ip TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_activity_company ON activity_log(company_id, id DESC);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS notify JSONB NOT NULL DEFAULT '{}';
