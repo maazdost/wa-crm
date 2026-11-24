@@ -8,6 +8,7 @@ const { saveInbound, saveOutbound } = require('../messages');
 const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
+const autoreply = require('../autoreply');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
@@ -77,6 +78,22 @@ async function handleMessage(m, profileName, numId) {
     await saveOutbound(conv, { senderType: 'bot', body: t, waMessageId: sent.messages?.[0]?.id });
     w.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    return;
+  }
+  // Quick Message: the message matches one of the company's keywords (for example the ready-made first message of an ad).
+  // Its saved messages are sent instead of the welcome bot, and the chat gets its tag and agent.
+  const rule = await autoreply.find(conv, contact, msg).catch(e => { console.error('quick message', e.message); return null; });
+  if (rule) {
+    const out = await autoreply.run(rule, conv, contact, waId);
+    conv = out.conversation;
+    w.markRead(m.id);
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    if (conv.assigned_to) {
+      const who = contact.profile_name || contact.name || '+' + waId;
+      if (out.newlyAssigned) { push.notifyUser(conv.assigned_to, 'New client assigned', `${who}: ${rule.name}`, { conversationId: conv.id }); rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: conv.id, name: who }); }
+      else push.notifyUser(conv.assigned_to, who, msg.body || '', { conversationId: conv.id });
+      rt.toConversation(conv, 'conversation:updated', { conversationId: conv.id });
+    } else rt.toConversation({}, 'conversation:unassigned', { conversationId: conv.id });
     return;
   }
   // Optional gate: only start the bot for ad clicks, imported contacts, or messages with the chosen words

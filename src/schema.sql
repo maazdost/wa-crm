@@ -262,3 +262,47 @@ INSERT INTO departments(company_id,key,name) VALUES (1,'general','General'),(1,'
   ON CONFLICT (company_id, key) DO NOTHING;
 INSERT INTO departments(company_id,key,name) SELECT DISTINCT company_id, team, initcap(team) FROM users WHERE team IS NOT NULL AND team <> ''
   ON CONFLICT (company_id, key) DO NOTHING;
+
+-- ============================================================================
+-- Media Library (files a company saves once and sends again and again) and
+-- Quick Message (automatic messages when a client's message matches a keyword, for example the first message from an ad).
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS media_library (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  size INT NOT NULL,
+  data BYTEA NOT NULL,
+  created_by INT REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_media_library_company ON media_library(company_id, id DESC);
+
+-- One quick message = one rule: keywords that start it, the messages to send in order ("steps"), and what to do afterwards.
+-- steps: [{ "type": "text|image|video|audio|file", "text": "...", "media_id": 12, "delay": 0,
+--           "buttons": [{ "type": "reply", "title": "Yes" }] or [{ "type": "url", "title": "Open", "url": "https://..." }] }]
+CREATE TABLE IF NOT EXISTS auto_replies (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL,
+  keywords JSONB NOT NULL DEFAULT '[]',
+  match_type TEXT NOT NULL DEFAULT 'contains' CHECK (match_type IN ('contains','exact')),
+  steps JSONB NOT NULL DEFAULT '[]',
+  tag_id INT REFERENCES labels(id) ON DELETE SET NULL,
+  assign_to INT REFERENCES users(id) ON DELETE SET NULL,
+  respect_opt_out BOOLEAN NOT NULL DEFAULT TRUE,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  sent_count INT NOT NULL DEFAULT 0,
+  last_sent_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auto_replies_company ON auto_replies(company_id, active);
+CREATE TABLE IF NOT EXISTS auto_reply_log (
+  id BIGSERIAL PRIMARY KEY,
+  auto_reply_id INT NOT NULL REFERENCES auto_replies(id) ON DELETE CASCADE,
+  conversation_id INT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auto_reply_log ON auto_reply_log(auto_reply_id, conversation_id, sent_at DESC);

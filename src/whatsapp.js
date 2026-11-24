@@ -59,12 +59,20 @@ function client(numId) {
   const sendCallPermission = (to, text) => call({ to, type: 'interactive', interactive: { type: 'call_permission_request', action: { name: 'call_permission_request' }, body: { text } } });
 
   const sendText = (to, body, ctx) => call({ to, ...withCtx(ctx), type: 'text', text: { body, preview_url: true } });
-  const sendButtons = (to, body, buttons) => call({
+  // A photo, video or document shown above a message with buttons. head = { kind, id, filename }
+  const header = (head) => head && ['image', 'video', 'document'].includes(head.kind)
+    ? { header: { type: head.kind, [head.kind]: { id: head.id, ...(head.kind === 'document' && head.filename ? { filename: head.filename } : {}) } } } : {};
+  const sendButtons = (to, body, buttons, head) => call({
     to, type: 'interactive',
     interactive: {
-      type: 'button', body: { text: body },
+      type: 'button', ...header(head), body: { text: body },
       action: { buttons: buttons.slice(0, 3).map(b => ({ type: 'reply', reply: { id: b.id, title: b.title.slice(0, 20) } })) }
     }
+  });
+  // One button that opens a website link
+  const sendLinkButton = (to, body, title, url, head) => call({
+    to, type: 'interactive',
+    interactive: { type: 'cta_url', ...header(head), body: { text: body }, action: { name: 'cta_url', parameters: { display_text: String(title).slice(0, 20), url } } }
   });
   const sendTemplate = (to, name, language = 'en', params = []) => call({
     to, type: 'template',
@@ -126,7 +134,7 @@ function client(numId) {
   // Marks the client's message as read and shows "typing..." on their phone until we reply (or 25 seconds pass).
   const typing = (waMessageId) => call({ status: 'read', message_id: waMessageId, typing_indicator: { type: 'text' } });
 
-  return { graph, wabaId, callAction, setCalling, sendCallPermission, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendTemplate, markRead };
+  return { graph, wabaId, callAction, setCalling, sendCallPermission, typing, createTemplate, listTemplates, uploadMedia, downloadMedia, sendMedia, sendText, sendButtons, sendLinkButton, sendTemplate, markRead };
 }
 
 function verifySignature(rawBody, header) {
