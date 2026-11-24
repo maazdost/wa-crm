@@ -26,6 +26,7 @@ app.use('/api', require('./routes/marketing'));
 app.use('/api', require('./routes/calls'));
 app.use('/api', require('./routes/embedded'));
 app.use('/api', require('./routes/library'));
+app.use('/api', require('./routes/reports'));
 
 const server = http.createServer(app);
 rt.init(server);
