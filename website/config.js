@@ -4,17 +4,17 @@
 */
 window.SITE = {
   // Product name shown across the website
-  brand: 'TeamInbox',
+  brand: 'TeamInbox Pro',
 
   // Your sales WhatsApp number in international format, digits only, no + or spaces (example: '923001234567').
   // The "Book a demo" form and every WhatsApp button open a chat with this number.
   salesWhatsApp: '',
 
   // Your sales email. Used when no WhatsApp number is set, and shown in the footer.
-  salesEmail: '',
+  salesEmail: 'sales@teaminboxpro.com',
 
   // Address of the live app, so existing customers can sign in (example: 'https://app.yourdomain.com').
-  appUrl: '',
+  appUrl: 'https://app.teaminboxpro.com',
 
   // Link to the Android app download (APK) or Play Store page. Leave empty to hide the download button.
   androidUrl: '',
