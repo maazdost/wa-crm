@@ -265,7 +265,7 @@ INSERT INTO departments(company_id,key,name) SELECT DISTINCT company_id, team, i
 
 -- ============================================================================
 -- Media Library (files a company saves once and sends again and again) and
--- Quick Message (automatic reply when a client's message contains a keyword).
+-- Quick Message (automatic messages when a client's message matches a keyword, for example the first message from an ad).
 -- Safe to run again and again: nothing is deleted.
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS media_library (
@@ -280,15 +280,19 @@ CREATE TABLE IF NOT EXISTS media_library (
 );
 CREATE INDEX IF NOT EXISTS idx_media_library_company ON media_library(company_id, id DESC);
 
+-- One quick message = one rule: keywords that start it, the messages to send in order ("steps"), and what to do afterwards.
+-- steps: [{ "type": "text|image|video|audio|file", "text": "...", "media_id": 12, "delay": 0,
+--           "buttons": [{ "type": "reply", "title": "Yes" }] or [{ "type": "url", "title": "Open", "url": "https://..." }] }]
 CREATE TABLE IF NOT EXISTS auto_replies (
   id SERIAL PRIMARY KEY,
   company_id INT NOT NULL REFERENCES companies(id),
   name TEXT NOT NULL,
   keywords JSONB NOT NULL DEFAULT '[]',
   match_type TEXT NOT NULL DEFAULT 'contains' CHECK (match_type IN ('contains','exact')),
-  body TEXT NOT NULL,
-  buttons JSONB,
-  media_id INT REFERENCES media_library(id) ON DELETE SET NULL,
+  steps JSONB NOT NULL DEFAULT '[]',
+  tag_id INT REFERENCES labels(id) ON DELETE SET NULL,
+  assign_to INT REFERENCES users(id) ON DELETE SET NULL,
+  respect_opt_out BOOLEAN NOT NULL DEFAULT TRUE,
   active BOOLEAN NOT NULL DEFAULT TRUE,
   sent_count INT NOT NULL DEFAULT 0,
   last_sent_at TIMESTAMPTZ,

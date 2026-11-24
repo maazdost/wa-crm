@@ -14,7 +14,7 @@ const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); r
 // How much each company may keep in its library. Change with MEDIA_LIBRARY_MAX_MB on the server (default 100).
 const LIMIT_MB = () => Math.max(1, Number(process.env.MEDIA_LIBRARY_MAX_MB) || 100);
 const FILE_COLS = `f.id, f.name, f.mime, f.size, f.created_at, (SELECT name FROM users WHERE id=f.created_by) AS added_by,
-  (SELECT COUNT(*)::int FROM auto_replies a WHERE a.media_id=f.id) AS used_in`;
+  (SELECT COUNT(*)::int FROM auto_replies a WHERE a.company_id=f.company_id AND EXISTS (SELECT 1 FROM jsonb_array_elements(a.steps) s WHERE s->>'media_id' = f.id::text)) AS used_in`;
 
 // ---- Media Library ----
 router.get('/media-library', required(), wrap(async (req, res) => {
@@ -73,21 +73,54 @@ router.post('/conversations/:id/library/:fileId', required(), wrap(async (req, r
 }));
 
 // ---- Quick Message ----
+const TYPES = ['text', 'image', 'video', 'audio', 'file'];
+// Checks a rule sent from the page and returns it in the shape that is stored. WhatsApp's own limits are applied here.
 const clean = async (b) => {
-  const list = (x, max, len) => (Array.isArray(x) ? x : String(x || '').split(',')).map(s => String(s).trim().slice(0, len)).filter(Boolean).slice(0, max);
-  const out = { name: String(b.name || '').trim().slice(0, 80), keywords: [...new Set(list(b.keywords, 20, 60).map(k => k.toLowerCase()))],
-    match_type: b.match_type === 'exact' ? 'exact' : 'contains', body: String(b.body || '').trim().slice(0, 1000), buttons: list(b.buttons, 3, 20), media_id: Number(b.media_id) || null };
-  if (!out.name || !out.keywords.length || !out.body) return { error: 'Name, at least one keyword and the reply text are required' };
-  if (out.media_id && !(await query('SELECT 1 FROM media_library WHERE id=$1 AND company_id=$2', [out.media_id, C()])).rows[0]) return { error: 'The chosen file is no longer in the library' };
-  return out;
+  const str = (x, n) => String(x == null ? '' : x).trim().slice(0, n);
+  const seen = new Set(); // the same keyword twice (in any letter case) is kept once
+  const keywords = (Array.isArray(b.keywords) ? b.keywords : String(b.keywords || '').split(',')).map(k => str(k, 300).replace(/\s+/g, ' ')).filter(k => k && !seen.has(k.toLowerCase()) && seen.add(k.toLowerCase())).slice(0, 30);
+  const name = str(b.name, 80);
+  if (!name) return { error: 'Give this quick message a name' };
+  if (!keywords.length) return { error: 'Add at least one keyword or message that starts it' };
+  const raw = Array.isArray(b.steps) ? b.steps.slice(0, 10) : [];
+  if (!raw.length) return { error: 'Add at least one message to send' };
+  const ids = [...new Set(raw.map(s => Number(s.media_id)).filter(Boolean))];
+  const files = ids.length ? (await query('SELECT id, mime FROM media_library WHERE company_id=$1 AND id = ANY($2::int[])', [C(), ids])).rows : [];
+  const steps = [];
+  for (const [i, s] of raw.entries()) {
+    const n = `Message ${i + 1}`, type = TYPES.includes(s.type) ? s.type : 'text', text = str(s.text, 1000);
+    const step = { type, text, delay: Math.min(60, Math.max(0, Math.round(Number(s.delay) || 0))) };
+    if (type !== 'text') {
+      const f = files.find(x => x.id === Number(s.media_id));
+      if (!f) return { error: `${n}: choose a file from the Media Library` };
+      const kind = mediaStore.kindOf(f.mime);
+      if (type !== 'file' && kind !== type) return { error: `${n}: the chosen file is not ${type === 'image' ? 'a photo (JPG or PNG)' : type === 'video' ? 'a video (MP4)' : 'an audio file'}. Choose another file or use the File type.` };
+      step.media_id = f.id;
+    } else if (!text) return { error: `${n}: type the text` };
+    const btns = (Array.isArray(s.buttons) ? s.buttons : []).map(x => ({ type: x.type === 'url' ? 'url' : 'reply', title: str(x.title, 20), url: str(x.url, 500) })).filter(x => x.title || x.url).slice(0, 3);
+    if (btns.length) {
+      if (type === 'audio') return { error: `${n}: WhatsApp does not allow buttons on audio. Put them on a text message after it.` };
+      if (!text) return { error: `${n}: a message with buttons needs text` };
+      if (btns.some(x => !x.title)) return { error: `${n}: every button needs a name` };
+      const links = btns.filter(x => x.type === 'url');
+      if (links.length && btns.length > 1) return { error: `${n}: WhatsApp allows one website link button per message, and not together with reply buttons` };
+      if (links.length && !/^https:\/\/[^\s]+\.[^\s]+$/i.test(links[0].url)) return { error: `${n}: the website link must start with https://` };
+      step.buttons = btns.map(x => x.type === 'url' ? x : { type: 'reply', title: x.title });
+    }
+    steps.push(step);
+  }
+  const tag_id = Number(b.tag_id) || null, assign_to = Number(b.assign_to) || null;
+  if (tag_id && !(await query('SELECT 1 FROM labels WHERE id=$1 AND company_id=$2', [tag_id, C()])).rows[0]) return { error: 'The chosen tag no longer exists' };
+  if (assign_to && !(await query('SELECT 1 FROM users WHERE id=$1 AND company_id=$2 AND is_active', [assign_to, C()])).rows[0]) return { error: 'The chosen agent is not active' };
+  return { name, keywords, match_type: b.match_type === 'contains' ? 'contains' : 'exact', steps, tag_id, assign_to, respect_opt_out: b.respect_opt_out !== false };
 };
-const RULE_COLS = `a.id, a.name, a.keywords, a.match_type, a.body, a.buttons, a.media_id, a.active, a.sent_count, a.last_sent_at, a.created_at,
-  (SELECT name FROM media_library WHERE id=a.media_id) AS media_name`;
+const RULE_COLS = `a.id, a.name, a.keywords, a.match_type, a.steps, a.tag_id, a.assign_to, a.respect_opt_out, a.active, a.sent_count, a.last_sent_at, a.created_at,
+  (SELECT name FROM labels WHERE id=a.tag_id) AS tag_name, (SELECT name FROM users WHERE id=a.assign_to) AS agent_name`;
+const vals = (v) => [v.name, JSON.stringify(v.keywords), v.match_type, JSON.stringify(v.steps), v.tag_id, v.assign_to, v.respect_opt_out];
 router.get('/auto-replies', mgr, wrap(async (req, res) => res.json((await query(`SELECT ${RULE_COLS} FROM auto_replies a WHERE a.company_id=$1 ORDER BY a.id DESC`, [C()])).rows)));
 router.post('/auto-replies', mgr, wrap(async (req, res) => {
   const v = await clean(req.body); if (v.error) return res.status(400).json(v);
-  res.json((await query('INSERT INTO auto_replies(company_id,name,keywords,match_type,body,buttons,media_id) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-    [C(), v.name, JSON.stringify(v.keywords), v.match_type, v.body, v.buttons.length ? JSON.stringify(v.buttons) : null, v.media_id])).rows[0]);
+  res.json((await query('INSERT INTO auto_replies(company_id,name,keywords,match_type,steps,tag_id,assign_to,respect_opt_out) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [C(), ...vals(v)])).rows[0]);
 }));
 router.patch('/auto-replies/:id', mgr, wrap(async (req, res) => {
   const id = Number(req.params.id) || 0;
@@ -96,8 +129,7 @@ router.patch('/auto-replies/:id', mgr, wrap(async (req, res) => {
     return r ? res.json(r) : res.status(404).json({ error: 'not found' });
   }
   const v = await clean(req.body); if (v.error) return res.status(400).json(v);
-  const r = (await query('UPDATE auto_replies SET name=$3, keywords=$4, match_type=$5, body=$6, buttons=$7, media_id=$8 WHERE id=$1 AND company_id=$2 RETURNING *',
-    [id, C(), v.name, JSON.stringify(v.keywords), v.match_type, v.body, v.buttons.length ? JSON.stringify(v.buttons) : null, v.media_id])).rows[0];
+  const r = (await query('UPDATE auto_replies SET name=$3, keywords=$4, match_type=$5, steps=$6, tag_id=$7, assign_to=$8, respect_opt_out=$9 WHERE id=$1 AND company_id=$2 RETURNING *', [id, C(), ...vals(v)])).rows[0];
   r ? res.json(r) : res.status(404).json({ error: 'not found' });
 }));
 router.delete('/auto-replies/:id', mgr, wrap(async (req, res) => {

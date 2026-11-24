@@ -288,6 +288,27 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .pth{width:44px;height:44px;border-radius:8px;background:var(--field);display:grid;place-items:center;color:var(--icon);overflow:hidden;flex:none}.pth img{width:100%;height:100%;object-fit:cover}
 .b .tg+.ghost,.b .tg+img,.b .tg+audio{display:block;margin-top:4px}.menu.clipm{left:0;right:auto;top:auto;bottom:calc(100% + 10px)}
 @media (max-width:760px){.mgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mthumb{height:104px}.lbar .search{flex:1 1 100%}}
+/* Quick Message cards and builder */
+.qmcard header{gap:6px}.qmcard header b{font-size:15px}.qmic{width:34px;height:34px;border-radius:10px;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center;flex:none;margin-right:4px}.qmcard.off{opacity:.62}
+.qmtr{display:flex;align-items:center;gap:6px;min-width:0}.qmtr small{color:var(--mute);font-size:12px;white-space:nowrap}.qmtr .kw{margin:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qmtr .kw.more{flex:none}
+.qmcard p{min-height:62px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.qmcard footer{display:flex;flex-wrap:wrap;gap:4px 14px;border-top:1px solid var(--line);padding-top:10px;margin-top:2px;color:var(--mute);font-size:12px}.qmcard footer span{display:inline-flex;align-items:center;gap:5px}
+.ph .search{min-width:220px}
+.qsec{border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0 0;background:var(--field);display:grid;gap:10px}.qsec-h{display:flex;align-items:center;justify-content:space-between}.qsec-h b{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}.qsec-h small{color:var(--mute)}
+.qadd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.qadd>span{font-size:12px;font-weight:600;color:var(--mute);margin-right:2px}
+.qstep{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;margin-bottom:10px}
+.qstep-h{display:flex;align-items:center;gap:8px}.qstep-h>b{background:var(--pill);border-radius:999px;padding:2px 10px;font-size:12px}.qstep-h label{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mute)}.qstep-h input{width:58px;padding:5px 8px;text-align:center}.qstep-h>span{flex:1}
+.rowbtn.danger{color:#d9534f}.rowbtn[disabled]{opacity:.3;pointer-events:none}
+.qtype{display:flex;gap:4px;background:var(--field);border-radius:10px;padding:4px;overflow-x:auto;scrollbar-width:none}.qtype button{flex:1;border:0;background:none;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--mute);display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}.qtype button.on{background:var(--card);color:var(--tint-ink);box-shadow:var(--sh)}
+.qfile{display:flex;align-items:center;gap:8px}.qfile select{flex:1;min-width:0}
+.qins{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}.qins span{font-weight:600;color:var(--ink2);margin-right:auto}.qins i{font-style:normal;color:var(--mute)}.qins button{border:0;background:var(--tint);color:var(--tint-ink);border-radius:6px;padding:2px 8px;font-size:11.5px;font-weight:600}
+.qbh{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:10px;font-size:12px;font-weight:600;color:var(--ink2)}.qbh small{color:var(--mute);font-weight:500}
+.qbtn{display:flex;gap:6px;align-items:center}.qbtn select{flex:0 0 132px}.qbtn input{flex:1;min-width:0}.qbadd{justify-self:start}
+.kwadd{display:flex;gap:8px}.kwadd input{flex:1;min-width:0}.kwl{display:flex;flex-wrap:wrap;gap:6px}.kw.big{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;margin:0;font-size:12.5px;max-width:100%;overflow-wrap:anywhere}.kw.big button{border:0;background:none;color:inherit;display:grid;place-items:center;padding:2px;border-radius:50%;opacity:.7}.kw.big button:hover{opacity:1}
+.qopt{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink2);cursor:pointer}
+.qtwo{display:grid;grid-template-columns:1fr 1fr;gap:12px}.qtwo .fld{margin:0}
+#m-qm .mcard{width:min(680px,100%);min-width:0}#m-qm .mb,#qmf,.qsec,.qsec>*,.qstep,.qstep>*{min-width:0}.modal{grid-template-columns:minmax(0,auto)}
+@media (max-width:760px){.qtwo{grid-template-columns:1fr}.qstep-h label{font-size:12px;white-space:nowrap}.qtype button{flex:none}.qsec{padding:10px}.qbtn{flex-wrap:wrap}.qbtn select{flex:1 1 100%}.ph .search{display:none}}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -1391,35 +1412,95 @@ async function sendLib(f) {
 
 /* ---------- Quick Message (automatic keyword replies) ---------- */
 async function showQuickMsg() {
-  const sc = screen('Quick Message', 'Automatic replies. When a client writes one of your keywords, the saved reply goes out at once, day or night. The chat still stays with its agent.',
-    `<button class="btn" id="qmn">${ico('plus', 16)}New quick message</button>`);
-  const [rs] = await Promise.all([api('/auto-replies'), loadLib()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
-  const list = arr(rs), on = list.filter(r => r.active).length;
-  sc.innerHTML = `<div class="stats">${kpi('reply', list.length, 'Quick messages')}${kpi('check', on, 'Switched on', 'blue')}${kpi('send', list.reduce((n, r) => n + r.sent_count, 0), 'Replies sent', 'amber')}</div>
-  <div class="tbl">${list.length ? `<table><thead><tr><th>Name</th><th>When the client writes</th><th>We reply</th><th>Sent</th><th>On</th><th></th></tr></thead><tbody>
-  ${list.map(r => `<tr><td><b>${esc(r.name)}</b></td><td style="max-width:260px">${arr(r.keywords).map(k => `<span class="kw">${esc(k)}</span>`).join('')}<br><small class="mute">${r.match_type === 'exact' ? 'Only when it is the whole message' : 'Anywhere in the message'}</small></td>
-    <td><div class="qmtxt">${esc(r.body)}</div>${r.media_name ? `<small class="mute qmf">${ico('clip', 13)}${esc(r.media_name)}</small>` : ''}${r.buttons && r.buttons.length ? `<div class="qbtns" style="padding:6px 0 0">${r.buttons.map(x => `<i>${esc(x)}</i>`).join('')}</div>` : ''}</td>
-    <td style="white-space:nowrap"><b>${r.sent_count}</b>${r.last_sent_at ? `<br><small class="mute">last ${fmtD(r.last_sent_at)}</small>` : ''}</td>
-    <td><label class="tog" title="Switch on or off"><input type="checkbox" data-qt="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label></td>
-    <td class="tdm"><button class="rowbtn" data-qe="${r.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-qd="${r.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></td></tr>`).join('')}</tbody></table>`
-    : emptyState('reply', 'No quick messages yet', 'For example: when a client writes "fees" or "price", reply with your fee details and the fee structure file.', `<button class="btn" id="qmn2">${ico('plus', 16)}New quick message</button>`)}</div>
-  ${modal('m-qm', 'Quick message', `<form id="qmf">${field('qm1', 'Name (only your team sees it)', '')}
-  ${field('qm2', 'Keywords, separated by commas, e.g. fees, price, charges', '')}
-  <label class="fld"><span>Reply when</span><select id="qm3"><option value="contains">The keyword is anywhere in the message</option><option value="exact">The keyword is the whole message</option></select></label>
-  ${field('qm4', 'Reply text', '', 1)}
-  <label class="fld"><span>Attach a file from the Media Library (optional)</span><select id="qm5"><option value="">No file</option>${S.lib.map(f => `<option value="${f.id}">${esc(f.name)} (${KIND[f.kind][1]}, ${fmtSize(f.size)})</option>`).join('')}</select></label>
-  ${field('qm6', 'Buttons under the reply, up to 3, separated by commas (optional)', '')}
-  <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn" id="qmsave">Save</button></div></form>`, 1)}`;
+  const sc = screen('Quick Message', 'Automatic messages for your ads and common questions. When a client sends the message you choose, for example the ready-made first message of an ad, your saved messages go out in order, day or night.',
+    `<div class="search">${ico('search', 18)}<input id="qmq" placeholder="Search quick messages"></div><button class="btn" id="qmn">${ico('plus', 16)}New quick message</button>`);
+  const [rs, us] = await Promise.all([api('/auto-replies'), api('/users'), loadLib()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
+  const list = arr(rs), agents = arr(us).filter(u => u.is_active && u.role === 'agent'), on = list.filter(r => r.active).length;
+  const TY = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], audio: ['mic', 'Audio'], file: ['file', 'File'] };
+  const first = r => { const s = arr(r.steps).find(x => x.text) || arr(r.steps)[0] || {}; return s.text || `[${(TY[s.type] || TY.text)[1]}]`; };
+  const card = r => { const kw = arr(r.keywords), st = arr(r.steps);
+    return `<div class="qcard qmcard${r.active ? '' : ' off'}" data-name="${esc((r.name + ' ' + kw.join(' ')).toLowerCase())}"><header><span class="qmic">${ico('reply', 18)}</span><b title="${esc(r.name)}">${esc(r.name)}</b>
+      <label class="tog" title="Switch on or off"><input type="checkbox" data-qt="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label>
+      <button class="rowbtn" data-qe="${r.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-qd="${r.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></header>
+      <div class="qmtr"><small>${r.match_type === 'exact' ? 'Client sends exactly' : 'Client message contains'}</small><span class="kw" title="${esc(kw[0] || '')}">${esc(kw[0] || '')}</span>${kw.length > 1 ? `<span class="kw more">+${kw.length - 1}</span>` : ''}</div>
+      <p>${esc(first(r))}</p>
+      <footer><span>${ico('chat', 14)}${st.length} message${st.length === 1 ? '' : 's'}</span><span>${ico('send', 14)}Sent ${r.sent_count}</span>${r.tag_name ? `<span>${ico('tag', 14)}${esc(r.tag_name)}</span>` : ''}${r.agent_name ? `<span>${ico('user', 14)}${esc(r.agent_name)}</span>` : ''}</footer></div>`; };
+  sc.innerHTML = `<div class="stats">${kpi('reply', list.length, 'Quick messages')}${kpi('zap', on, 'Switched on', 'blue')}${kpi('send', list.reduce((n, r) => n + r.sent_count, 0), 'Times sent', 'amber')}</div>
+  ${list.length ? `<div class="cards" id="qml">${list.map(card).join('')}</div><div id="qmnone" hidden>${emptyState('search', 'No quick messages match', 'Try another word.')}</div>`
+    : `<div class="tbl">${emptyState('reply', 'No quick messages yet', 'Running an ad? Add the first message your ad sends, then the welcome photo, details and buttons that should answer it.', `<button class="btn" id="qmn2">${ico('plus', 16)}New quick message</button>`)}</div>`}
+  ${modal('m-qm', 'Quick message', `<form id="qmf"><label class="fld"><span>Name (only your team sees it)</span><input id="qm1" maxlength="80" placeholder="e.g. Scaling Account ad"></label>
+    <div class="qsec"><div class="qsec-h"><b>Messages to send, in order</b><small id="qmc"></small></div>
+      <div id="qsteps"></div>
+      <div class="qadd"><span>Add a message</span>${Object.entries(TY).map(([k, v]) => `<button type="button" class="ghost" data-qa="${k}">${ico(v[0], 15)}${v[1]}</button>`).join('')}</div><input type="file" id="qmfile" hidden accept="${LIB_ACCEPT}"></div>
+    <div class="qsec"><div class="qsec-h"><b>When to send it</b></div>
+      <select id="qm3"><option value="exact">The client sends exactly this message</option><option value="contains">The client's message contains this word or phrase</option></select>
+      <div class="kwadd"><input id="qmk" maxlength="300" placeholder="Type the ad's first message or a keyword, then press Enter"><button type="button" class="ghost" id="qmka">${ico('plus', 15)}Add</button></div>
+      <div id="qmkw" class="kwl"></div>
+      <label class="qopt"><span>Do not send to clients who unsubscribed (sent STOP)</span><span class="tog"><input type="checkbox" id="qm7"><i></i></span></label></div>
+    <div class="qsec"><div class="qsec-h"><b>After it is sent</b></div><div class="qtwo">
+      <label class="fld"><span>Add tag</span><select id="qm8"><option value="">None</option>${S.labels.map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></label>
+      <label class="fld"><span>Assign agent</span><select id="qm9"><option value="">Automatic, your usual assignment</option>${agents.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label></div></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn" id="qmsave">Save</button></div></form>`, 1)}`;
+
+  /* ----- the builder: R is the rule being edited ----- */
+  let R = null, upFor = null;
+  const fileOpts = st => S.lib.filter(f => st.type === 'file' || f.kind === st.type);
+  const stepHtml = (st, i) => { const f = S.lib.find(x => x.id == st.media_id), bt = arr(st.buttons), hasLink = bt.some(b => b.type === 'url');
+    return `<div class="qstep" data-i="${i}"><div class="qstep-h"><b>#${i + 1}</b><label>Wait <input type="number" min="0" max="60" data-f="delay" value="${Number(st.delay) || 0}"> sec</label><span></span>
+      <button type="button" class="rowbtn" data-up title="Move up" aria-label="Move up"${i ? '' : ' disabled'}>${ico('up', 16)}</button><button type="button" class="rowbtn" data-dn title="Move down" aria-label="Move down"${i < R.steps.length - 1 ? '' : ' disabled'}>${ico('chev', 16)}</button><button type="button" class="rowbtn danger" data-rm title="Remove" aria-label="Remove this message">${ico('trash', 16)}</button></div>
+      <div class="qtype">${Object.entries(TY).map(([k, v]) => `<button type="button" data-ty="${k}" class="${st.type === k ? 'on' : ''}">${ico(v[0], 14)}${v[1]}</button>`).join('')}</div>
+      ${st.type === 'text' ? '' : `<div class="qfile"><span class="pth">${f ? libThumb(f, 20) : ico(TY[st.type][0], 20)}</span><select data-f="media_id"><option value="">Choose from the Media Library</option>${fileOpts(st).map(x => `<option value="${x.id}"${x.id == st.media_id ? ' selected' : ''}>${esc(x.name)} (${fmtSize(x.size)})</option>`).join('')}</select><button type="button" class="ghost" data-upl>${ico('plus', 15)}Upload</button></div>`}
+      ${st.type === 'audio' ? '<small class="mute">WhatsApp does not allow text or buttons on audio. Add a text message after it.</small>' : `<div class="qins"><span>${st.type === 'text' ? 'Text' : 'Caption'}</span><i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button><button type="button" data-ins="{{whatsapp_name}}">+ WhatsApp name</button></div>
+      <textarea data-f="text" rows="3" maxlength="1000" placeholder="${st.type === 'text' ? 'Type the message' : 'Caption (optional)'}">${esc(st.text || '')}</textarea>
+      <div class="qbh"><span>Buttons</span><small>${bt.length} / ${hasLink ? 1 : 3}</small></div>
+      ${bt.map((b, j) => `<div class="qbtn" data-j="${j}"><select data-bf="type"><option value="reply"${b.type === 'url' ? '' : ' selected'}>Quick reply</option><option value="url"${b.type === 'url' ? ' selected' : ''}>Website link</option></select><input data-bf="title" maxlength="20" placeholder="Button name" value="${esc(b.title || '')}">${b.type === 'url' ? `<input data-bf="url" placeholder="https://..." value="${esc(b.url || '')}">` : ''}<button type="button" class="rowbtn danger" data-brm aria-label="Remove button">${ico('trash', 15)}</button></div>`).join('')}
+      ${bt.length < (hasLink ? 1 : 3) ? `<button type="button" class="ghost qbadd" data-badd>${ico('plus', 14)}Add button</button>` : ''}`}</div>`; };
+  const draw = () => { $('#qsteps').innerHTML = R.steps.map(stepHtml).join('') || '<p class="mute" style="margin:0 0 10px">No messages yet. Add the first one below.</p>'; $('#qmc').textContent = R.steps.length + ' of 10'; libThumbs($('#qsteps')); };
+  const drawKw = () => { $('#qmkw').innerHTML = R.keywords.map((k, i) => `<span class="kw big">${esc(k)}<button type="button" data-kx="${i}" aria-label="Remove">${ico('x', 13)}</button></span>`).join('') || '<small class="mute">Nothing added yet.</small>'; };
+  const addKw = () => { const v = $('#qmk').value.replace(/\s+/g, ' ').trim(); if (!v) return; if (!R.keywords.some(k => k.toLowerCase() === v.toLowerCase())) R.keywords.push(v); $('#qmk').value = ''; drawKw(); };
+  const open = r => {
+    R = r ? { id: r.id, name: r.name, keywords: [...arr(r.keywords)], match_type: r.match_type, steps: JSON.parse(JSON.stringify(arr(r.steps))), tag_id: r.tag_id, assign_to: r.assign_to, respect_opt_out: r.respect_opt_out }
+      : { id: null, name: '', keywords: [], match_type: 'exact', steps: [{ type: 'text', text: '', delay: 0, buttons: [] }], tag_id: null, assign_to: null, respect_opt_out: true };
+    R.steps.forEach(s => { s.buttons = arr(s.buttons); });
+    $('#qm1').value = R.name; $('#qm3').value = R.match_type; $('#qm7').checked = R.respect_opt_out; $('#qm8').value = R.tag_id || ''; $('#qm9').value = R.assign_to || ''; $('#qmk').value = '';
+    $('#m-qm .dlg-h b').textContent = r ? 'Edit quick message' : 'New quick message'; draw(); drawKw(); $('#m-qm').hidden = false; $('#m-qm .mb').scrollTop = 0; if (innerWidth > 760 && !r) $('#qm1').focus();
+  };
   const by = id => list.find(r => r.id == id);
-  const open = r => { S.qmEdit = r ? r.id : null; $('#qm1').value = r ? r.name : ''; $('#qm2').value = r ? arr(r.keywords).join(', ') : ''; $('#qm3').value = r ? r.match_type : 'contains'; $('#qm4').value = r ? r.body : '';
-    $('#qm5').value = r && r.media_id ? r.media_id : ''; $('#qm6').value = r && r.buttons ? r.buttons.join(', ') : ''; $('#m-qm .dlg-h b').textContent = r ? 'Edit quick message' : 'New quick message'; $('#m-qm').hidden = false; if (innerWidth > 760) $('#qm1').focus(); };
   $('#qmn').onclick = () => open(null); if ($('#qmn2')) $('#qmn2').onclick = () => open(null);
-  $('#qmf').onsubmit = async e => { e.preventDefault();
-    const r = await api('/auto-replies' + (S.qmEdit ? '/' + S.qmEdit : ''), S.qmEdit ? 'PATCH' : 'POST', { name: $('#qm1').value, keywords: $('#qm2').value, match_type: $('#qm3').value, body: $('#qm4').value, media_id: $('#qm5').value || null, buttons: $('#qm6').value });
-    if (r.error) return toast(r.error); toast(S.qmEdit ? 'Quick message updated' : 'Quick message added and switched on'); showQuickMsg(); };
+  $('#qmq').oninput = () => { const q = $('#qmq').value.trim().toLowerCase(); let n = 0; sc.querySelectorAll('.qmcard').forEach(c => { const hit = !q || c.dataset.name.includes(q); c.hidden = !hit; if (hit) n++; }); if ($('#qmnone')) $('#qmnone').hidden = n > 0; };
+  $('#qmka').onclick = addKw; $('#qmk').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKw(); } };
+  $('#qmkw').onclick = e => { const x = e.target.closest('[data-kx]'); if (x) { R.keywords.splice(+x.dataset.kx, 1); drawKw(); } };
+  $('#qmf').querySelector('.qadd').onclick = e => { const b = e.target.closest('[data-qa]'); if (!b) return; if (R.steps.length >= 10) return toast('A quick message can have up to 10 messages'); R.steps.push({ type: b.dataset.qa, text: '', delay: 0, buttons: [] }); draw(); const last = $('#qsteps').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+  const S_ = e => { const el = e.target.closest('.qstep'); return el ? R.steps[+el.dataset.i] : null; };
+  $('#qsteps').oninput = e => { const st = S_(e), t = e.target; if (!st) return;
+    if (t.dataset.f === 'text') st.text = t.value; else if (t.dataset.f === 'delay') st.delay = Math.min(60, Math.max(0, parseInt(t.value) || 0));
+    else if (t.dataset.bf === 'title' || t.dataset.bf === 'url') st.buttons[+t.closest('.qbtn').dataset.j][t.dataset.bf] = t.value; };
+  $('#qsteps').onchange = e => { const st = S_(e), t = e.target; if (!st) return;
+    if (t.dataset.f === 'media_id') { st.media_id = Number(t.value) || null; draw(); }
+    else if (t.dataset.bf === 'type') { const j = +t.closest('.qbtn').dataset.j; st.buttons[j].type = t.value; if (t.value === 'url') st.buttons = [st.buttons[j]]; draw(); } };
+  $('#qsteps').onclick = e => { const st = S_(e); if (!st) return; const i = R.steps.indexOf(st), c = s => e.target.closest(s);
+    if (c('[data-ty]')) { const ty = c('[data-ty]').dataset.ty; if (ty === st.type) return; st.type = ty; const f = S.lib.find(x => x.id == st.media_id); if (ty === 'text' || (f && ty !== 'file' && f.kind !== ty)) st.media_id = null; if (ty === 'audio') { st.buttons = []; st.text = ''; } return draw(); }
+    if (c('[data-up]') && i > 0) { R.steps.splice(i - 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
+    if (c('[data-dn]') && i < R.steps.length - 1) { R.steps.splice(i + 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
+    if (c('[data-rm]')) { R.steps.splice(i, 1); return draw(); }
+    if (c('[data-badd]')) { st.buttons.push({ type: 'reply', title: '' }); draw(); const ins = $('#qsteps').children[i].querySelectorAll('[data-bf="title"]'); if (ins.length) ins[ins.length - 1].focus(); return; }
+    if (c('[data-brm]')) { st.buttons.splice(+c('.qbtn').dataset.j, 1); return draw(); }
+    if (c('[data-ins]')) { const ta = c('.qstep').querySelector('textarea'), a = ta.selectionStart, v = c('[data-ins]').dataset.ins; ta.setRangeText(v, a, ta.selectionEnd, 'end'); st.text = ta.value; ta.focus(); return; }
+    if (c('[data-upl]')) { upFor = st; $('#qmfile').click(); } };
+  $('#qmfile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f || !upFor) return;
+    if (f.size > 16 * 1024 * 1024) return toast('Files must be under 16 MB');
+    toast('Uploading ' + f.name + '…');
+    const r = await fetch(API + '/api/media-library?' + new URLSearchParams({ filename: f.name, mime: f.type || 'application/octet-stream' }), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + S.token }, body: f });
+    const d = await r.json().catch(() => ({})); if (!r.ok) return toast(d.error || 'Could not upload the file');
+    await loadLib(); if (upFor.type !== 'file' && d.kind !== upFor.type) { toast('Saved in the library, but it is not ' + (upFor.type === 'image' ? 'a JPG or PNG photo' : upFor.type === 'video' ? 'an MP4 video' : 'an audio file') + '. Use the File type for it.'); return draw(); }
+    upFor.media_id = d.id; draw(); };
+  $('#qmf').onsubmit = async e => { e.preventDefault(); addKw();
+    const body = { name: $('#qm1').value, keywords: R.keywords, match_type: $('#qm3').value, steps: R.steps, tag_id: $('#qm8').value || null, assign_to: $('#qm9').value || null, respect_opt_out: $('#qm7').checked };
+    const r = await api('/auto-replies' + (R.id ? '/' + R.id : ''), R.id ? 'PATCH' : 'POST', body);
+    if (r.error) return toast(r.error); toast(R.id ? 'Quick message updated' : 'Quick message added and switched on'); showQuickMsg(); };
   sc.querySelectorAll('[data-qt]').forEach(c => c.onchange = async () => { const r = await api('/auto-replies/' + c.dataset.qt, 'PATCH', { active: c.checked }); if (r.error) { c.checked = !c.checked; return toast(r.error); } toast(c.checked ? 'Switched on' : 'Switched off'); showQuickMsg(); });
   sc.querySelectorAll('[data-qe]').forEach(b => b.onclick = () => open(by(b.dataset.qe)));
-  sc.querySelectorAll('[data-qd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.qd); if (!(await sure('Delete this quick message?', `"${r.name}" will stop replying to clients.`, { ok: 'Delete', danger: true }))) return; await api('/auto-replies/' + r.id, 'DELETE'); toast('Quick message deleted'); showQuickMsg(); });
+  sc.querySelectorAll('[data-qd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.qd); if (!(await sure('Delete this quick message?', `"${r.name}" will stop answering clients.`, { ok: 'Delete', danger: true }))) return; await api('/auto-replies/' + r.id, 'DELETE'); toast('Quick message deleted'); showQuickMsg(); });
 }
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
