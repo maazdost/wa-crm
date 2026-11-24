@@ -22,19 +22,26 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand);box-
 .ub.dotb{min-width:12px;width:12px;height:12px;padding:0;line-height:12px}
 .av{flex:none;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:600}
 /* sign in */
-.login{height:100%;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--surface)}
-.lbrand{background:linear-gradient(160deg,#075e54 0%,#00a884 100%);color:#fff;padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between;gap:28px}
-.lbrand h2{font-size:32px;line-height:1.2;letter-spacing:-.5px;margin:0 0 14px;max-width:440px;font-weight:600}.lbrand p{color:#d3efe8;max-width:420px;margin:0}.lbrand small{color:#bfe6dc}
-.lb-top{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700;letter-spacing:.2px}
-.lb-feat{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:14px;max-width:460px}
-.lb-feat li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
-.lb-feat i{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-style:normal;font-size:17px}
-.lb-feat b{display:block;font-size:14.5px;font-weight:600}.lb-feat span{display:block;font-size:13px;color:#d3efe8;line-height:1.35}
-.lb-steps{display:flex;gap:10px;flex-wrap:wrap}.lb-steps span{background:rgba(255,255,255,.14);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:600}
-.lb-note{margin:4px 0 0;text-align:center;font-size:12.5px;color:var(--mute)}
-.lform{display:grid;place-items:center;padding:24px;background:var(--bg)}.lform form{width:min(380px,100%);display:grid;gap:12px;background:var(--card);padding:28px;border-radius:12px;box-shadow:var(--sh2)}
-.lform h1{margin:0;font-size:24px;font-weight:600}.lform p{margin:0 0 6px}
-.logo{width:42px;height:42px;border-radius:50%;background:#fff;color:var(--brand-d);display:grid;place-items:center;font-weight:800}
+.login{height:100vh;height:100dvh;overflow:auto;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-auto-rows:minmax(100%,auto);background:var(--surface)}
+.lbrand{position:relative;overflow:hidden;background:radial-gradient(900px 500px at 110% -10%,rgba(37,211,102,.35),transparent 60%),radial-gradient(700px 500px at -10% 110%,rgba(0,168,132,.45),transparent 60%),#063b33;color:#fff;padding:40px 56px;display:flex;flex-direction:column;justify-content:space-between;gap:28px}
+.lb-top{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700;letter-spacing:-.2px}.lb-top em{font-style:normal;color:#5ee0b0}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(140deg,#25d366,#00a884);color:#fff;display:grid;place-items:center;font-weight:800;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.lbrand h2{font-size:38px;line-height:1.12;letter-spacing:-1px;margin:0 0 14px;max-width:480px;font-weight:700}.lbrand h2 em{font-style:normal;color:#5ee0b0}.lbrand p{color:#c5e6dd;max-width:440px;margin:0;font-size:15px;line-height:1.55}
+.lmock{margin-top:30px;max-width:460px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:14px;display:grid;gap:8px;backdrop-filter:blur(6px)}
+.lm-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.08);border-radius:12px;padding:10px 12px}.lm-row>b{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:14px;flex:none}
+.lm-row div{flex:1;min-width:0;display:grid;line-height:1.3}.lm-row strong{font-size:13.5px;font-weight:600}.lm-row small{color:#bfe0d7;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lm-row em{font-style:normal;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;background:rgba(94,224,176,.2);color:#8ff0c8;white-space:nowrap}.lm-row em.n{background:#25d366;color:#063b33}
+.lb-pts{display:flex;gap:22px;flex-wrap:wrap;list-style:none;margin:0;padding:0;font-size:13px;color:#d6efe8}.lb-pts li{display:flex;align-items:center;gap:8px}.lb-pts .ic{color:#5ee0b0}
+.lbrand>small{color:#9fcabf;font-size:12px}
+.lform{display:grid;place-items:center;padding:32px 24px;background:var(--surface)}.lbox{display:grid;gap:14px;width:min(400px,100%)}
+.lform form{display:grid;gap:16px}.lform h1{margin:0;font-size:28px;font-weight:700;letter-spacing:-.6px}.lform form>p{margin:-8px 0 4px;font-size:14.5px;line-height:1.5}
+.lhead{width:52px;height:52px;border-radius:14px;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center;margin-bottom:2px}
+.lfl{display:grid;gap:6px}.lfl>span{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink2)}.lfl a,.lb-note a{color:var(--brand-d);font-weight:600;text-decoration:none}.lfl a:hover,.lb-note a:hover{text-decoration:underline}
+[data-theme="dark"] .lfl a,[data-theme="dark"] .lb-note a{color:var(--tint-ink)}
+.inp{position:relative}.inp>.ic{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mute);pointer-events:none}.inp input{height:46px;padding:0 44px;border-radius:12px;font-size:15px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--mute);width:34px;height:34px;border-radius:8px;display:grid;place-items:center}.eye:hover{background:var(--hover)}
+.lform .btn{height:46px;border-radius:12px;font-size:15px;width:100%}.lform .err:empty,.lform .okm:empty{display:none}.lform .err{min-height:0;background:var(--redbg);border:1px solid var(--red-line);border-radius:10px;padding:9px 12px;font-size:13.5px}.lform .okm{background:var(--tint);border:1px solid var(--tint-line);color:var(--tint-ink);border-radius:10px;padding:9px 12px}
+.lb-note{margin:0;text-align:center;font-size:13.5px;color:var(--mute)}.lfoot{margin-top:18px;display:flex;justify-content:center;align-items:center;gap:7px;font-size:12px;color:var(--mute)}
 /* layout */
 .side{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 8px}
@@ -76,7 +83,7 @@ input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand);box-
 .acc{position:fixed;z-index:50}
 .winbar{text-align:center;padding:3px 14px;font-size:12px;background:var(--tint);color:var(--tint-ink);border-bottom:1px solid var(--tint-line)}.winbar.warn{background:var(--warnbg);color:var(--warn);border-color:var(--warn-line)}.winbar.closed{background:var(--redbg);color:var(--red);border-color:var(--red-line)}
 .sbar{display:flex;align-items:center;gap:8px;background:var(--bg);border-bottom:1px solid var(--line);padding:6px 12px;color:var(--icon)}.sbar input{flex:1;border-color:transparent;background:var(--inp)}.sbar .mute{white-space:nowrap;font-size:12.5px}
-#lbl:empty::after{content:"No labels yet. A manager can add them in Settings.";color:var(--mute);font-size:13px}
+#lbl:empty::after{content:"No tags yet. A manager can add them under Tags.";color:var(--mute);font-size:13px}
 .mgr{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13px}.mgr select{flex:1;min-width:0;max-width:320px;padding:6px 8px}
 .lbl{display:flex;gap:6px;flex-wrap:wrap}
 .lb2{border:1px solid;border-radius:999px;padding:2px 12px;font-size:12px;font-weight:600;background:none}
@@ -246,7 +253,7 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .dlg{border-radius:16px}.dlg-b p{margin:0 0 12px}.dlg-f{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .dlg-h{padding:12px 12px 12px 20px}
 @media(max-width:1280px){.cpanel{position:fixed;right:0;top:0;bottom:0;z-index:60;box-shadow:var(--sh2);width:min(340px,100%)}}
-@media(max-width:1100px){.shell{grid-template-columns:68px minmax(0,1fr)}.shell .brand{justify-content:center;padding:0}.shell .brand b,.shell .ni span{display:none}.shell .ng{font-size:0;padding:0;margin:9px 12px;border-top:1px solid var(--line)}.shell .ng:first-child{border:0;margin:6px 0 0}.shell .ni{justify-content:center;padding:11px 0}.shell .ni .nb{position:absolute;top:2px;right:6px;min-width:17px;line-height:17px;font-size:10px;padding:0 4px}#navtg{display:none}.dgrid{grid-template-columns:minmax(0,1fr)}.team{padding:0 18px 40px}}
+@media(max-width:1100px){.lbrand{padding:32px}.lbrand h2{font-size:30px}.shell{grid-template-columns:68px minmax(0,1fr)}.shell .brand{justify-content:center;padding:0}.shell .brand b,.shell .ni span{display:none}.shell .ng{font-size:0;padding:0;margin:9px 12px;border-top:1px solid var(--line)}.shell .ng:first-child{border:0;margin:6px 0 0}.shell .ni{justify-content:center;padding:11px 0}.shell .ni .nb{position:absolute;top:2px;right:6px;min-width:17px;line-height:17px;font-size:10px;padding:0 4px}#navtg{display:none}.dgrid{grid-template-columns:minmax(0,1fr)}.team{padding:0 18px 40px}}
 @media(max-width:760px){
   .shell,.shell.navmin{grid-template-columns:minmax(0,1fr)}.nav,.topbar{display:none}.avtop{display:grid}.work{grid-template-columns:minmax(0,1fr)}
   .team{padding:0 12px calc(84px + env(safe-area-inset-bottom,0px))}.ph{background:var(--brand-d);color:#fff;margin:0 -12px 14px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;position:sticky;top:0;z-index:5;gap:8px}.ph h1{font-size:17px;font-weight:600;letter-spacing:0}.ph p{display:none}.pht{min-width:120px}.ph .back{color:#fff;margin-left:0}.ph select{color:var(--ink)}#dgo{display:none}
@@ -258,7 +265,7 @@ td .ghost{padding:5px 10px;font-size:12.5px}
   .shell.ismgr .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
   .chat-open .tabbar{display:none!important}
   .tb{position:relative;flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--mute);padding:4px 0}.tb .ic{box-sizing:content-box;padding:4px 18px;border-radius:16px}.tb.on{color:var(--ink);font-weight:700}.tb.on .ic{background:var(--pillon)}.tb .nb{position:absolute;top:0;left:56%}
-  .login{grid-template-columns:minmax(0,1fr);align-content:start}.lbrand{padding:24px 20px 28px;gap:16px}.lbrand h2{font-size:23px;margin-bottom:8px}.lb-feat{margin-top:14px;gap:10px}.lb-feat span{display:none}.lb-steps{display:none}.lbrand small{display:none}.lform{padding:18px 16px 28px}
+  .login{grid-template-columns:minmax(0,1fr);grid-template-rows:max-content 1fr;grid-auto-rows:auto}.lbrand{padding:calc(22px + env(safe-area-inset-top,0px)) 20px 24px;gap:14px}.lbrand h2{font-size:24px;margin-bottom:8px;letter-spacing:-.4px}.lbrand p{font-size:14px}.lmock,.lb-pts,.lbrand>small{display:none}.lform{padding:26px 18px 32px;place-items:start center}.lform h1{font-size:24px}
   .msgs{padding:12px 3%}.b{max-width:84%}.stats,.stats.s4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bx{display:grid}
 }
 .ringbox{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 24px));background:#0b3d36;color:#fff;border-radius:16px;padding:14px 16px;z-index:150;box-shadow:0 8px 30px #0006;display:grid;gap:12px}
@@ -337,6 +344,9 @@ const ICONS = {
   panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
   userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   check: '<polyline points="20 6 9 17 4 12"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
 };
 const ico = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
@@ -345,15 +355,17 @@ const avatar = (name, size = 44) => `<span class="av" style="width:${size}px;hei
 const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a conversation</b><span>Pick a chat on the left to read it and reply. Every client stays with one team member from start to finish.</span>`;
 // key, label, icon, managers only, super admin only, menu group
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
-  ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['bc', 'Broadcasts', 'megaphone', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'],
+  ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
-  ['tm', 'Team', 'user', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+  ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tm: showTeam, co: showCompanies })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies })[k]();
   syncNav();
 }
-function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) sh.classList.toggle('onpage', pg); document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
+function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
+// On pages the menu is open unless you fold it; in Live Chat it is folded unless you open it. Each choice is remembered.
+const navIsMin = pg => pg ? localStorage.getItem('ti_nav') === 'min' : localStorage.getItem('ti_navchat') !== 'full';
 function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
 /* ---------- Page building blocks ---------- */
 const phead = (title, sub = '', actions = '') => `<header class="ph"><button class="back" id="tb" aria-label="Back">${ico('back')}</button><div class="pht"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="pha">${actions}</div></header>`;
@@ -445,21 +457,24 @@ async function copyToClipboard(text) {
 }
 
 /* ---------- Login ---------- */
+const lfld = (id, label, type, ph, ic, attrs = '', side = '') => `<label class="lfl"><span>${label}${side}</span><div class="inp">${ico(ic, 17)}<input id="${id}" type="${type}" placeholder="${ph}" ${attrs}>${type === 'password' ? `<button type="button" class="eye" tabindex="-1" aria-label="Show or hide the password">${ico('eye', 17)}</button>` : ''}</div></label>`;
+const LFOOT = `<div class="lfoot">${ico('shield', 14)}<span>Secure sign-in · © ${new Date().getFullYear()} TeamInbox Pro</span></div>`;
+document.addEventListener('click', e => { const b = e.target.closest('.eye'); if (!b) return; e.preventDefault(); const i = b.parentNode.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); });
 const postPublic = (path, body) => fetch(API + path, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) }).then(r => r.json()).catch(() => ({ error: 'Cannot reach the server. Check your connection.' }));
 function showForgot() {
-  showLogin(); const box = document.querySelector('.lform > div');
-  box.innerHTML = `<form id="ff" style="width:100%"><h1>Forgot your password?</h1><p class="mute">Enter the email you sign in with. We will send you a link to choose a new password.</p>
-    <input id="fe" type="email" placeholder="Email" autocomplete="username" required><button class="btn">Send reset link</button><div class="err" id="fm"></div></form><p class="lb-note"><a href="#" id="fb">Back to sign in</a></p>`;
+  showLogin(); const box = document.querySelector('.lbox');
+  box.innerHTML = `<form id="ff"><span class="lhead">${ico('mail', 24)}</span><h1>Forgot your password?</h1><p class="mute">Enter the email you sign in with. We will send you a link to choose a new password.</p>
+    ${lfld('fe', 'Email', 'email', 'you@company.com', 'mail', 'autocomplete="username" required')}<button class="btn">Send reset link</button><div class="err" id="fm"></div></form><p class="lb-note"><a href="#" id="fb">Back to sign in</a></p>${LFOOT}`;
   $('#fb').onclick = e => { e.preventDefault(); showLogin(); };
   $('#ff').onsubmit = async e => { e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
     const r = await postPublic('/api/auth/forgot', { email: $('#fe').value }); b.disabled = false;
     const m = $('#fm'); m.className = r.error ? 'err' : 'okm'; m.textContent = r.error || r.message; };
 }
 function showReset(token) {
-  showLogin(); const box = document.querySelector('.lform > div');
-  box.innerHTML = `<form id="rf" style="width:100%"><h1>Choose a new password</h1><p class="mute">Use at least 8 characters.</p>
-    <input id="r1" type="password" minlength="8" placeholder="New password" autocomplete="new-password" required><input id="r2" type="password" minlength="8" placeholder="Repeat the new password" autocomplete="new-password" required>
-    <button class="btn">Save password</button><div class="err" id="rm"></div></form><p class="lb-note"><a href="#" id="rb">Back to sign in</a></p>`;
+  showLogin(); const box = document.querySelector('.lbox');
+  box.innerHTML = `<form id="rf"><span class="lhead">${ico('lock', 24)}</span><h1>Choose a new password</h1><p class="mute">Use at least 8 characters.</p>
+    ${lfld('r1', 'New password', 'password', '8 or more characters', 'lock', 'minlength="8" autocomplete="new-password" required')}${lfld('r2', 'Repeat the new password', 'password', 'Type it again', 'lock', 'minlength="8" autocomplete="new-password" required')}
+    <button class="btn">Save password</button><div class="err" id="rm"></div></form><p class="lb-note"><a href="#" id="rb">Back to sign in</a></p>${LFOOT}`;
   const done = () => { history.replaceState(null, '', location.pathname); showLogin(); };
   $('#rb').onclick = e => { e.preventDefault(); done(); };
   $('#rf').onsubmit = async e => { e.preventDefault(); const m = $('#rm'); m.className = 'err';
@@ -469,21 +484,17 @@ function showReset(token) {
     done(); const o = document.querySelector('#lf .err'); if (o) { o.className = 'okm'; o.textContent = 'Password changed. Sign in with your new password.'; } };
 }
 function showLogin(err) {
+  const mrow = (n, c, t, tag, cls = '') => `<div class="lm-row"><b style="background:${c}">${n[0]}</b><div><strong>${n}</strong><small>${t}</small></div><em class="${cls}">${tag}</em></div>`;
   $('#app').innerHTML = `<div class="login"><aside class="lbrand">
-    <div class="lb-top"><div class="logo">TI</div>TeamInbox Pro</div>
-    <div><h2>Every client conversation, with one owner.</h2><p>One shared WhatsApp inbox for your whole team. A bot says hello, the right team member takes over, and stays with the client until the end.</p>
-      <ul class="lb-feat">
-        <li><i>🤖</i><div><b>Smart first reply</b><span>The bot greets new clients, finds out what they need and collects their name.</span></div></li>
-        <li><i>👥</i><div><b>Right person, every time</b><span>Chats go to the correct team and stay with the same agent, so clients never repeat themselves.</span></div></li>
-        <li><i>📣</i><div><b>Broadcasts and follow-ups</b><span>Send approved messages to a chosen audience, and follow up automatically if a client goes quiet.</span></div></li>
-        <li><i>📱</i><div><b>Works on phone and computer</b><span>Photos, voice notes and documents, with alerts on the Android app.</span></div></li>
-      </ul></div>
-    <div class="lb-steps"><span>1 · Client messages</span><span>2 · Bot greets</span><span>3 · Agent takes over</span></div>
-    <small>Secure sign-in for team members only.</small></aside>
-  <main class="lform"><div style="display:grid;gap:12px;width:min(380px,100%)"><form id="lf" style="width:100%"><h1>Welcome back</h1><p class="mute">Sign in with the account your manager created for you.</p>
-  <input id="em" type="email" placeholder="Email" autocomplete="username" required><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+    <div class="lb-top"><div class="logo">TI</div><span>TeamInbox <em>Pro</em></span></div>
+    <div><h2>Every WhatsApp conversation, <em>with one owner.</em></h2><p>One shared inbox for your whole team. The bot says hello, the right agent takes over, and stays with the client until the end.</p>
+      <div class="lmock" aria-hidden="true">${mrow('Ayesha Khan', '#3b7a9e', 'Thank you, I will join the class', '2', 'n')}${mrow('Bilal Ahmed', '#8a5a9e', 'Can you share the fee details?', 'Sales')}${mrow('Sana Malik', '#a9743a', 'Assigned to Omar · 23h left', 'Support')}</div></div>
+    <ul class="lb-pts"><li>${ico('bot', 16)}Smart first reply</li><li>${ico('users', 16)}Right agent, every time</li><li>${ico('megaphone', 16)}Broadcasts and follow-ups</li></ul>
+    <small>Built on the official WhatsApp Business Platform.</small></aside>
+  <main class="lform"><div class="lbox"><form id="lf"><h1>Welcome back</h1><p class="mute">Sign in to your team inbox.</p>
+  ${lfld('em', 'Email', 'email', 'you@company.com', 'mail', 'autocomplete="username" required')}${lfld('pw', 'Password', 'password', 'Your password', 'lock', 'autocomplete="current-password" required', '<a href="#" id="fg">Forgot password?</a>')}
   <button class="btn">Sign in</button><div class="err">${esc(err || '')}</div></form>
-  <p class="lb-note"><a href="#" id="fg">Forgot your password?</a></p><p class="lb-note" id="sul" hidden>New here? <a href="#" id="sug">Create your company account</a></p></div></main></div>`;
+  <p class="lb-note" id="sul" hidden>New here? <a href="#" id="sug">Create your company account</a></p>${LFOOT}</div></main></div>`;
   $('#fg').onclick = e => { e.preventDefault(); showForgot(); };
   $('#sug').onclick = e => { e.preventDefault(); showSignup(); };
   signupOpen().then(on => { const p = $('#sul'); if (p) p.hidden = !on; });
@@ -499,11 +510,11 @@ function showLogin(err) {
 let _signupOpen = null;
 const signupOpen = () => _signupOpen || (_signupOpen = fetch(API + '/api/auth/config').then(r => r.json()).then(d => !!d.signup).catch(() => false));
 function showSignup() {
-  showLogin(); const box = document.querySelector('.lform > div');
-  box.innerHTML = `<form id="sf" style="width:100%"><h1>Create your account</h1><p class="mute">Set up a shared WhatsApp inbox for your team. You will be the admin and can add your team members afterwards.</p>
-    <input id="sc" placeholder="Company name" autocomplete="organization" maxlength="80" required><input id="sn" placeholder="Your full name" autocomplete="name" maxlength="60" required>
-    <input id="se" type="email" placeholder="Work email" autocomplete="username" required><input id="sp" type="password" minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" required>
-    <button class="btn">Create account</button><div class="err" id="sm"></div></form><p class="lb-note">Already have an account? <a href="#" id="sb">Sign in</a></p>`;
+  showLogin(); const box = document.querySelector('.lbox');
+  box.innerHTML = `<form id="sf"><h1>Create your account</h1><p class="mute">Set up a shared WhatsApp inbox for your team. You will be the admin and can add your team members afterwards.</p>
+    ${lfld('sc', 'Company name', 'text', 'Your business name', 'building', 'autocomplete="organization" maxlength="80" required')}${lfld('sn', 'Your full name', 'text', 'First and last name', 'user', 'autocomplete="name" maxlength="60" required')}
+    ${lfld('se', 'Work email', 'email', 'you@company.com', 'mail', 'autocomplete="username" required')}${lfld('sp', 'Password', 'password', '8 or more characters', 'lock', 'minlength="8" autocomplete="new-password" required')}
+    <button class="btn">Create account</button><div class="err" id="sm"></div></form><p class="lb-note">Already have an account? <a href="#" id="sb">Sign in</a></p>${LFOOT}`;
   $('#sb').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname); showLogin(); };
   $('#sf').onsubmit = async e => { e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
     const d = await postPublic('/api/auth/signup', { company: $('#sc').value, name: $('#sn').value, email: $('#se').value, password: $('#sp').value }); b.disabled = false;
@@ -520,7 +531,7 @@ async function boot() {
   const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super)), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
   const badge = k => k === 'inbox' ? '<i class="nb" hidden></i>' : '';
   const groups = []; items.forEach(n => { if (!groups.length || groups[groups.length - 1][0] !== n[5]) groups.push([n[5], []]); groups[groups.length - 1][1].push(n); });
-  const navPref = localStorage.getItem('ti_nav'), navmin = navPref ? navPref === 'min' : !mgr;
+  const navmin = navIsMin(false);
   $('#app').innerHTML = `<div class="shell${mgr ? ' ismgr' : ''}${navmin ? ' navmin' : ''}">
     <aside class="nav"><div class="brand"><span class="lg">TI</span><b>TeamInbox <em>Pro</em></b></div>
       <div class="navsc">${groups.map(g => `<div class="ng">${g[0]}</div>` + g[1].map(n => `<button class="ni${n[0] === 'inbox' ? ' on' : ''}" data-nav="${n[0]}" title="${n[1]}" aria-label="${n[1]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('')).join('')}</div>
@@ -533,7 +544,7 @@ async function boot() {
     <div class="work"><aside class="side"><header class="top"><div><h1>Live Chat</h1><small id="sub">Loading…</small></div><button class="ib avtop" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 36)}</button></header>
       <div class="tools"><div class="search">${ico('search', 18)}<input id="q" placeholder="Search name or number"></div>
       <div class="tabs" id="tabs"></div>
-      <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div></div><div id="list" class="list"></div></aside>
+      <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${k === 'inbox' ? 'Chats' : n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
@@ -546,7 +557,7 @@ async function boot() {
   document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-more]')) closeOverlays(); });
   new MutationObserver(syncNav).observe($('#team'), { attributes: true, attributeFilter: ['hidden'] });
   $('#out').onclick = logout; $('#out2').onclick = logout;
-  $('#navtg').onclick = () => { const m = $('.shell').classList.toggle('navmin'); localStorage.setItem('ti_nav', m ? 'min' : 'full'); };
+  $('#navtg').onclick = () => { const sh = $('.shell'), m = sh.classList.toggle('navmin'); localStorage.setItem(sh.classList.contains('onpage') ? 'ti_nav' : 'ti_navchat', m ? 'min' : 'full'); };
   $('#modebtn').onclick = () => { setPref({ mode: effTheme() === 'dark' ? 'light' : 'dark' }); applyTheme(); $('#modebtn').innerHTML = ico(effTheme() === 'dark' ? 'sun' : 'moon', 18); };
   if (mgr) api('/whatsapp/numbers').then(ns => { const n = arr(ns).find(x => x.is_default) || arr(ns)[0], p = $('#numpill'); if (!p) return; p.hidden = false; p.classList.toggle('off', !n); p.innerHTML = n ? `${ico('phone', 13)}<span>${esc(n.display_phone || n.label)}${arr(ns).length > 1 ? ' +' + (arr(ns).length - 1) : ''}</span>` : '<i></i><span>No WhatsApp number yet</span>'; if (!n) p.onclick = () => goNav('st'); });
   if (mgr && innerWidth > 760) goNav('dash');
@@ -755,7 +766,7 @@ function buildPanel() {
   p.innerHTML = `<div class="cp-h"><span>Contact details</span><button class="ib" id="cpx" aria-label="Close contact details">${ico('x', 20)}</button></div>
     <div class="cp-top" id="cptop"></div>
     <div class="cp-sec"><h4>Assigned to</h4><div id="mgr">${isMgr() ? '' : esc(S.conv.assigned_to === S.user.id ? 'You' : S.conv.agent_name || 'Nobody yet')}</div></div>
-    <div class="cp-sec"><h4>Labels</h4><div id="lbl"></div></div>
+    <div class="cp-sec"><h4>Tags</h4><div id="lbl"></div></div>
     <div class="cp-sec"><h4>Internal notes</h4><section id="notes" class="notes"></section></div>
     <div class="cp-sec"><h4>About this client</h4><dl class="kv" id="cpkv"></dl></div>
     <div class="cp-sec"><h4>Media, files and voice notes</h4><div id="mcount"><button class="ghost" id="mcb">Count shared files</button></div></div>`;
@@ -1045,7 +1056,7 @@ async function showTeam() {
   const [st, us, ds] = await Promise.all([api('/stats'), api('/users'), api('/departments')]); if (st.error || us.error) return toast(st.error || us.error); if (S.nav !== 'tm') return;
   const dopt = v => arr(ds).map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join(''), dname = k => (arr(ds).find(d => d.key === k) || { name: k }).name;
   const t = st.totals, admin = S.user.role === 'admin', cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-  el.innerHTML = phead('Team', 'Your team members, their departments and who receives new chats.', admin ? `<button class="btn" data-open="m-user">${ico('userplus', 16)}Add team member</button>` : '') + `
+  el.innerHTML = phead('Agents', 'Your team members, their departments and who receives new chats.', admin ? `<button class="btn" data-open="m-user">${ico('userplus', 16)}Add agent</button>` : '') + `
   <div class="stats">${kpi('users', us.filter(u => u.is_active).length, 'Active members')}${kpi('check', us.filter(u => u.is_active && u.is_online).length, 'Online now', 'blue')}${kpi('chat', t.open, 'Open chats', 'violet')}${kpi('hourglass', t.unassigned, 'Waiting for an agent', 'amber')}</div>
   <div class="tbl"><div class="tbl-h"><b>Members</b><div class="search">${ico('search', 16)}<input id="uq" placeholder="Search name or email"></div></div>
   <table><thead><tr><th>Member</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>New chats</th><th></th>' : ''}</tr></thead><tbody id="utb">
@@ -1075,7 +1086,7 @@ async function showTeam() {
 }
 
 /* ---------- Labels + quick replies ---------- */
-function fillLabelFilter() { const f = $('#lf'); if (f) f.innerHTML = '<option value="">All labels</option>' + S.labels.map(l => `<option value="${l.id}"${String(l.id) === String(S.label || '') ? ' selected' : ''}>${esc(l.name)}</option>`).join(''); }
+function fillLabelFilter() { const f = $('#lf'); if (f) f.innerHTML = '<option value="">All tags</option>' + S.labels.map(l => `<option value="${l.id}"${String(l.id) === String(S.label || '') ? ' selected' : ''}>${esc(l.name)}</option>`).join(''); }
 function renderLabels() {
   const el = $('#lbl'); if (!el) return;
   if (!S.labels.length) { el.className = ''; el.innerHTML = ''; return; }
@@ -1171,9 +1182,10 @@ async function showSettings(mode) {
   S.quick = arr(ql); S.labels = arr(lb); fillLabelFilter();
   const b = st.bot, a = st.away, g = st.gate, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], admin = S.user.role === 'admin';
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
-  const TABS = { st: [admin && ['general', 'General'], ['wa', 'WhatsApp numbers'], admin && ['dept', 'Departments and routing'], ['labels', 'Labels']].filter(Boolean), bot: [['bot', 'Bot messages'], ['away', 'Away message'], ['gate', 'Who gets the bot']], qr: [['quick', '']] }[mode];
+  const TABS = { st: [admin && ['general', 'General'], ['wa', 'WhatsApp numbers'], admin && ['dept', 'Departments and routing']].filter(Boolean), tg: [['labels', '']], bot: [['bot', 'Bot messages'], ['away', 'Away message'], ['gate', 'Who gets the bot']], qr: [['quick', '']] }[mode];
   S.stTab = S.stTab || {}; const cur = TABS.some(x => x[0] === S.stTab[mode]) ? S.stTab[mode] : TABS[0][0];
   const HEAD = { st: ['Settings', 'Your company, WhatsApp numbers, departments and labels.'], bot: ['Bot & Away', 'What the bot says to new clients, your away message, and who the bot answers.'],
+    tg: ['Tags', 'Coloured tags your team puts on chats, for example Hot lead or Paid. You can filter chats and broadcasts by tag.'],
     qr: ['Quick Replies', 'Saved answers your agents send by typing / in a chat. {{name}} becomes the client\'s first name and {{agent}} the agent\'s name.'] }[mode];
   const sec = k => `data-sec="${k}"${k === cur ? '' : ' hidden'}`;
   el.innerHTML = phead(HEAD[0], HEAD[1], mode === 'qr' ? `<button class="btn" data-open="m-qr">${ico('plus', 16)}Add quick reply</button>` : '') + `
@@ -1210,9 +1222,9 @@ async function showSettings(mode) {
   ${modal('m-qr', 'Add a quick reply', `<form id="qf" style="display:grid;gap:4px"><label class="fld"><span>Shortcut (agents type / and this word)</span><input id="q1" placeholder="e.g. fees" required></label><label class="fld"><span>Title</span><input id="q2" placeholder="e.g. Course fees" required></label>
     <label class="fld"><span>Message text</span><textarea id="q3" rows="4" required></textarea></label><label class="fld"><span>Buttons (optional, up to 3, separated by commas)</span><input id="q4" placeholder="e.g. Yes, No"></label>
     <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Add quick reply</button></div></form>`)}
-  <div class="panel" ${sec('labels')}><h3>Labels</h3><p class="mute">Coloured tags your team puts on chats, for example Hot lead or Paid. You can filter chats and broadcasts by label.</p>
+  <div class="panel" ${sec('labels')}><h3>Your tags</h3>
     ${S.labels.map(l => `<div class="lrow"><span><i style="display:inline-block;width:12px;height:12px;border-radius:6px;background:${esc(l.color)};margin-right:10px"></i><b>${esc(l.name)}</b></span><button class="ghost" data-dl="${l.id}">Delete</button></div>`).join('') || '<p class="mute">None yet.</p>'}
-    <form id="lf2" style="display:flex;gap:8px;margin-top:12px"><input id="l1" placeholder="Label name, e.g. Hot lead" required style="flex:1"><input type="color" id="l2" value="#0e5a4a" style="width:56px;padding:2px;flex:none"><button class="btn">${ico('plus', 16)}Add</button></form></div>
+    <form id="lf2" style="display:flex;gap:8px;margin-top:12px"><input id="l1" placeholder="Tag name, e.g. Hot lead" required style="flex:1"><input type="color" id="l2" value="#0e5a4a" style="width:56px;padding:2px;flex:none"><button class="btn">${ico('plus', 16)}Add</button></form></div>
   </div>`;
   if ($('#stabs')) $('#stabs').onclick = e => { const t = e.target.closest('button'); if (!t) return; S.stTab[mode] = t.dataset.t; el.querySelectorAll('[data-sec]').forEach(x => { x.hidden = x.dataset.sec !== t.dataset.t; }); $('#stabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === t)); };
   if ($('#cosave')) $('#cosave').onclick = async () => { const name = $('#coname').value.trim(); const r = await api('/company', 'PATCH', { name }); if (r.error) return toast(r.error);
@@ -1238,9 +1250,9 @@ async function showSettings(mode) {
   $('#g1').value = g.mode;
   $('#gf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/gate', 'PUT', { mode: $('#g1').value, keywords: $('#g2').value }); toast(r.error || 'Saved'); };
   $('#qf').onsubmit = async e => { e.preventDefault(); const r = await api('/quick-replies', 'POST', { shortcut: $('#q1').value.trim().replace(/^\//, ''), title: $('#q2').value, body: $('#q3').value, buttons: $('#q4').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That shortcut already exists' : r.error); toast('Quick reply added'); showSettings(); };
-  $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That label already exists' : r.error); showSettings(); };
+  $('#lf2').onsubmit = async e => { e.preventDefault(); const r = await api('/labels', 'POST', { name: $('#l1').value, color: $('#l2').value }); if (r.error) return toast(r.error.includes('duplicate') ? 'That tag already exists' : r.error); showSettings(); };
   el.querySelectorAll('[data-dq]').forEach(x => x.onclick = async () => { if (!await sure('Delete this quick reply?', '', { ok: 'Delete', danger: 1 })) return; await api('/quick-replies/' + x.dataset.dq, 'DELETE'); showSettings(); });
-  el.querySelectorAll('[data-dl]').forEach(x => x.onclick = async () => { if (!await sure('Delete this label?', '', { ok: 'Delete', danger: 1 })) return; await api('/labels/' + x.dataset.dl, 'DELETE'); showSettings(); });
+  el.querySelectorAll('[data-dl]').forEach(x => x.onclick = async () => { if (!await sure('Delete this tag?', '', { ok: 'Delete', danger: 1 })) return; await api('/labels/' + x.dataset.dl, 'DELETE'); showSettings(); });
 }
 
 /* ---------- Broadcast tools (managers/admins) ---------- */
@@ -1306,7 +1318,7 @@ async function showContacts() {
     toast(`Added ${r.added}, updated ${r.updated}, skipped ${r.skipped} invalid`); showContacts(); };
 }
 async function showBroadcasts() {
-  const sc = screen('Broadcasts', 'Send an approved template to a chosen audience, now or on a schedule, and track the results.',
+  const sc = screen('Bulk Broadcasting', 'Send an approved template to a chosen audience, now or on a schedule, and track the results.',
     `<button class="ghost" id="br">${ico('refresh', 15)}Refresh</button><button class="btn" id="bn" data-open="m-bc">${ico('plus', 16)}New broadcast</button>`);
   S.templates = arr(await api('/templates')); S.waNumbers = arr(await api('/whatsapp/numbers')); const list = arr(await api('/broadcasts')); if (S.nav !== 'bc') return;
   const chip = st => `<em class="chip ${st === 'done' ? 'ok' : st === 'cancelled' ? 'closed' : 'warn'}">${esc(st.charAt(0).toUpperCase() + st.slice(1))}</em>`;
@@ -1330,7 +1342,7 @@ async function newBroadcast() {
   ${S.waNumbers.length > 1 ? `<label class="fld"><span>Send from</span><select id="n0">${S.waNumbers.map(n => `<option value="${n.id}"${n.is_default ? ' selected' : ''}>${esc(n.label)}${n.display_phone ? ' (' + esc(n.display_phone) + ')' : ''}</option>`).join('')}</select></label>` : ''}
   <label class="fld"><span>Template</span><select id="n2">${tpls.map(t => `<option value="${esc(t.name)}">${esc(t.name)}</option>`).join('')}</select></label><p id="n3" style="margin:0 0 12px;white-space:pre-wrap;background:var(--field);border-radius:10px;padding:10px 12px;font-size:13.5px"></p><div id="n4"></div>
   <div class="fld"><span>Audience. Leave everything unticked to message everyone who has not opted out.</span>
-   <div style="margin-top:6px">${grp('Lists', chk('sl', lists.map(l => ({ v: l.list_name, t: `${l.list_name} (${l.n})` }))))}${grp('Labels', chk('sb', S.labels.map(l => ({ v: l.id, t: l.name }))))}
+   <div style="margin-top:6px">${grp('Lists', chk('sl', lists.map(l => ({ v: l.list_name, t: `${l.list_name} (${l.n})` }))))}${grp('Tags', chk('sb', S.labels.map(l => ({ v: l.id, t: l.name }))))}
    ${grp('Asked for', chk('si', [{ v: 'info', t: 'More info' }, { v: 'team', t: 'Join the team' }, { v: 'classes', t: 'Classes' }]))}${grp('Came from', chk('ss', [{ v: 'ad', t: 'Ads' }, { v: 'organic', t: 'Organic' }, { v: 'import', t: 'Imported' }]))}</div></div>
   <p><button type="button" class="ghost" id="n5">Count audience</button> <span class="mute" id="n6"></span></p>
   <div class="fld"><span>When</span><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="n7" style="width:auto"><option value="now">Send now</option><option value="later">Schedule</option></select><input type="datetime-local" id="n8" hidden style="width:auto"></div></div>
