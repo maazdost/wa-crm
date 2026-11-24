@@ -472,10 +472,12 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
-// Every page has its own address, so refresh, back, forward and bookmarks work.
+// Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
+const LANG = 'en';
 const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
-const routeKey = p => Object.keys(ROUTES).find(k => '/' + ROUTES[k] === String(p).replace(/\/+$/, ''));
-function setUrl(k) { const p = '/' + ROUTES[k], n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase()}/${ROUTES[k]}`; };
+const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
+function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
