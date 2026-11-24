@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS wa_numbers (
   is_default BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS one_default_wa_number ON wa_numbers(is_default) WHERE is_default;
+-- (one default number per company: see one_default_wa_number_per_company further down)
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);
 ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS wa_number_id INT REFERENCES wa_numbers(id);
 

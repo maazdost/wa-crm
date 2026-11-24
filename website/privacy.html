@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script src="config.js"></script>
+<style>
+:root{--bg:#fff;--text:#0f1c18;--muted:#5b6b66;--line:#e4ebe8;--green:#00a884;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0b141a;--text:#e9edef;--muted:#9fb0b7;--line:#233138;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:48px 16px 80px}
+a{color:var(--green)}
+h1{font-size:34px;line-height:1.2;margin:24px 0 6px}
+h2{font-size:20px;margin:32px 0 6px}
+p,li{color:var(--muted)}
+.back{font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← Back to home</a>
+  <h1>Privacy policy</h1>
+  <p>Last updated: <span id="upd">November 2026</span></p>
+
+  <h2>Who we are</h2>
+  <p><b data-brand>TeamInbox Pro</b> is a shared WhatsApp inbox used by businesses to talk to their customers. This page explains what information is handled and why.</p>
+
+  <h2>This website</h2>
+  <p>This website does not use tracking cookies or analytics. The demo form does not store anything on our servers: it opens WhatsApp or your email app with your details filled in, and nothing is sent until you press send there.</p>
+
+  <h2>Messages handled for our customers</h2>
+  <p>When a business uses <span data-brand>TeamInbox Pro</span>, the messages their customers send to that business's WhatsApp number are stored so the business's team can read and reply to them. This includes the sender's phone number, WhatsApp profile name, message text and any photos, voice notes or files. The business decides who on its team can see these chats.</p>
+  <ul>
+    <li>Messages are received through the official WhatsApp Business Platform provided by Meta.</li>
+    <li>We do not sell personal data or use it for advertising.</li>
+    <li>People who ask to stop receiving marketing messages are marked as opted out and are skipped in broadcasts.</li>
+  </ul>
+
+  <h2>Your choices</h2>
+  <p>If you messaged a business that uses <span data-brand>TeamInbox Pro</span> and want your data removed, ask that business directly, or contact us and we will pass your request on.</p>
+
+  <h2>Contact</h2>
+  <p id="contact">For any privacy question, message us through the contact details on our home page.</p>
+</main>
+<script>
+  var S = window.SITE || {};
+  document.querySelectorAll('[data-brand]').forEach(function (el) { el.textContent = S.brand || 'TeamInbox'; });
+  document.title = 'Privacy policy – ' + (S.brand || 'TeamInbox');
+  if (S.salesEmail) document.getElementById('contact').innerHTML = 'For any privacy question, email <a href="mailto:' + encodeURI(S.salesEmail) + '">' + S.salesEmail.replace(/</g, '&lt;') + '</a>.';
+</script>
+</body>
+</html>

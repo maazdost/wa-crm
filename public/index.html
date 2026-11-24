@@ -916,6 +916,45 @@ function showQr(filter) {
 function renderBtnChips() { const b = $('#qbtns'); if (!b) return; b.hidden = !S.qrBtns; b.innerHTML = S.qrBtns ? `Buttons: ${S.qrBtns.map(x => `<i>${esc(x)}</i>`).join('')} <button class="ghost" id="qbx">Remove</button>` : ''; if ($('#qbx')) $('#qbx').onclick = () => { S.qrBtns = null; renderBtnChips(); }; }
 function pickQr(i) { const q = S.qrList[i]; if (!q) return; const t = $('#txt'); t.value = fillVars(q.body); S.qrBtns = q.buttons && q.buttons.length ? q.buttons : null; renderBtnChips(); $('#qr').hidden = true; t.focus(); syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
 
+/* ---------- Connect WhatsApp button (Meta Embedded Signup) ---------- */
+// Shown only when the server has META_APP_ID, META_CONFIG_ID and META_APP_SECRET. The client signs in with Facebook in a popup.
+async function setupEmbeddedSignup() {
+  const box = $('#esu'); if (!box) return;
+  const cfg = await api('/whatsapp/embedded-config'); if (!cfg.enabled || !$('#esu')) return;
+  box.innerHTML = `<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><b>Connect a WhatsApp number</b>
+    <p class="mute" style="margin:6px 0 10px">Sign in with Facebook, pick or create your WhatsApp Business account and number, and it is added here with messages going to this inbox. No IDs or tokens to copy. Use a computer browser for this step.</p>
+    <button class="btn" id="esb" type="button">Connect WhatsApp</button></div>`;
+  if (!S.esuListen) { S.esuListen = true; window.addEventListener('message', ev => { // the popup tells us which account and number were picked
+    try { if (!/(^|\.)facebook\.com$/.test(new URL(ev.origin).hostname)) return; const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; if (d && d.type === 'WA_EMBEDDED_SIGNUP') S.esu = d.data || {}; } catch (_) {}
+  }); }
+  const loadSdk = () => window.FB ? Promise.resolve() : new Promise((ok, fail) => {
+    window.fbAsyncInit = () => { FB.init({ appId: cfg.app_id, autoLogAppEvents: true, xfbml: false, version: cfg.version }); ok(); };
+    const sc = document.createElement('script'); sc.src = 'https://connect.facebook.net/en_US/sdk.js'; sc.async = true; sc.crossOrigin = 'anonymous';
+    sc.onerror = () => fail(new Error('Could not load Facebook sign-in. Check your internet or ad blocker.')); document.head.appendChild(sc);
+  });
+  $('#esb').onclick = async () => {
+    const btn = $('#esb'); btn.disabled = true; btn.textContent = 'Opening Facebook…';
+    try { await loadSdk(); } catch (e) { toast(e.message); btn.disabled = false; btn.textContent = 'Connect WhatsApp'; return; }
+    S.esu = {};
+    FB.login(resp => {
+      const code = resp && resp.authResponse && resp.authResponse.code;
+      if (!code) { toast('Connection cancelled'); btn.disabled = false; btn.textContent = 'Connect WhatsApp'; return; }
+      finish(code);
+    }, { config_id: cfg.config_id, response_type: 'code', override_default_response_type: true, extras: { setup: {}, sessionInfoVersion: '3' } });
+  };
+  async function finish(code) {
+    const btn = $('#esb');
+    const pin = (prompt('Choose a 6-digit PIN for this number (WhatsApp two-step verification). Write it down. If the number already has a PIN, type that one.') || '').replace(/\D/g, '');
+    if (pin.length !== 6) { toast('The PIN must be 6 digits. Please press Connect WhatsApp again.'); if (btn) { btn.disabled = false; btn.textContent = 'Connect WhatsApp'; } return; }
+    if (btn) btn.textContent = 'Connecting…';
+    const r = await api('/whatsapp/embedded-signup', 'POST', { code, pin, phone_number_id: (S.esu || {}).phone_number_id, waba_id: (S.esu || {}).waba_id });
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect WhatsApp'; }
+    if (r.error) return toast(r.error);
+    toast(`${r.number.display_phone || 'Number'} connected${r.warnings && r.warnings.length ? ', with a warning: ' + r.warnings[0] : ''}`);
+    showSettings();
+  }
+}
+
 /* ---------- Settings (managers/admins) ---------- */
 async function loadWaStatus() {
   const r = await api('/whatsapp/status'), el = $('#ws'); if (!el) return;
@@ -950,7 +989,7 @@ async function showSettings() {
   const row = (left, attr) => `<div class="hb" style="grid-template-columns:1fr auto">${left}<button class="ghost" ${attr}>Delete</button></div>`;
   el.innerHTML = `<header class="ch"><button class="back" id="tb">${ico('back')}</button><b>Settings</b></header>
   ${S.user.role === 'admin' ? `<div class="panel"><h3>Company</h3><p class="mute">The name your team sees in the app.</p><label class="fld"><span>Company name</span><input id="coname" maxlength="80" value="${esc(S.user.company || '')}"></label><button class="btn" id="cosave">Save name</button></div>` : ''}
-  <div class="panel" id="wp"><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>
+  <div class="panel" id="wp"><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>${S.user.role === 'admin' ? '<div id="esu"></div>' : ''}
     ${S.user.role === 'admin' ? `<form id="wnf" style="display:grid;gap:8px;margin-top:14px;border-top:1px solid var(--line,#0001);padding-top:12px"><b>Add another number</b>
       <input id="wn1" placeholder="Name, e.g. Support" required><input id="wn2" placeholder="Phone number ID (from Meta, WhatsApp, API Setup)" required>
       <input id="wn3" placeholder="Access token (leave empty to use the server's token)" autocomplete="off"><input id="wn4" placeholder="WhatsApp Business Account ID (optional)">
@@ -993,7 +1032,7 @@ async function showSettings() {
       const a = await api('/settings/assign', 'PUT', { mode: $('#as1').value, batch: +$('#as2').value }); if (a.error) return toast(a.error);
       const r = await api('/settings/routing', 'PUT', { info: $('#rt1').value, team: $('#rt2').value, classes: $('#rt3').value }); toast(r.error || 'Assignment saved'); };
   }
-  loadWaStatus();
+  loadWaStatus(); setupEmbeddedSignup();
   if ($('#wnf')) $('#wnf').onsubmit = async e => { e.preventDefault();
     const r = await api('/whatsapp/numbers', 'POST', { label: $('#wn1').value, phone_number_id: $('#wn2').value, access_token: $('#wn3').value, waba_id: $('#wn4').value, make_default: $('#wn5').checked });
     if (r.error) return toast(r.error);

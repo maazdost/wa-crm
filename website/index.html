@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeamInbox Pro – One WhatsApp inbox for your whole team</title>
+<meta name="description" content="Put all your WhatsApp Business numbers in one shared inbox. Auto-assign chats to agents by department, reply faster with bots and quick replies, send broadcasts and track reply times. Web and Android app.">
+<meta name="theme-color" content="#00a884">
+<meta property="og:title" content="TeamInbox Pro – One WhatsApp inbox for your whole team">
+<meta property="og:description" content="Shared WhatsApp inbox for sales and support teams: multi-number, auto assignment, bots, broadcasts, reports and an Android app.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://teaminboxpro.com/">
+<link rel="canonical" href="https://teaminboxpro.com/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<script>
+  // Apply the saved theme before the page paints, so there is no flash
+  try { var t = localStorage.getItem('site-theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+</script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#ffffff; --bg-soft:#f4f7f6; --bg-card:#ffffff; --line:#e4ebe8; --text:#0f1c18; --muted:#5b6b66; --faint:#8a9893;
+  --green:#00a884; --green-dark:#008069; --green-ink:#005c4b; --green-soft:#e7f8f2; --mint:#d9fdd3;
+  --chat-bg:#efeae2; --bubble-in:#ffffff; --bubble-out:#d9fdd3; --bot:#ece8ff; --bot-ink:#5b47c8;
+  --amber:#f59e0b; --red:#e5484d; --violet:#6e56cf;
+  --shadow:0 1px 2px rgba(16,40,32,.06),0 8px 24px rgba(16,40,32,.08);
+  --shadow-lg:0 24px 60px -12px rgba(16,40,32,.22);
+  --radius:16px; --maxw:1160px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b141a; --bg-soft:#111b21; --bg-card:#16222a; --line:#233138; --text:#e9edef; --muted:#9fb0b7; --faint:#71858d;
+    --green:#00a884; --green-dark:#21c093; --green-ink:#7ee2c4; --green-soft:#0f2e28; --mint:#005c4b;
+    --chat-bg:#0d1a1f; --bubble-in:#1f2c33; --bubble-out:#005c4b; --bot:#2e2752; --bot-ink:#c4b8ff;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3); --shadow-lg:0 24px 60px -12px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b141a; --bg-soft:#111b21; --bg-card:#16222a; --line:#233138; --text:#e9edef; --muted:#9fb0b7; --faint:#71858d;
+  --green:#00a884; --green-dark:#21c093; --green-ink:#7ee2c4; --green-soft:#0f2e28; --mint:#005c4b;
+  --chat-bg:#0d1a1f; --bubble-in:#1f2c33; --bubble-out:#005c4b; --bot:#2e2752; --bot-ink:#c4b8ff;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.3); --shadow-lg:0 24px 60px -12px rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+h1,h2,h3{line-height:1.15;margin:0;letter-spacing:-.02em}
+p{margin:0}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+section{padding:96px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--green-dark);background:var(--green-soft);padding:6px 12px;border-radius:999px}
+.sec-head{max-width:680px;margin:0 auto 52px;text-align:center}
+.sec-head h2{font-size:clamp(28px,4vw,42px);margin:14px 0 14px}
+.sec-head p{color:var(--muted);font-size:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:12px;font-weight:600;border:1px solid transparent;transition:transform .15s,background .15s,border-color .15s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--green);color:#fff}
+.btn-primary:hover{background:#019874}
+.btn-ghost{border-color:var(--line);background:var(--bg-card)}
+.btn-ghost:hover{border-color:var(--green)}
+.btn-sm{height:40px;padding:0 16px;border-radius:10px;font-size:15px}
+.ico{width:20px;height:20px;flex:none}
+
+/* Nav */
+.nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.6) blur(12px);-webkit-backdrop-filter:saturate(1.6) blur(12px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav .wrap{display:flex;align-items:center;height:68px;gap:24px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.logo-mark{width:34px;height:34px;border-radius:10px;background:var(--green);display:grid;place-items:center;color:#fff}
+.nav-links{display:flex;gap:4px;margin-left:12px}
+.nav-links a{padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:500;font-size:15px}
+.nav-links a:hover{color:var(--text);background:var(--bg-soft)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--bg-card);display:grid;place-items:center}
+.icon-btn:hover{border-color:var(--green)}
+.menu-btn{display:none}
+.sun{display:none}
+:root[data-theme="dark"] .sun{display:block} :root[data-theme="dark"] .moon{display:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sun{display:block}:root:not([data-theme="light"]) .moon{display:none}}
+.mobile-menu{display:none;border-top:1px solid var(--line);padding:12px 20px 20px;background:var(--bg)}
+.mobile-menu a{display:block;padding:12px 4px;font-weight:500;border-bottom:1px solid var(--line)}
+.mobile-menu .btn{width:100%;margin-top:14px}
+.nav.open .mobile-menu{display:block}
+
+/* Hero */
+.hero{padding:72px 0 88px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-200px -200px auto auto;width:720px;height:720px;background:radial-gradient(closest-side,color-mix(in srgb,var(--green) 18%,transparent),transparent);pointer-events:none}
+.hero-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center;position:relative}
+.hero h1{font-size:clamp(38px,5.6vw,62px);margin:18px 0 20px;font-weight:800}
+.hero h1 em{font-style:normal;color:var(--green)}
+.hero .lead{font-size:19px;color:var(--muted);max-width:540px}
+.hero-cta{display:flex;gap:12px;margin:32px 0 28px;flex-wrap:wrap}
+.trust{display:flex;flex-wrap:wrap;gap:10px 22px;color:var(--muted);font-size:14px}
+.trust span{display:inline-flex;align-items:center;gap:7px}
+.trust svg{color:var(--green);width:18px;height:18px}
+
+/* Inbox mock */
+.mock{position:relative}
+.app{background:var(--bg-card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow-lg);overflow:hidden;display:grid;grid-template-columns:44px 210px 1fr;height:440px;font-size:13px}
+.app-rail{background:var(--bg-soft);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:12px}
+.rail-dot{width:28px;height:28px;border-radius:8px;background:var(--line)}
+.rail-dot.on{background:var(--green-soft);border:1.5px solid var(--green)}
+.app-list{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.list-head{padding:12px 12px 8px}
+.list-head b{font-size:16px}
+.chips{display:flex;gap:5px;margin-top:8px}
+.chip{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--bg-soft);color:var(--muted)}
+.chip.on{background:var(--green-soft);color:var(--green-dark);font-weight:600}
+.row{display:flex;gap:9px;padding:9px 12px;border-top:1px solid var(--line);align-items:center}
+.row.sel{background:var(--bg-soft)}
+.av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:none}
+.row .meta{min-width:0;flex:1}
+.row .n{display:flex;justify-content:space-between;font-weight:600}
+.row .n small{font-weight:400;color:var(--faint);font-size:10px}
+.row .m{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.tags{display:flex;gap:4px;margin-top:3px}
+.tag{font-size:9.5px;padding:1px 6px;border-radius:4px;background:var(--bg-soft);color:var(--muted);font-weight:600}
+.tag.t{background:var(--green-soft);color:var(--green-dark)}
+.badge{min-width:18px;height:18px;border-radius:9px;background:var(--green);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.app-chat{display:flex;flex-direction:column;min-width:0;background:var(--chat-bg)}
+.chat-top{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card);border-bottom:1px solid var(--line)}
+.chat-top .who{flex:1;min-width:0}
+.chat-top .who b{display:block;font-size:14px}
+.chat-top .who small{color:var(--faint);font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assignee{font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--muted);white-space:nowrap}
+.assignee b{color:var(--text)}
+.window-bar{text-align:center;font-size:11px;padding:4px;background:var(--green-soft);color:var(--green-dark)}
+.msgs{flex:1;padding:12px 14px;display:flex;flex-direction:column;justify-content:flex-end;gap:7px;overflow:hidden}
+.b{max-width:78%;padding:6px 9px 5px;border-radius:9px;background:var(--bubble-in);box-shadow:0 1px 0 rgba(0,0,0,.06);font-size:12.5px;line-height:1.4}
+.b small{display:block;text-align:right;color:var(--faint);font-size:9.5px;margin-top:1px}
+.b.out{align-self:flex-end;background:var(--bubble-out)}
+.b.bot{align-self:flex-end;background:var(--bot)}
+.b.bot i{display:block;font-style:normal;font-weight:700;color:var(--bot-ink);font-size:10px}
+.b .btns{display:flex;gap:4px;margin-top:6px}
+.b .btns span{flex:1;text-align:center;font-size:11px;padding:4px;border-radius:6px;background:var(--bg-card);color:var(--green-dark);font-weight:600}
+.composer{display:flex;gap:8px;padding:9px 12px;background:var(--bg-card);border-top:1px solid var(--line);align-items:center}
+.composer .in{flex:1;height:32px;border-radius:8px;background:var(--bg-soft);color:var(--faint);display:flex;align-items:center;padding:0 10px;font-size:12px}
+.composer .send{width:32px;height:32px;border-radius:50%;background:var(--green);display:grid;place-items:center;color:#fff}
+.float{position:absolute;background:var(--bg-card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:11px 13px;display:flex;gap:10px;align-items:center;font-size:13px;animation:bob 6s ease-in-out infinite}
+.float .fi{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none}
+.float b{display:block;font-size:13px}
+.float small{color:var(--muted);font-size:12px}
+.f1{left:-28px;bottom:-22px}
+.f2{right:-14px;top:-62px;animation-delay:-3s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.float{animation:none}html{scroll-behavior:auto}}
+
+/* Strip */
+.strip{padding:30px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-soft)}
+.strip .wrap{display:flex;align-items:center;gap:14px 34px;flex-wrap:wrap;justify-content:center;color:var(--muted);font-weight:600;font-size:15px}
+.strip .lbl{color:var(--faint);font-weight:500}
+.strip span.i{display:inline-flex;align-items:center;gap:8px}
+.strip span.i::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* Problem */
+.pain{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pain .card{padding:26px}
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius)}
+.pain h3{font-size:18px;margin:14px 0 8px}
+.pain p{color:var(--muted);font-size:15px}
+.x{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--red) 12%,transparent);color:var(--red)}
+.pain .fix{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);font-size:14px;color:var(--green-dark);font-weight:600;display:flex;gap:8px}
+
+/* Feature tabs */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:28px}
+.tab{height:42px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--bg-card);font-weight:600;font-size:15px;color:var(--muted);display:inline-flex;align-items:center;gap:8px}
+.tab[aria-selected="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+.panel{display:none;grid-template-columns:1fr 1fr;gap:28px;align-items:stretch}
+.panel.on{display:grid}
+.panel .copy{padding:34px}
+.panel .copy h3{font-size:26px;margin-bottom:10px}
+.panel .copy>p{color:var(--muted);margin-bottom:20px}
+.ticks{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.ticks li{display:flex;gap:12px;font-size:15px}
+.ticks li svg{color:var(--green);width:20px;height:20px;flex:none;margin-top:2px}
+.ticks li b{display:block}
+.ticks li span{color:var(--muted)}
+.visual{background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--radius);padding:26px;display:flex;flex-direction:column;justify-content:center;gap:12px;min-height:380px}
+.vrow{background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-size:14px}
+.vrow .grow{flex:1;min-width:0}
+.vrow small{display:block;color:var(--muted);font-size:12.5px}
+.pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--green-soft);color:var(--green-dark);white-space:nowrap}
+.pill.amber{background:color-mix(in srgb,var(--amber) 16%,transparent);color:#b26a00}
+.pill.violet{background:color-mix(in srgb,var(--violet) 16%,transparent);color:var(--violet)}
+:root[data-theme="dark"] .pill.amber{color:#fbbf24}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.amber{color:#fbbf24}}
+.toggle{width:36px;height:20px;border-radius:10px;background:var(--green);position:relative;flex:none}
+.toggle::after{content:"";position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.toggle.off{background:var(--line)} .toggle.off::after{right:auto;left:2px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding:4px 2px 0}
+.bars i{flex:1;background:var(--green);border-radius:6px 6px 2px 2px;opacity:.85}
+.bars i:nth-child(odd){opacity:.55}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi{background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi small{color:var(--muted);font-size:12px;display:block}
+.kpi b{font-size:22px;letter-spacing:-.02em}
+.kpi em{font-style:normal;font-size:12px;color:var(--green-dark);font-weight:600}
+
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+.step{padding:28px;position:relative}
+.step::before{counter-increment:s;content:counter(s);width:40px;height:40px;border-radius:12px;background:var(--green);color:#fff;font-weight:800;display:grid;place-items:center;margin-bottom:18px}
+.step h3{font-size:19px;margin-bottom:8px}
+.step p{color:var(--muted);font-size:15px}
+
+/* Assignment */
+.assign{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.assign h2{font-size:clamp(28px,3.6vw,40px);margin:14px 0}
+.assign .lead{color:var(--muted);font-size:17px;margin-bottom:24px}
+.rr{padding:24px}
+.rr-in{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--green-soft);font-size:14px;font-weight:600;color:var(--green-dark)}
+.rr-dept{display:flex;gap:8px;margin:16px 0 10px;font-size:13px;color:var(--muted);align-items:center;flex-wrap:wrap}
+.agents{display:grid;gap:10px}
+.agent{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg-card);transition:border-color .3s,box-shadow .3s}
+.agent.next{border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.agent .grow{flex:1}
+.agent small{display:block;color:var(--muted);font-size:12.5px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px}
+.dot.away{background:var(--faint)}
+.slots{display:flex;gap:4px}
+.slots i{width:10px;height:10px;border-radius:3px;background:var(--line)}
+.slots i.f{background:var(--green)}
+
+/* App section */
+.mobile{display:grid;grid-template-columns:.9fr 1.1fr;gap:56px;align-items:center}
+.phone{width:280px;height:560px;margin:0 auto;border-radius:40px;background:#0b141a;padding:12px;box-shadow:var(--shadow-lg);position:relative}
+.screen{width:100%;height:100%;border-radius:30px;background:linear-gradient(160deg,#0f3d33,#0b141a 60%);overflow:hidden;padding:46px 14px 14px;color:#e9edef;position:relative}
+.screen .time{text-align:center;font-size:54px;font-weight:300;letter-spacing:-.02em}
+.screen .date{text-align:center;font-size:13px;opacity:.75;margin-bottom:26px}
+.notif{background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border-radius:16px;padding:11px 12px;margin-bottom:9px;font-size:12.5px;display:flex;gap:10px}
+.notif .ap{width:30px;height:30px;border-radius:8px;background:var(--green);display:grid;place-items:center;flex:none;color:#fff}
+.notif b{display:block;font-size:12.5px}
+.notif span{opacity:.8}
+.notch{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:90px;height:22px;border-radius:12px;background:#000}
+.mobile h2{font-size:clamp(28px,3.6vw,40px);margin:14px 0}
+.mobile .lead{color:var(--muted);font-size:17px;margin-bottom:24px}
+
+/* Compare */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg-card)}
+table{width:100%;border-collapse:collapse;min-width:640px;font-size:15px}
+th,td{padding:15px 18px;text-align:left;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-size:14px;color:var(--muted);font-weight:600;background:var(--bg-soft)}
+th.us,td.us{background:color-mix(in srgb,var(--green) 7%,transparent)}
+th.us{color:var(--green-dark)}
+td.c{text-align:center;width:150px} th.c{text-align:center}
+.yes{color:var(--green);font-weight:700} .no{color:var(--faint)} .meh{color:#b26a00}
+
+/* Roadmap */
+.soon{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.soon .card{padding:22px}
+.soon h3{font-size:16px;margin:12px 0 6px}
+.soon p{font-size:14px;color:var(--muted)}
+
+/* Pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+.plan{padding:30px;display:flex;flex-direction:column}
+.plan.hi{border:2px solid var(--green);position:relative;box-shadow:var(--shadow)}
+.plan.hi::before{content:"Most popular";position:absolute;top:-13px;left:30px;background:var(--green);color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
+.plan h3{font-size:20px}
+.plan .tl{color:var(--muted);font-size:14px;margin:4px 0 18px}
+.price{font-size:38px;font-weight:800;letter-spacing:-.03em;margin-bottom:20px}
+.price small{font-size:15px;font-weight:500;color:var(--muted);letter-spacing:0}
+.price.q{font-size:28px}
+.plan .ticks{margin-bottom:26px;flex:1}
+.plan .ticks li{font-size:14.5px}
+.note{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+
+/* FAQ */
+.faq{max-width:780px;margin:0 auto;display:grid;gap:10px}
+details{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:0 22px}
+summary{list-style:none;cursor:pointer;padding:18px 0;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:22px;font-weight:400;color:var(--green);transition:transform .2s}
+details[open] summary::after{transform:rotate(45deg)}
+details p{color:var(--muted);padding:0 0 18px;font-size:15px}
+
+/* Demo */
+.demo{background:var(--green-ink);color:#fff;border-radius:28px;padding:56px;display:grid;grid-template-columns:1fr 1fr;gap:48px;position:relative;overflow:hidden}
+:root[data-theme="dark"] .demo{background:#0f2e28}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .demo{background:#0f2e28}}
+.demo::after{content:"";position:absolute;right:-160px;bottom:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(closest-side,rgba(37,211,102,.35),transparent)}
+.demo h2{font-size:clamp(28px,3.6vw,40px);margin-bottom:14px}
+.demo>div>p{opacity:.85;font-size:17px;margin-bottom:24px}
+.demo .ticks li svg{color:#7ee2c4}
+.demo .ticks li span{color:rgba(255,255,255,.8)}
+form{background:var(--bg-card);color:var(--text);border-radius:20px;padding:26px;display:grid;gap:14px;position:relative;z-index:1;box-shadow:var(--shadow-lg)}
+label{font-size:13px;font-weight:600;display:grid;gap:6px}
+input,select,textarea{font:inherit;font-size:15px;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:0;border-color:transparent}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+form .btn{width:100%}
+form .fine{font-size:12.5px;color:var(--muted);text-align:center}
+
+footer{padding:40px 0;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer .wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+footer nav{display:flex;gap:18px;margin-left:auto;flex-wrap:wrap}
+footer a:hover{color:var(--text)}
+
+/* Responsive */
+@media (max-width:980px){
+  .nav-links,.nav-right .hide-m{display:none}
+  .menu-btn{display:grid}
+  .hero-grid,.assign,.mobile,.demo{grid-template-columns:1fr}
+  .hero{padding:44px 0 64px}
+  .mock{max-width:640px;margin:40px auto 0;width:100%}
+  .panel{grid-template-columns:1fr}
+  .pain,.steps{grid-template-columns:1fr}
+  .soon{grid-template-columns:1fr 1fr}
+  .plans{grid-template-columns:1fr;max-width:460px;margin:0 auto}
+  .mobile .phone{order:2}
+  .demo{padding:36px 24px}
+  section{padding:72px 0}
+}
+@media (max-width:640px){
+  .wrap{padding:0 16px}
+  .app{grid-template-columns:1fr;height:400px}
+  .app-rail,.app-list{display:none}
+  .f1{left:8px;bottom:-30px} .f2{right:8px;top:-58px}
+  .soon{grid-template-columns:1fr}
+  .two{grid-template-columns:1fr}
+  .panel .copy{padding:24px}
+  .visual{padding:16px;min-height:0}
+  .kpis{grid-template-columns:1fr 1fr}
+  .hero-cta .btn{flex:1}
+  footer nav{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<!-- Icons, defined once and reused -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.2 4.2L19 7"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2c0 1.3.9 2.5 1.1 2.7.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.3-.3-.4-.5-.5z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18 14.8c1.9.7 3.2 2.5 3.5 5.2"/></g></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 10v4h3l7 5V5L6 10zM17 8.5a5 5 0 0 1 0 7"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="3"/><path stroke-linecap="round" d="M11 18h2"/></g></symbol>
+  <symbol id="i-call" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 2l8 3v6c0 5-3.4 9.3-8 11-4.6-1.7-8-6-8-11V5z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path fill="currentColor" d="M3 20.5V14l9-2-9-2V3.5L22 12z"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="6" rx="1.5"/><rect x="14" y="15" width="7" height="6" rx="1.5"/><path d="M6.5 9v3.5a2.5 2.5 0 0 0 2.5 2.5h5"/></g></symbol>
+  <symbol id="i-kanban" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="15" rx="1.5"/><rect x="10" y="3" width="5" height="10" rx="1.5"/><rect x="17" y="3" width="4" height="18" rx="1.5"/></g></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></symbol>
+  <symbol id="i-insta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></g></symbol>
+</svg>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a href="#top" class="logo" aria-label="Home"><span class="logo-mark"><svg class="ico"><use href="#i-chat"/></svg></span><span data-brand>TeamInbox Pro</span></a>
+    <nav class="nav-links" aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#app">Android app</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" id="themeBtn" aria-label="Switch light or dark mode" title="Light / dark">
+        <svg class="ico moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+        <svg class="ico sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>
+      </button>
+      <a class="btn btn-ghost btn-sm hide-m" data-app-link href="#">Sign in</a>
+      <a class="btn btn-primary btn-sm hide-m" href="#demo">Book a demo</a>
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+        <svg class="ico" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#app">Android app</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a data-app-link href="#">Sign in</a>
+    <a class="btn btn-primary" href="#demo">Book a demo</a>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><svg class="ico" style="width:16px;height:16px"><use href="#i-wa"/></svg>Official WhatsApp Business API</span>
+      <h1>One WhatsApp inbox for your <em>whole team.</em></h1>
+      <p class="lead">Bring every WhatsApp business number into one shared inbox. New chats go to the right agent automatically, nobody replies twice, and you can see who answered, how fast, and where each lead came from.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#demo"><svg class="ico"><use href="#i-wa"/></svg>Book a free demo</a>
+        <a class="btn btn-ghost" href="#features">See all features</a>
+      </div>
+      <div class="trust">
+        <span><svg><use href="#i-check"/></svg>Several numbers, one inbox</span>
+        <span><svg><use href="#i-check"/></svg>Web and Android app</span>
+        <span><svg><use href="#i-check"/></svg>Set up in a day</span>
+      </div>
+    </div>
+
+    <div class="mock" aria-label="Preview of the shared inbox">
+      <div class="app">
+        <div class="app-rail"><div class="rail-dot on"></div><div class="rail-dot"></div><div class="rail-dot"></div><div class="rail-dot"></div></div>
+        <div class="app-list">
+          <div class="list-head"><b>Chats</b>
+            <div class="chips"><span class="chip on">All</span><span class="chip">Unread 3</span><span class="chip">Mine</span></div>
+          </div>
+          <div class="row sel"><div class="av" style="background:#4f46e5">Z</div><div class="meta"><div class="n">Zara Khan <small>10:42</small></div><div class="m">Is the weekend batch still open?</div><div class="tags"><span class="tag">Sales</span><span class="tag t">23h left</span></div></div></div>
+          <div class="row"><div class="av" style="background:#0e9f6e">U</div><div class="meta"><div class="n">Usman Ali <small>10:39</small></div><div class="m">Sent you the payment slip</div><div class="tags"><span class="tag">Accounts</span></div></div><span class="badge">2</span></div>
+          <div class="row"><div class="av" style="background:#c2410c">M</div><div class="meta"><div class="n">Mehwish R. <small>10:31</small></div><div class="m">Thank you, see you Monday!</div><div class="tags"><span class="tag">Support</span></div></div></div>
+          <div class="row"><div class="av" style="background:#be185d">F</div><div class="meta"><div class="n">Faisal T. <small>10:12</small></div><div class="m">Can I visit your office?</div><div class="tags"><span class="tag">Sales</span></div></div><span class="badge">1</span></div>
+          <div class="row"><div class="av" style="background:#0369a1">H</div><div class="meta"><div class="n">Hamza S. <small>09:58</small></div><div class="m">Voice message (0:24)</div><div class="tags"><span class="tag">Sales</span></div></div></div>
+        </div>
+        <div class="app-chat">
+          <div class="chat-top"><div class="av" style="background:#4f46e5">Z</div><div class="who"><b>Zara Khan</b><small>Facebook ad · Sales line</small></div><span class="assignee">Assigned to <b>Sara</b> · Sales</span></div>
+          <div class="window-bar">Free replies open · 23h 41m left</div>
+          <div class="msgs">
+            <div class="b">Hi! I saw your ad about the course 👋<small>10:38</small></div>
+            <div class="b bot"><i>Bot</i>Welcome! How can we help you today?<div class="btns"><span>Course info</span><span>Fees</span><span>Talk to us</span></div><small>10:38</small></div>
+            <div class="b">Course info<small>10:39</small></div>
+            <div class="b out">Hi Zara, I'm Sara from the sales team. The next batch starts on Monday, evenings 7 to 9 pm.<small>10:40 ✓✓</small></div>
+            <div class="b">Is the weekend batch still open?<small>10:42</small></div>
+          </div>
+          <div class="composer"><div class="in">Type a message or / for quick replies</div><div class="send"><svg class="ico" style="width:16px;height:16px"><use href="#i-send"/></svg></div></div>
+        </div>
+      </div>
+      <div class="float f1"><div class="fi" style="background:var(--green-soft);color:var(--green-dark)"><svg class="ico"><use href="#i-users"/></svg></div><div><b>New chat → Sara (Sales)</b><small>Assigned automatically, her turn</small></div></div>
+      <div class="float f2"><div class="fi" style="background:color-mix(in srgb,var(--violet) 15%,transparent);color:var(--violet)"><svg class="ico"><use href="#i-bolt"/></svg></div><div><b>First reply: 1m 40s</b><small>Team average today</small></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap">
+    <span class="lbl">Built for teams that sell on WhatsApp:</span>
+    <span class="i">Academies</span><span class="i">Real estate</span><span class="i">Clinics</span><span class="i">Online stores</span><span class="i">Travel agents</span><span class="i">Trading and finance</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Why teams switch</span>
+      <h2>One phone, five people, lost leads.</h2>
+      <p>The WhatsApp Business app was made for one person. When a whole team shares it, things slip through.</p>
+    </div>
+    <div class="pain">
+      <div class="card"><div class="x"><svg class="ico"><use href="#i-x"/></svg></div><h3>Chats go unanswered</h3><p>Everyone thinks someone else replied. The client waits, then buys somewhere else.</p><div class="fix"><svg class="ico"><use href="#i-check"/></svg>Every chat has one owner, and managers get an alert when a client waits too long.</div></div>
+      <div class="card"><div class="x"><svg class="ico"><use href="#i-x"/></svg></div><h3>Two agents, two answers</h3><p>Clients get different prices from different people, or the same question answered twice.</p><div class="fix"><svg class="ico"><use href="#i-check"/></svg>A returning client goes back to the same agent, with notes and labels from last time.</div></div>
+      <div class="card"><div class="x"><svg class="ico"><use href="#i-x"/></svg></div><h3>No idea what works</h3><p>You can't tell which ad brings buyers, who replies fastest, or how many leads came in today.</p><div class="fix"><svg class="ico"><use href="#i-check"/></svg>Simple reports: new chats per day, reply times, agent results and lead sources.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Features</span>
+      <h2>Everything your team needs. Nothing that slows it down.</h2>
+      <p>A clean inbox that feels like WhatsApp, with the team tools added on top. Fast on any laptop or phone.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="inbox"><svg class="ico"><use href="#i-chat"/></svg>Shared inbox</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="assign"><svg class="ico"><use href="#i-users"/></svg>Team &amp; assignment</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="auto"><svg class="ico"><use href="#i-bolt"/></svg>Automation</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="mkt"><svg class="ico"><use href="#i-mega"/></svg>Broadcasts</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="rep"><svg class="ico"><use href="#i-chart"/></svg>Reports</button>
+    </div>
+
+    <!-- Inbox -->
+    <div class="panel on" role="tabpanel" data-panel="inbox">
+      <div class="card copy">
+        <h3>All your numbers in one place</h3>
+        <p>Connect two, five or ten WhatsApp numbers, even from different Meta accounts. Your team works from one list.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>Multi-number inbox</b><span>Each chat shows which number it came in on, and replies go out from the same number.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Photos, videos, voice notes and files</b><span>Send and receive everything, record voice notes, paste screenshots.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Labels, private notes and quick replies</b><span>Tag hot leads, leave notes for colleagues, answer common questions in one tap.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>24-hour window timer</b><span>See how long you can still reply for free, and send an approved template when it closes.</span></div></li>
+        </ul>
+      </div>
+      <div class="visual">
+        <div class="vrow"><div class="av" style="background:#0e9f6e">S</div><div class="grow"><b>Sales line</b><small>+92 311 •••• 085 · default</small></div><span class="pill">42 open</span></div>
+        <div class="vrow"><div class="av" style="background:#6e56cf">A</div><div class="grow"><b>Academy line</b><small>+92 300 •••• 774 · second Meta account</small></div><span class="pill">17 open</span></div>
+        <div class="vrow"><div class="av" style="background:#c2410c">P</div><div class="grow"><b>Personal numbers</b><small>Friends and family are ignored, never assigned</small></div><span class="pill amber">Hidden</span></div>
+        <div class="vrow"><svg class="ico" style="color:var(--green)"><use href="#i-bolt"/></svg><div class="grow"><b>/fees</b><small>"Our fee is … Would you like the payment details?"</small></div><span class="pill violet">Quick reply</span></div>
+      </div>
+    </div>
+
+    <!-- Assignment -->
+    <div class="panel" role="tabpanel" data-panel="assign">
+      <div class="card copy">
+        <h3>The right chat to the right person</h3>
+        <p>Set up departments like Sales, Accounts and Support. New chats are shared out fairly, without anyone picking and choosing.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>Automatic assignment</b><span>Give each agent 1, 2 or more chats in turn, or send each chat to whoever is least busy.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Chat limits and online status</b><span>Agents who are online get chats first. Nobody gets more than their limit.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Same client, same agent</b><span>A client who comes back is sent to the agent who helped them before.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Admin, manager and agent roles</b><span>Agents see their own chats. Managers can see everything and move chats by hand.</span></div></li>
+        </ul>
+      </div>
+      <div class="visual">
+        <div class="vrow"><div class="av" style="background:#0e9f6e">S</div><div class="grow"><b>Sara</b><small>Sales · online · 3 of 8 chats</small></div><span class="pill">Next</span></div>
+        <div class="vrow"><div class="av" style="background:#0369a1">B</div><div class="grow"><b>Bilal</b><small>Sales · online · 5 of 8 chats</small></div><span class="pill violet">In rotation</span></div>
+        <div class="vrow"><div class="av" style="background:#be185d">A</div><div class="grow"><b>Ayesha</b><small>Accounts · online · 2 of 6 chats</small></div><span class="pill violet">In rotation</span></div>
+        <div class="vrow"><div class="av" style="background:#71858d">K</div><div class="grow"><b>Kamran</b><small>Support · on leave</small></div><div class="toggle off" aria-label="Out of rotation"></div></div>
+      </div>
+    </div>
+
+    <!-- Automation -->
+    <div class="panel" role="tabpanel" data-panel="auto">
+      <div class="card copy">
+        <h3>Answer instantly, even at 2 am</h3>
+        <p>A friendly welcome bot greets new clients, asks their name, and sends them to the right department with tap-to-reply buttons.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>Welcome bot with buttons</b><span>Write your own messages and buttons. Each button can route to a different department.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Away message with working hours</b><span>Pick your days, hours and time zone. Clients outside hours get a polite reply.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Keyword filter</b><span>Only start the bot for ad clicks or messages with your chosen words, so personal chats stay personal.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Follow-up sequences</b><span>Send step-by-step follow-ups over days. They stop on their own when the client replies.</span></div></li>
+        </ul>
+      </div>
+      <div class="visual">
+        <div class="vrow"><svg class="ico" style="color:var(--violet)"><use href="#i-bolt"/></svg><div class="grow"><b>Welcome bot</b><small>Greets, asks name, offers 3 buttons</small></div><div class="toggle"></div></div>
+        <div class="vrow"><svg class="ico" style="color:var(--violet)"><use href="#i-chat"/></svg><div class="grow"><b>Away message</b><small>Mon–Sat, 9:00–18:00 · Asia/Karachi</small></div><div class="toggle"></div></div>
+        <div class="vrow"><svg class="ico" style="color:var(--violet)"><use href="#i-shield"/></svg><div class="grow"><b>Only for ads and keywords</b><small>info, price, fees, course, join</small></div><div class="toggle off"></div></div>
+        <div class="vrow"><svg class="ico" style="color:var(--violet)"><use href="#i-send"/></svg><div class="grow"><b>New lead follow-up</b><small>Day 1 → Day 3 → Day 7 · stops on reply</small></div><span class="pill">128 active</span></div>
+      </div>
+    </div>
+
+    <!-- Broadcasts -->
+    <div class="panel" role="tabpanel" data-panel="mkt">
+      <div class="card copy">
+        <h3>Reach your whole list, the right way</h3>
+        <p>Send offers, reminders and updates with templates approved by WhatsApp, so your number stays safe.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>Broadcasts with audience preview</b><span>Pick your audience, see exactly how many people will get it, then send or schedule.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Create templates inside the app</b><span>Write a template, submit it to Meta and sync approvals without leaving the inbox.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Import contacts</b><span>Paste numbers or upload a CSV file, and keep them in named lists.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Opt-outs respected</b><span>People who opted out and personal numbers are skipped automatically.</span></div></li>
+        </ul>
+      </div>
+      <div class="visual">
+        <div class="vrow"><svg class="ico" style="color:var(--green)"><use href="#i-mega"/></svg><div class="grow"><b>Eid offer – 20% off</b><small>Template: eid_offer_2026 · Approved</small></div><span class="pill">Sending</span></div>
+        <div class="vrow"><div class="grow"><b>Audience</b><small>List "Walk-in leads" + label "Hot lead"</small></div><b style="font-size:20px">1,284</b></div>
+        <div class="vrow"><div class="grow"><b>Delivered</b><small>Updated live</small></div><div style="flex:1.2;height:8px;border-radius:4px;background:var(--line);overflow:hidden"><div style="width:72%;height:100%;background:var(--green)"></div></div><b>72%</b></div>
+        <div class="vrow"><div class="grow"><b>Skipped</b><small>Opted out or personal</small></div><span class="pill amber">36</span></div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="panel" role="tabpanel" data-panel="rep">
+      <div class="card copy">
+        <h3>Know what is working</h3>
+        <p>Clear numbers for owners and managers, without exporting spreadsheets.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>New chats per day</b><span>Spot busy days and plan your team around them.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>First reply and average reply time</b><span>For the whole team and for every agent.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Where clients came from</b><span>See which Facebook and Instagram ads bring chats, and what clients asked for.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Waiting alerts</b><span>Managers are told when a client has waited too long for a reply.</span></div></li>
+        </ul>
+      </div>
+      <div class="visual">
+        <div class="kpis">
+          <div class="kpi"><small>New chats</small><b>86</b> <em>+12%</em></div>
+          <div class="kpi"><small>First reply</small><b>1m 40s</b></div>
+          <div class="kpi"><small>Replied</small><b>97%</b></div>
+        </div>
+        <div class="vrow" style="display:block"><small style="margin-bottom:8px">New chats, last 10 days</small><div class="bars"><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:70%"></i><i style="height:62%"></i><i style="height:85%"></i><i style="height:58%"></i><i style="height:76%"></i><i style="height:92%"></i><i style="height:80%"></i></div></div>
+        <div class="vrow"><div class="grow"><b>Facebook ad · "Weekend batch"</b><small>Top source this week</small></div><span class="pill">41 chats</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">How it works</span>
+      <h2>Live in a day, not a month.</h2>
+      <p>We set it up with you. No coding, no long training.</p>
+    </div>
+    <div class="steps">
+      <div class="card step"><h3>Connect your numbers</h3><p>We connect your WhatsApp Business numbers through the official API. Your clients keep messaging the same numbers they already know.</p></div>
+      <div class="card step"><h3>Add your team</h3><p>Create departments, add agents, choose how chats are shared, and write your welcome message and quick replies.</p></div>
+      <div class="card step"><h3>Start replying</h3><p>Agents sign in on the web or the Android app. New chats are assigned the moment they arrive, and you watch it all from one screen.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ASSIGNMENT DEMO -->
+<section style="background:var(--bg-soft)">
+  <div class="wrap assign">
+    <div>
+      <span class="eyebrow">Fair, automatic sharing</span>
+      <h2>Every agent gets their turn.</h2>
+      <p class="lead">Choose how many new chats each agent gets before the next one's turn, from 1 to 20. Only agents who are on duty and under their limit are picked. A manager can still move any chat by hand.</p>
+      <ul class="ticks">
+        <li><svg><use href="#i-check"/></svg><div><b>Department first</b><span>A chat from the "Fees" button goes to Accounts, not Sales.</span></div></li>
+        <li><svg><use href="#i-check"/></svg><div><b>No double replies</b><span>Two chats arriving at the same second never land on the same free slot.</span></div></li>
+      </ul>
+    </div>
+    <div class="card rr" aria-label="Animated example of turn-based assignment">
+      <div class="rr-in"><svg class="ico"><use href="#i-wa"/></svg><span id="rrText">New chat from +92 333 ••• 412</span></div>
+      <div class="rr-dept">Department: <span class="pill">Sales</span> · 2 chats per turn</div>
+      <div class="agents" id="rrAgents">
+        <div class="agent"><div class="av" style="background:#0e9f6e">S</div><div class="grow"><b>Sara</b><small><span class="dot"></span>Online</small></div><div class="slots"><i></i><i></i></div></div>
+        <div class="agent"><div class="av" style="background:#0369a1">B</div><div class="grow"><b>Bilal</b><small><span class="dot"></span>Online</small></div><div class="slots"><i></i><i></i></div></div>
+        <div class="agent"><div class="av" style="background:#be185d">N</div><div class="grow"><b>Nida</b><small><span class="dot"></span>Online</small></div><div class="slots"><i></i><i></i></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ANDROID APP -->
+<section id="app">
+  <div class="wrap mobile">
+    <div class="phone" aria-hidden="true">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="time">9:41</div>
+        <div class="date">Tuesday, 24 November</div>
+        <div class="notif"><div class="ap"><svg class="ico" style="width:16px;height:16px"><use href="#i-chat"/></svg></div><div><b>Zara Khan · Sales line</b><span>Is the weekend batch still open?</span></div></div>
+        <div class="notif"><div class="ap"><svg class="ico" style="width:16px;height:16px"><use href="#i-users"/></svg></div><div><b>New chat assigned to you</b><span>Usman Ali came from a Facebook ad</span></div></div>
+        <div class="notif"><div class="ap"><svg class="ico" style="width:16px;height:16px"><use href="#i-call"/></svg></div><div><b>Incoming WhatsApp call</b><span>Faisal T. · tap to answer</span></div></div>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow">Android app</span>
+      <h2>Your team, on the move.</h2>
+      <p class="lead">Agents get a real Android app with alerts, even when the app is closed. Reply from the shop floor, the site visit or home, with the same inbox they use on the computer.</p>
+      <ul class="ticks">
+        <li><svg><use href="#i-check"/></svg><div><b>Push alerts for new chats and messages</b><span>Nobody misses a lead because they were away from the desk.</span></div></li>
+        <li><svg><use href="#i-check"/></svg><div><b>Always up to date</b><span>Improvements reach every phone instantly, no reinstalling.</span></div></li>
+        <li><svg><use href="#i-check"/></svg><div><b>WhatsApp calling (beta)</b><span>Answer and make WhatsApp voice calls from the inbox, on the business number.</span></div></li>
+        <li><svg><use href="#i-check"/></svg><div><b>Light and dark mode</b><span>Easy on the eyes on late shifts.</span></div></li>
+      </ul>
+      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap">
+        <a class="btn btn-primary" href="#demo">See it on your phone</a>
+        <a class="btn btn-ghost" id="androidBtn" href="#" hidden><svg class="ico"><use href="#i-phone"/></svg>Download for Android</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<section style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Compare</span>
+      <h2>The team tools you need, without the clutter.</h2>
+      <p>Big all-in-one platforms pack in dozens of screens you never open, and feel slow because of it. We kept what sales teams use every day and made it fast.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th class="c">WhatsApp Business app</th><th class="c">Big all-in-one platforms</th><th class="c us" data-brand>TeamInbox Pro</th></tr></thead>
+        <tbody>
+          <tr><td>Whole team on the same number</td><td class="c no">A few linked phones</td><td class="c yes">Yes</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Several numbers in one inbox</td><td class="c no">No</td><td class="c meh">Often extra cost</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Automatic, fair chat assignment</td><td class="c no">No</td><td class="c yes">Yes</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Returning client goes to the same agent</td><td class="c no">No</td><td class="c meh">Sometimes</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Feels like WhatsApp, no training needed</td><td class="c yes">Yes</td><td class="c no">Busy screens</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Loads fast on any laptop or phone</td><td class="c yes">Yes</td><td class="c meh">Often slow</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Android app with push alerts for agents</td><td class="c yes">Yes</td><td class="c meh">Varies</td><td class="c us yes">Yes</td></tr>
+          <tr><td>Setup done with you, local support</td><td class="c no">No</td><td class="c meh">Self-serve</td><td class="c us yes">Yes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Coming soon</span>
+      <h2>What we're building next.</h2>
+      <p>Customers on any plan get these as they arrive, at no extra cost.</p>
+    </div>
+    <div class="soon">
+      <div class="card"><svg class="ico" style="color:var(--green)"><use href="#i-flow"/></svg><h3>Visual flow builder</h3><p>Drag and drop bot journeys with questions, buttons and conditions.</p></div>
+      <div class="card"><svg class="ico" style="color:var(--green)"><use href="#i-kanban"/></svg><h3>Sales pipeline</h3><p>Move leads through stages like New, Interested and Paid on a board.</p></div>
+      <div class="card"><svg class="ico" style="color:var(--green)"><use href="#i-insta"/></svg><h3>Instagram and Messenger</h3><p>Reply to Instagram and Facebook messages from the same inbox.</p></div>
+      <div class="card"><svg class="ico" style="color:var(--green)"><use href="#i-code"/></svg><h3>Developer API</h3><p>Connect your website, CRM or forms to send and receive messages.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Pricing</span>
+      <h2>Simple plans that grow with your team.</h2>
+      <p>Every plan includes setup help, the Android app and updates.</p>
+    </div>
+    <div class="plans" id="plans"></div>
+    <p class="note">WhatsApp charges for some messages (like templates and broadcasts) directly through Meta. We'll explain the costs for your country during the demo.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>Questions, answered.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Can I keep my current WhatsApp number?</summary><p>Yes. We connect your existing business number to the official WhatsApp Business API, so your clients keep messaging the number they already have. Note that once a number is on the API, it is used through the inbox instead of the normal WhatsApp app on a phone.</p></details>
+      <details><summary>Can I connect more than one number?</summary><p>Yes. You can add several numbers, even if they belong to different Meta business accounts. All chats arrive in one inbox, and each chat shows which number it came in on.</p></details>
+      <details><summary>How are chats shared between agents?</summary><p>You choose: each agent gets a set number of chats in turn (for example 2 each), or each new chat goes to whoever has the fewest open chats. Chats go to the right department first, agents who are online come first, and nobody goes over their chat limit. Managers can move any chat by hand.</p></details>
+      <details><summary>Is there a mobile app?</summary><p>Yes, there is an Android app for agents with push alerts, so new chats reach them even when the app is closed. The web version works on any computer and on iPhone browsers.</p></details>
+      <details><summary>Is it safe? Who can see the chats?</summary><p>Agents only see the chats assigned to them. Managers and admins can see all chats. Everyone signs in with their own account, and you can switch an agent off at any time.</p></details>
+      <details><summary>Do I need a developer to set it up?</summary><p>No. We do the setup with you, usually in a day. After that, admins change bot messages, quick replies, departments and working hours from the settings screen.</p></details>
+      <details><summary>What does WhatsApp itself charge?</summary><p>Replying to a client within 24 hours of their last message is free. Template messages, like broadcasts or messages after 24 hours, are charged by Meta per message, at rates that depend on the country. We'll walk you through it.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section id="demo" style="padding-top:0">
+  <div class="wrap">
+    <div class="demo">
+      <div style="position:relative;z-index:1">
+        <h2>See it with your own chats.</h2>
+        <p>Book a free 20-minute demo. We'll show you the inbox, set up a test number and answer every question.</p>
+        <ul class="ticks">
+          <li><svg><use href="#i-check"/></svg><div><b>Free setup help</b><span>We connect your numbers and team with you.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>No long contracts</b><span>Pay monthly, cancel when you want.</span></div></li>
+          <li><svg><use href="#i-check"/></svg><div><b>Real people on WhatsApp</b><span>Support from the team that builds it.</span></div></li>
+        </ul>
+      </div>
+      <form id="demoForm" novalidate>
+        <div class="two">
+          <label>Your name<input name="name" required autocomplete="name" placeholder="Ali Raza"></label>
+          <label>Business name<input name="business" required autocomplete="organization" placeholder="Raza Academy"></label>
+        </div>
+        <div class="two">
+          <label>WhatsApp number<input name="phone" required type="tel" autocomplete="tel" placeholder="+92 300 1234567"></label>
+          <label>Team size<select name="team"><option>1–3 agents</option><option selected>4–10 agents</option><option>11–25 agents</option><option>25+ agents</option></select></label>
+        </div>
+        <label><span>What would you like to see? <span style="font-weight:400;color:var(--muted)">(optional)</span></span><textarea name="note" rows="3" placeholder="e.g. we have 2 numbers and 6 agents in sales"></textarea></label>
+        <button class="btn btn-primary" type="submit"><svg class="ico"><use href="#i-wa"/></svg><span id="submitLabel">Send on WhatsApp</span></button>
+        <p class="fine" id="formNote">Opens WhatsApp with your details filled in. Nothing is stored on this website.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <a href="#top" class="logo"><span class="logo-mark"><svg class="ico"><use href="#i-chat"/></svg></span><span data-brand>TeamInbox Pro</span></a>
+    <span>© <span id="year">2026</span> <span data-brand>TeamInbox Pro</span>. Uses the official WhatsApp Business Platform.</span>
+    <nav>
+      <a href="#features">Features</a><a href="#pricing">Pricing</a><a href="privacy.html">Privacy</a><a data-app-link href="#">Sign in</a><a id="footMail" href="#" hidden></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var S = window.SITE || {};
+  var brand = S.brand || 'TeamInbox';
+
+  // Brand name everywhere
+  document.querySelectorAll('[data-brand]').forEach(function (el) { el.textContent = brand; });
+  document.title = brand + ' – One WhatsApp inbox for your whole team';
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Sign-in links go to the live app
+  document.querySelectorAll('[data-app-link]').forEach(function (a) {
+    if (S.appUrl) { a.href = S.appUrl; a.rel = 'noopener'; } else { a.hidden = true; }
+  });
+  if (S.androidUrl) { var ab = document.getElementById('androidBtn'); ab.href = S.androidUrl; ab.hidden = false; }
+  if (S.salesEmail) { var fm = document.getElementById('footMail'); fm.href = 'mailto:' + S.salesEmail; fm.textContent = S.salesEmail; fm.hidden = false; }
+
+  // Theme toggle (remembered on this browser)
+  var root = document.documentElement;
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('site-theme', next); } catch (e) {}
+  });
+
+  // Sticky nav border + mobile menu
+  var nav = document.getElementById('nav'), menuBtn = document.getElementById('menuBtn');
+  addEventListener('scroll', function () { nav.classList.toggle('scrolled', scrollY > 8); }, { passive: true });
+  menuBtn.addEventListener('click', function () {
+    var open = nav.classList.toggle('open'); menuBtn.setAttribute('aria-expanded', open);
+  });
+  document.querySelectorAll('#mobileMenu a').forEach(function (a) { a.addEventListener('click', function () { nav.classList.remove('open'); menuBtn.setAttribute('aria-expanded', false); }); });
+
+  // Feature tabs
+  var tabs = document.querySelectorAll('.tab');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.setAttribute('aria-selected', x === t); });
+      document.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.dataset.panel === t.dataset.tab); });
+    });
+  });
+
+  // Pricing from config.js
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  document.getElementById('plans').innerHTML = (S.plans || []).map(function (p) {
+    var price = p.price ? '<div class="price">' + esc(S.currency || '') + ' ' + esc(p.price) + ' <small>' + esc(p.period || '') + '</small></div>'
+                        : '<div class="price q">Custom quote</div>';
+    return '<div class="card plan' + (p.highlight ? ' hi' : '') + '"><h3>' + esc(p.name) + '</h3><p class="tl">' + esc(p.tagline || '') + '</p>' + price +
+      '<ul class="ticks">' + (p.features || []).map(function (f) { return '<li><svg><use href="#i-check"/></svg><span style="color:var(--text)">' + esc(f) + '</span></li>'; }).join('') + '</ul>' +
+      '<a class="btn ' + (p.highlight ? 'btn-primary' : 'btn-ghost') + '" href="#demo" data-plan="' + esc(p.name) + '">' + (p.price ? 'Get started' : 'Ask for a quote') + '</a></div>';
+  }).join('');
+  var chosenPlan = '';
+  document.querySelectorAll('[data-plan]').forEach(function (a) { a.addEventListener('click', function () { chosenPlan = a.dataset.plan; }); });
+
+  // Demo form: opens WhatsApp (or email) with the details filled in
+  var form = document.getElementById('demoForm');
+  if (!S.salesWhatsApp) {
+    document.getElementById('submitLabel').textContent = S.salesEmail ? 'Send by email' : 'Request a demo';
+    if (S.salesEmail) document.getElementById('formNote').textContent = 'Opens your email app with your details filled in.';
+  }
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var bad = null;
+    form.querySelectorAll('[required]').forEach(function (i) { if (!bad && !i.value.trim()) bad = i; });
+    if (bad) { bad.focus(); bad.setCustomValidity('Please fill this in'); bad.reportValidity(); bad.setCustomValidity(''); return; }
+    var d = new FormData(form);
+    var text = 'Hi! I would like a demo of ' + brand + '.\n\nName: ' + d.get('name') + '\nBusiness: ' + d.get('business') +
+      '\nWhatsApp: ' + d.get('phone') + '\nTeam size: ' + d.get('team') + (chosenPlan ? '\nPlan: ' + chosenPlan : '') +
+      (d.get('note') ? '\n\n' + d.get('note') : '');
+    var num = String(S.salesWhatsApp || '').replace(/\D/g, '');
+    if (num) window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    else if (S.salesEmail) location.href = 'mailto:' + S.salesEmail + '?subject=' + encodeURIComponent('Demo request: ' + d.get('business')) + '&body=' + encodeURIComponent(text);
+    else document.getElementById('formNote').textContent = 'Thanks! Contact details are being set up. Please check back soon.';
+  });
+
+  // Round-robin animation
+  var agents = Array.prototype.slice.call(document.querySelectorAll('#rrAgents .agent'));
+  var rrText = document.getElementById('rrText');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var nums = ['412', '087', '559', '230', '918', '664'];
+  var step = 0;
+  function tick() {
+    var who = Math.floor(step / 2) % agents.length;
+    if (step % (agents.length * 2) === 0) agents.forEach(function (a) { a.querySelectorAll('.slots i').forEach(function (i) { i.classList.remove('f'); }); });
+    agents.forEach(function (a, i) { a.classList.toggle('next', i === who); });
+    var slots = agents[who].querySelectorAll('.slots i');
+    slots[step % 2].classList.add('f');
+    rrText.textContent = 'New chat from +92 3' + (step % 4) + '3 ••• ' + nums[step % nums.length] + ' → ' + agents[who].querySelector('b').textContent;
+    step++;
+  }
+  tick();
+  if (!reduce) setInterval(tick, 1800);
+})();
+</script>
+</body>
+</html>
