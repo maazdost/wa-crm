@@ -38,7 +38,7 @@ router.post('/auth/login', wrap(async (req, res) => {
   }
   attempts.delete(key);
   if (u.company_status !== 'active' && !tenant.isSuper(u.email)) return res.status(403).json({ error: 'This company account is paused. Contact support.' });
-  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: u.company_name, company_id: u.company_id, is_super: tenant.isSuper(u.email) } });
+  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: u.company_name, company_id: u.company_id, is_super: tenant.isSuper(u.email), perms: await require('../access').effective(u.company_id, u.role) } });
 }));
 
 // ---- Forgot / reset password (link sent by email, valid for 1 hour, single use) ----
@@ -132,7 +132,7 @@ router.post('/me/password', required(), wrap(async (req, res) => {
 }));
 router.get('/me', required(), wrap(async (req, res) => {
   const u = (await query('SELECT u.id,u.name,u.email,u.role,u.team,u.company_id,co.name AS company FROM users u JOIN companies co ON co.id=u.company_id WHERE u.id=$1', [req.user.id])).rows[0];
-  res.json({ ...u, is_super: req.user.is_super });
+  res.json({ ...u, is_super: req.user.is_super, perms: await require('../access').effective(u.company_id, u.role) });
 }));
 
 // ---- Conversations: agents only ever see their own ----
@@ -295,7 +295,7 @@ router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(as
   }
   if (!conv) return res.status(409).json({ error: 'No agent available' });
   rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: id });
-  push.notifyUser(conv.assigned_to, 'Chat assigned to you', 'A manager assigned you a client.', { conversationId: id });
+  push.notifyUser(conv.assigned_to, 'Chat assigned to you', 'A manager assigned you a client.', { conversationId: id }, 'assigned');
   res.json(conv);
 }));
 

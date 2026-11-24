@@ -103,6 +103,23 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const ha = await j('/api/health-audit', {}, admin);
   check('health audit returns a score and checks', ha.status === 200 && ha.data.score >= 0 && ha.data.score <= 100 && ha.data.checks.length >= 5 && ha.data.checks.every(c => c.level && c.title));
   check('agent cannot open reports or health audit', (await j('/api/reports', {}, a1.token)).status === 403 && (await j('/api/health-audit', {}, a1.token)).status === 403);
+  // Permissions, Activity Log, Notification Preferences
+  const st = (body) => j(`/api/conversations/${own.id}/status`, { method: 'POST', body }, a1.token);
+  await j('/api/permissions', { method: 'PUT', body: { agent: { close: false }, manager: { reports: false } } }, admin);
+  const refused = await st({ status: 'closed' });
+  check('agent cannot close a chat when the admin switched it off', refused.status === 403 && /switched off/.test(refused.data.error) && (await j('/api/reports', {}, admin)).status === 200);
+  const pm = await j('/api/permissions', { method: 'PUT', body: { agent: { close: true }, manager: { reports: true } } }, admin);
+  check('permissions switch back on and only the admin can change them', pm.data.agent.find(x => x.key === 'close').on && (await st({ status: 'closed' })).status === 200 && (await st({ status: 'open' })).status === 200
+    && (await j('/api/permissions', {}, a1.token)).status === 403 && (await j('/api/me', {}, a1.token)).data.perms.close === true);
+  await sleep(300);
+  const al = (await j('/api/activity-log?q=chat', {}, admin)).data, al2 = (await j('/api/activity-log', {}, admin)).data;
+  check('activity log records who did what', al.rows.some(r => r.action === 'Closed a chat' && r.user_name === 'Ali' && r.detail) && al.rows.some(r => r.action === 'Reopened a chat')
+    && al2.rows.some(r => r.action === 'Changed permissions' && /Agents: Close and reopen chats off/.test(r.detail)) && al2.rows.some(r => r.action === 'Added a team member') && al2.rows.some(r => r.action === 'Signed in')
+    && !al2.rows.some(r => r.action === 'Closed a chat' && r.id > al.rows[0].id) && (await j('/api/activity-log', {}, a1.token)).status === 403);
+  const np = await j('/api/me/notifications', { method: 'PUT', body: { message: false, quiet: { on: true, from: '23:00', to: '07:00' } } }, a1.token);
+  const push = require('./push'), at = (h) => new Date(`2026-01-10T${h}:00+05:00`);
+  check('notification preferences are saved per person', np.data.message === false && np.data.assigned === true && np.data.quiet.on && (await j('/api/me/notifications', {}, a2.token)).data.message === true
+    && (await push.allowed(a1.user.id, 'message')) === false && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('23:30')) && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('06:59')) && !push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('12:00')) && !push.quietNow({ on: false, from: '23:00', to: '07:00' }, at('23:30')));
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
