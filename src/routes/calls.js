@@ -6,24 +6,26 @@ const rt = require('../realtime');
 const calls = require('../calls');
 const { saveOutbound, windowInfo } = require('../messages');
 const router = express.Router();
+const tenant = require('../tenant');
+const numbers = require('../numbers');
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const isAgent = (u) => u.role === 'agent';
 
 // Agents only handle their own chats; managers and admins can handle any.
 async function loadCall(req, res) {
-  const c = (await query(`SELECT c.*, v.assigned_to, v.status AS conv_status FROM calls c JOIN conversations v ON v.id=c.conversation_id WHERE c.id=$1`, [req.params.id])).rows[0];
+  const c = (await query(`SELECT c.*, v.assigned_to, v.status AS conv_status FROM calls c JOIN conversations v ON v.id=c.conversation_id WHERE c.id=$1 AND v.company_id=$2`, [req.params.id, tenant.cid()])).rows[0];
   if (!c) { res.status(404).json({ error: 'Call not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'This call is not for you' }); return null; }
   return c;
 }
 async function loadConv(req, res) {
-  const c = (await query(`SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`, [req.params.id])).rows[0];
+  const c = (await query(`SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1 AND c.company_id=$2`, [req.params.id, tenant.cid()])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
   return c;
 }
 const numberOn = async (conv) => {
-  const r = conv.wa_number_id ? (await query('SELECT calls_enabled FROM wa_numbers WHERE id=$1', [conv.wa_number_id])).rows[0] : (await query('SELECT calls_enabled FROM wa_numbers WHERE is_default')).rows[0];
+  const r = conv.wa_number_id ? await numbers.get(conv.wa_number_id) : await numbers.getDefault();
   return !!(r && r.calls_enabled);
 };
 
@@ -47,7 +49,7 @@ router.post('/calls/:id/accept', required(), wrap(async (req, res) => {
     await calls.settle(c.id, 'failed', { errors: [{ message: String(e.message).slice(0, 200) }] });
     return res.status(502).json({ error: 'WhatsApp could not connect the call: ' + e.message });
   }
-  rt.toConversation({ assigned_to: c.assigned_to }, 'call:taken', { id: c.id, by: req.user.id });
+  rt.toConversation({ assigned_to: c.assigned_to, company_id: req.user.cid }, 'call:taken', { id: c.id, by: req.user.id });
   res.json({ ok: true });
 }));
 
@@ -56,7 +58,7 @@ router.post('/calls/:id/reject', required(), wrap(async (req, res) => {
   const claim = (await query(`UPDATE calls SET status='rejected' WHERE id=$1 AND status='ringing' AND direction='in' RETURNING id`, [c.id])).rows[0];
   if (!claim) return res.json({ ok: true });
   await wa.forNumber(c.wa_number_id).callAction({ call_id: c.wa_call_id, action: 'reject' }).catch(e => console.warn('reject:', e.message));
-  rt.toConversation({ assigned_to: c.assigned_to }, 'call:taken', { id: c.id, by: req.user.id });
+  rt.toConversation({ assigned_to: c.assigned_to, company_id: req.user.cid }, 'call:taken', { id: c.id, by: req.user.id });
   res.json({ ok: true });
 }));
 

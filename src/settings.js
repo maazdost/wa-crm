@@ -1,4 +1,5 @@
 const { query } = require('./db');
+const tenant = require('./tenant');
 const DEFAULTS = {
   bot: {
     greet: 'Assalam o Alaikum! Welcome to our trading academy. How can we help you today?',
@@ -15,9 +16,10 @@ const DEFAULTS = {
     start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5, 6], tz: 'Asia/Karachi'
   }
 };
+// Settings belong to the company of the current request or job.
 async function get(key) {
-  const r = (await query('SELECT value FROM settings WHERE key=$1', [key])).rows[0];
+  const r = (await query('SELECT value FROM settings WHERE company_id=$1 AND key=$2', [tenant.cid(), key])).rows[0];
   return { ...DEFAULTS[key], ...(r ? r.value : {}) };
 }
-const set = (key, value) => query(`INSERT INTO settings(key,value) VALUES($1,$2) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value`, [key, value]);
+const set = (key, value) => query(`INSERT INTO settings(company_id,key,value) VALUES($1,$2,$3) ON CONFLICT (company_id,key) DO UPDATE SET value=EXCLUDED.value`, [tenant.cid(), key, value]);
 module.exports = { get, set };

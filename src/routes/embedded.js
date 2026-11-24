@@ -6,6 +6,7 @@
 const express = require('express');
 const { query } = require('../db');
 const { required } = require('../auth');
+const tenant = require('../tenant');
 const numbers = require('../numbers');
 const router = express.Router();
 const admin = required('admin');
@@ -82,11 +83,13 @@ router.post('/whatsapp/embedded-signup', admin, wrap(async (req, res) => {
   catch (e) { warnings.push('Meta did not confirm message delivery to this server: ' + e.message); }
 
   // 6. Save it. A number that is already here gets the new token instead of a second copy.
+  // A number belongs to one company only: another company cannot take it over by connecting it again.
   const existing = await numbers.byPhoneId(pid);
+  if (existing && existing.company_id !== tenant.cid()) return res.status(409).json({ error: 'This number is already connected to another account. Contact support if it is yours.' });
   let row;
   if (existing) {
-    await query('UPDATE wa_numbers SET access_token=$2, waba_id=$3, display_phone=$4, verified_name=$5 WHERE id=$1',
-      [existing.id, numbers.encrypt(token), waba, info.display_phone_number || null, info.verified_name || null]);
+    await query('UPDATE wa_numbers SET access_token=$2, waba_id=$3, display_phone=$4, verified_name=$5 WHERE id=$1 AND company_id=$6',
+      [existing.id, numbers.encrypt(token), waba, info.display_phone_number || null, info.verified_name || null, tenant.cid()]);
     row = { id: existing.id, label: existing.label, updated: true };
   } else {
     const label = String(req.body.label || info.verified_name || 'WhatsApp').trim().slice(0, 40) || 'WhatsApp';

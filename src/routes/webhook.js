@@ -11,6 +11,7 @@ const { maybeAway } = require('../away');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
+const tenant = require('../tenant');
 const router = express.Router();
 
 // Meta webhook verification
@@ -48,14 +49,15 @@ function extract(m) {
 async function handleMessage(m, profileName, numId) {
   const msg = extract(m);
   const waId = m.from;
+  const cid = tenant.cid();
   const contact = (await query(
-    `INSERT INTO contacts(wa_id,profile_name,source) VALUES($1,$2,$3)
-     ON CONFLICT (wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`,
-    [waId, profileName || null, m.referral ? 'ad' : 'organic'])).rows[0];
+    `INSERT INTO contacts(company_id,wa_id,profile_name,source) VALUES($4,$1,$2,$3)
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`,
+    [waId, profileName || null, m.referral ? 'ad' : 'organic', cid])).rows[0];
   if (contact.is_personal) return; // marked "not a client": nothing is stored and nothing is sent
   let conv = (await query(
-    `INSERT INTO conversations(contact_id, wa_number_id) VALUES($1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`,
-    [contact.id, numId || null])).rows[0];
+    `INSERT INTO conversations(company_id, contact_id, wa_number_id) VALUES($3,$1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`,
+    [contact.id, numId || null, cid])).rows[0];
   const w = wa.forConversation(conv); // replies leave from the number the client wrote to
 
   const saved = await saveInbound(conv, msg);
@@ -123,10 +125,11 @@ router.post('/', (req, res) => {
     for (const m of v.messages || []) {
       const name = v.contacts?.find(c => c.wa_id === m.from)?.profile?.name;
       const pid = v.metadata?.phone_number_id; // which of your numbers the client wrote to
-      serial(m.from, async () => {
+      serial(`${pid || ''}|${m.from}`, async () => {
         const num = pid ? await numbers.byPhoneId(pid) : null;
         if (pid && !num) { console.warn(`[webhook] message for phone number id ${pid}, which is not added in Settings > WhatsApp numbers; ignored`); return; }
-        return handleMessage(m, name, num && num.id);
+        // The number the client wrote to decides the company. Messages without a number ID (older setups) go to company 1.
+        return tenant.run(num ? num.company_id : 1, () => handleMessage(m, name, num && num.id));
       });
     }
     for (const ev of v.calls || []) {
@@ -134,7 +137,7 @@ router.post('/', (req, res) => {
       (async () => {
         const num = pid ? await numbers.byPhoneId(pid) : null;
         if (pid && !num) return console.warn(`[webhook] call for phone number id ${pid}, which is not added in Settings > WhatsApp numbers; ignored`);
-        await calls.onEvent(ev, v, num && num.id);
+        await tenant.run(num ? num.company_id : 1, () => calls.onEvent(ev, v, num && num.id));
       })().catch(e => console.error('call event', e.message));
     }
     for (const s of v.statuses || []) {
@@ -146,7 +149,7 @@ router.post('/', (req, res) => {
         [s.id, s.status, s.errors?.[0]?.title || null])
         .then(async r => {
           const row = r.rows[0]; if (!row) return;
-          const conv = (await query('SELECT assigned_to FROM conversations WHERE id=$1', [row.conversation_id])).rows[0];
+          const conv = (await query('SELECT assigned_to, company_id FROM conversations WHERE id=$1', [row.conversation_id])).rows[0];
           rt.toConversation(conv || {}, 'message:status', { conversationId: row.conversation_id, waMessageId: s.id, status: s.status });
         })
         .catch(() => {});

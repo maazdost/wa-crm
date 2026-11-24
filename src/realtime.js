@@ -9,14 +9,14 @@ function init(httpServer) {
     try {
       const tok = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET), cur = await auth.current(tok.id);
       if (!auth.valid(tok, cur)) throw new Error('ended');
-      socket.user = { ...tok, role: cur.role };
+      socket.user = { ...tok, role: cur.role, cid: cur.company_id };
       next();
     } catch { next(new Error('unauthorized')); }
   });
   io.on('connection', async (socket) => {
-    const { id, role } = socket.user;
+    const { id, role, cid } = socket.user;
     socket.join(`user:${id}`);
-    if (role !== 'agent') socket.join('managers');
+    if (role !== 'agent') socket.join(`managers:${cid}`); // managers only hear about their own company
     await require('./db').query('UPDATE users SET is_online=TRUE WHERE id=$1', [id]);
     socket.on('disconnect', async () => {
       const left = await io.in(`user:${id}`).fetchSockets();
@@ -26,11 +26,13 @@ function init(httpServer) {
   return io;
 }
 
-// Send an event only to the owning agent and to managers/admins.
+// Send an event only to the owning agent and to the managers/admins of the same company.
 function toConversation(conv, event, payload) {
   if (!io) return;
   if (conv.assigned_to) io.to(`user:${conv.assigned_to}`).emit(event, payload);
-  io.to('managers').emit(event, payload);
+  const cid = conv.company_id || require('./tenant').maybe();
+  if (cid) io.to(`managers:${cid}`).emit(event, payload);
+  else console.warn('[realtime] no company for event', event);
 }
 const toUser = (userId, event, payload) => io && io.to(`user:${userId}`).emit(event, payload);
 

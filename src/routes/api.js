@@ -15,11 +15,14 @@ const settings = require('../settings');
 const { markPersonal } = require('../personal');
 const bot = require('../bot');
 const { toOggOpus } = require('../audio');
+const tenant = require('../tenant');
+const C = () => tenant.cid(); // the signed-in person's company; every query below is limited to it
 async function replyCtx(convId, id) {
   if (!id) return null;
   const r = (await query('SELECT wa_message_id FROM messages WHERE id=$1 AND conversation_id=$2', [Number(id), convId])).rows[0];
   return (r && r.wa_message_id) || null;
 }
+const NUMBER_LABEL_SQL = `(CASE WHEN (SELECT COUNT(*) FROM wa_numbers WHERE company_id=c.company_id) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label`;
 const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
 const attempts = new Map(); // "ip|email" -> { n, since }
@@ -28,13 +31,14 @@ router.post('/auth/login', wrap(async (req, res) => {
   const key = `${req.ip}|${String(email || '').toLowerCase()}`, rec = attempts.get(key);
   if (rec && Date.now() - rec.since > 15 * 60000) attempts.delete(key);
   if ((attempts.get(key)?.n || 0) >= 8) return res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
-  const u = (await query('SELECT * FROM users WHERE email=$1 AND is_active', [String(email || '').toLowerCase()])).rows[0];
+  const u = (await query('SELECT u.*, co.status AS company_status, co.name AS company_name FROM users u JOIN companies co ON co.id=u.company_id WHERE u.email=$1 AND u.is_active', [String(email || '').toLowerCase()])).rows[0];
   if (!u || !(await bcrypt.compare(password || '', u.password_hash))) {
     const r = attempts.get(key) || { n: 0, since: Date.now() }; r.n++; attempts.set(key, r);
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   attempts.delete(key);
-  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team } });
+  if (u.company_status !== 'active' && !tenant.isSuper(u.email)) return res.status(403).json({ error: 'This company account is paused. Contact support.' });
+  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: u.company_name, company_id: u.company_id, is_super: tenant.isSuper(u.email) } });
 }));
 
 // ---- Forgot / reset password (link sent by email, valid for 1 hour, single use) ----
@@ -81,6 +85,44 @@ router.post('/auth/reset', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// ---- Sign-up: a new company creates its own account (only when SIGNUP_ENABLED=true on the server) ----
+const signupOn = () => process.env.SIGNUP_ENABLED === 'true';
+router.get('/auth/config', (req, res) => res.json({ signup: signupOn() }));
+router.post('/auth/signup', wrap(async (req, res) => {
+  if (!signupOn()) return res.status(403).json({ error: 'Sign-up is not open yet. Contact us to get an account.' });
+  if (!allow('su|' + req.ip, 5, 3600e3)) return res.status(429).json({ error: 'Too many sign-ups from this connection. Try again later.' });
+  const company = String(req.body.company || '').trim().slice(0, 80), name = String(req.body.name || '').trim().slice(0, 60);
+  const email = String(req.body.email || '').trim().toLowerCase(), password = String(req.body.password || '');
+  if (!company) return res.status(400).json({ error: 'Enter your company name' });
+  if (!name) return res.status(400).json({ error: 'Enter your name' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address' });
+  if (password.length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
+  if ((await query('SELECT 1 FROM users WHERE email=$1', [email])).rows[0]) return res.status(409).json({ error: 'An account with this email already exists. Sign in instead.' });
+  let made;
+  try { made = await require('../companies').create({ company, name, email, password }); }
+  catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'An account with this email already exists. Sign in instead.' }); throw e; }
+  const u = made.user;
+  console.log(`[signup] new company #${made.company.id} "${company}"`);
+  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: made.company.name, company_id: made.company.id, is_super: tenant.isSuper(u.email) } });
+}));
+
+// ---- Super admin (emails listed in SUPER_ADMIN_EMAILS): see every company, pause or resume one ----
+router.get('/super/companies', required('super'), wrap(async (req, res) => res.json(await require('../companies').list())));
+router.patch('/super/companies/:id', required('super'), wrap(async (req, res) => {
+  const id = Number(req.params.id), status = req.body.status;
+  if (!['active', 'paused'].includes(status)) return res.status(400).json({ error: 'Unknown status' });
+  if (id === req.user.cid && status === 'paused') return res.status(409).json({ error: 'You cannot pause your own company' });
+  const r = (await query('UPDATE companies SET status=$2 WHERE id=$1 RETURNING id', [id, status])).rows[0];
+  if (!r) return res.status(404).json({ error: 'Company not found' });
+  require('../auth').forgetAll(); // signed-in people of a paused company are stopped within seconds
+  res.json({ ok: true });
+}));
+// Company name, changed by its admin
+router.patch('/company', required('admin'), wrap(async (req, res) => {
+  const name = String(req.body.name || '').trim().slice(0, 80); if (!name) return res.status(400).json({ error: 'Enter the company name' });
+  await query('UPDATE companies SET name=$2 WHERE id=$1', [C(), name]); res.json({ ok: true });
+}));
+
 router.post('/me/password', required(), wrap(async (req, res) => {
   const { current, password } = req.body;
   if (!password || String(password).length < 8) return res.status(400).json({ error: 'The new password must be at least 8 characters' });
@@ -89,22 +131,22 @@ router.post('/me/password', required(), wrap(async (req, res) => {
   await query('UPDATE users SET password_hash=$2 WHERE id=$1', [u.id, await bcrypt.hash(password, 10)]); res.json({ ok: true });
 }));
 router.get('/me', required(), wrap(async (req, res) => {
-  const u = (await query('SELECT id,name,email,role,team FROM users WHERE id=$1', [req.user.id])).rows[0];
-  res.json(u);
+  const u = (await query('SELECT u.id,u.name,u.email,u.role,u.team,u.company_id,co.name AS company FROM users u JOIN companies co ON co.id=u.company_id WHERE u.id=$1', [req.user.id])).rows[0];
+  res.json({ ...u, is_super: req.user.is_super });
 }));
 
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, COALESCE((SELECT n.calls_enabled FROM wa_numbers n WHERE n.id = COALESCE(c.wa_number_id, (SELECT id FROM wa_numbers WHERE is_default LIMIT 1))), false) AS calls_enabled, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1`,
-    [req.params.id])).rows[0];
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, COALESCE((SELECT n.calls_enabled FROM wa_numbers n WHERE n.id = COALESCE(c.wa_number_id, (SELECT id FROM wa_numbers WHERE is_default AND company_id=c.company_id LIMIT 1))), false) AS calls_enabled, ${NUMBER_LABEL_SQL}, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1 AND c.company_id=$2`,
+    [Number(req.params.id) || 0, C()])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
   return c;
 }
 
 router.get('/conversations/counts', required(), wrap(async (req, res) => {
-  const me = Number(req.user.id), own = isAgent(req.user) ? `AND c.assigned_to=${me}` : '';
+  const me = Number(req.user.id), own = (isAgent(req.user) ? `AND c.assigned_to=${me}` : '') + ` AND c.company_id=${Number(C())}`;
   const r = (await query(`SELECT
       COUNT(*) FILTER (WHERE c.status='open' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND (c.unread_count>0 OR COALESCE(f.marked_unread,false)))::int AS unread,
       COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND COALESCE(f.favorite,false))::int AS fav,
@@ -118,7 +160,7 @@ router.get('/conversations/counts', required(), wrap(async (req, res) => {
 
 router.get('/conversations', required(), wrap(async (req, res) => {
   const { status, assigned_to, q, unassigned, view } = req.query;
-  const me = Number(req.user.id), where = ['TRUE'], p = [];
+  const me = Number(req.user.id), where = ['c.company_id=$1'], p = [C()];
   if (isAgent(req.user)) { p.push(req.user.id); where.push(`c.assigned_to=$${p.length}`); }
   else if (assigned_to) { p.push(assigned_to); where.push(`c.assigned_to=$${p.length}`); }
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
@@ -131,7 +173,7 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
   if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, (CASE WHEN (SELECT COUNT(*) FROM wa_numbers) > 1 THEN (SELECT n.label FROM wa_numbers n WHERE n.id=c.wa_number_id) END) AS number_label, ${LABELS_SQL},
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, u.name AS agent_name, ${NUMBER_LABEL_SQL}, ${LABELS_SQL},
             COALESCE(f.pinned,false) AS pinned, COALESCE(f.favorite,false) AS favorite, COALESCE(f.archived,false) AS archived, COALESCE(f.marked_unread,false) AS marked_unread,
             (SELECT body FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_body,
             (SELECT type FROM messages m WHERE m.conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_type
@@ -191,7 +233,7 @@ router.post('/conversations/:id/messages', required(), wrap(async (req, res) => 
 
 router.post('/conversations/:id/template', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
-  const t = (await query('SELECT * FROM templates WHERE name=$1', [req.body.name])).rows[0];
+  const t = (await query('SELECT * FROM templates WHERE name=$1 AND company_id=$2', [req.body.name, C()])).rows[0];
   if (!t) return res.status(404).json({ error: 'template not found' });
   if (t.status !== 'APPROVED' && process.env.WA_DRY_RUN !== 'true') return res.status(409).json({ error: 'Meta has not approved this template yet' });
   const params = t.var_count === 0 ? [] : (req.body.params?.length ? req.body.params : [(c.contact_name || 'there').split(' ')[0]]);
@@ -242,12 +284,14 @@ router.post('/conversations/:id/status', required(), wrap(async (req, res) => {
 // Managers: reassign (to a chosen agent, or auto-pick when agent_id omitted)
 router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(async (req, res) => {
   const id = Number(req.params.id);
+  const cur = (await query('SELECT team FROM conversations WHERE id=$1 AND company_id=$2', [id, C()])).rows[0];
+  if (!cur) return res.status(404).json({ error: 'not found' });
   let conv;
   if (req.body.agent_id) {
-    conv = (await query(`UPDATE conversations SET assigned_to=$2, status='open', assigned_at=now() WHERE id=$1 RETURNING *`, [id, req.body.agent_id])).rows[0];
+    if (!(await query('SELECT 1 FROM users WHERE id=$1 AND company_id=$2', [Number(req.body.agent_id) || 0, C()])).rows[0]) return res.status(400).json({ error: 'Person not found' });
+    conv = (await query(`UPDATE conversations SET assigned_to=$2, status='open', assigned_at=now() WHERE id=$1 AND company_id=$3 RETURNING *`, [id, req.body.agent_id, C()])).rows[0];
   } else {
-    const cur = (await query('SELECT team FROM conversations WHERE id=$1', [id])).rows[0];
-    conv = await assignConversation(id, cur?.team);
+    conv = await assignConversation(id, cur.team);
   }
   if (!conv) return res.status(409).json({ error: 'No agent available' });
   rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: id });
@@ -257,7 +301,7 @@ router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(as
 
 // ---- Media ----
 // Raw body upload: POST /conversations/:id/media?filename=..&mime=..&caption=..
-router.post('/conversations/:id/media', required(), express.raw({ type: () => true, limit: '16mb' }), wrap(async (req, res) => {
+router.post('/conversations/:id/media', express.raw({ type: () => true, limit: '16mb' }), required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   if (!windowInfo(c).window_open)
     return res.status(409).json({ error: 'The reply window is closed. Send an approved template first.', code: 'WINDOW_CLOSED' });
@@ -286,7 +330,7 @@ router.post('/conversations/:id/media', required(), express.raw({ type: () => tr
 }));
 
 router.get('/messages/:id/media', required(), wrap(async (req, res) => {
-  const m = (await query(`SELECT m.*, c.assigned_to, c.wa_number_id FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1`, [req.params.id])).rows[0];
+  const m = (await query(`SELECT m.*, c.assigned_to, c.wa_number_id FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1 AND c.company_id=$2`, [Number(req.params.id) || 0, C()])).rows[0];
   if (!m || !m.media_id) return res.status(404).json({ error: 'not found' });
   if (isAgent(req.user) && m.assigned_to !== req.user.id) return res.status(403).json({ error: 'not your conversation' });
   try {
@@ -309,25 +353,25 @@ router.post('/devices/remove', required(), wrap(async (req, res) => {
 
 // ---- Departments (admin adds, renames and removes them) ----
 router.get('/departments', required(), wrap(async (req, res) => res.json((await query(
-  `SELECT d.id, d.key, d.name, (SELECT COUNT(*) FROM users u WHERE u.team=d.key)::int AS members FROM departments d ORDER BY d.name`)).rows)));
+  `SELECT d.id, d.key, d.name, (SELECT COUNT(*) FROM users u WHERE u.team=d.key AND u.company_id=d.company_id)::int AS members FROM departments d WHERE d.company_id=$1 ORDER BY d.name`, [C()])).rows)));
 router.post('/departments', required('admin'), wrap(async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 40); if (!name) return res.status(400).json({ error: 'Give the department a name' });
   const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30); if (!key) return res.status(400).json({ error: 'Use letters or numbers in the name' });
-  if ((await query('SELECT 1 FROM departments WHERE key=$1 OR lower(name)=lower($2)', [key, name])).rows[0]) return res.status(409).json({ error: 'A department with this name already exists' });
-  res.json((await query('INSERT INTO departments(key,name) VALUES($1,$2) RETURNING *', [key, name])).rows[0]);
+  if ((await query('SELECT 1 FROM departments WHERE company_id=$3 AND (key=$1 OR lower(name)=lower($2))', [key, name, C()])).rows[0]) return res.status(409).json({ error: 'A department with this name already exists' });
+  res.json((await query('INSERT INTO departments(company_id,key,name) VALUES($3,$1,$2) RETURNING *', [key, name, C()])).rows[0]);
 }));
 router.patch('/departments/:id', required('admin'), wrap(async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 40); if (!name) return res.status(400).json({ error: 'Give the department a name' });
-  await query('UPDATE departments SET name=$2 WHERE id=$1', [req.params.id, name]); res.json({ ok: true });
+  await query('UPDATE departments SET name=$2 WHERE id=$1 AND company_id=$3', [req.params.id, name, C()]); res.json({ ok: true });
 }));
 router.delete('/departments/:id', required('admin'), wrap(async (req, res) => {
-  const d = (await query('SELECT * FROM departments WHERE id=$1', [req.params.id])).rows[0]; if (!d) return res.status(404).json({ error: 'Not found' });
+  const d = (await query('SELECT * FROM departments WHERE id=$1 AND company_id=$2', [req.params.id, C()])).rows[0]; if (!d) return res.status(404).json({ error: 'Not found' });
   if (d.key === 'general') return res.status(409).json({ error: 'The General department cannot be removed' });
-  const used = (await query(`SELECT (SELECT COUNT(*) FROM users WHERE team=$1)::int AS u, (SELECT COUNT(*) FROM conversations WHERE team=$1 AND status IN ('open','bot'))::int AS c`, [d.key])).rows[0];
+  const used = (await query(`SELECT (SELECT COUNT(*) FROM users WHERE team=$1 AND company_id=$2)::int AS u, (SELECT COUNT(*) FROM conversations WHERE team=$1 AND company_id=$2 AND status IN ('open','bot'))::int AS c`, [d.key, C()])).rows[0];
   const routing = await settings.get('routing');
   if (Object.values(routing).includes(d.key)) return res.status(409).json({ error: 'The bot sends clients to this department. Pick another one in "Chat assignment" first.' });
   if (used.u || used.c) return res.status(409).json({ error: `${used.u} team member(s) and ${used.c} open chat(s) use this department. Move them first.` });
-  await query('DELETE FROM departments WHERE id=$1', [d.id]); res.json({ ok: true });
+  await query('DELETE FROM departments WHERE id=$1 AND company_id=$2', [d.id, C()]); res.json({ ok: true });
 }));
 
 // ---- Admin: users, templates, stats ----
@@ -335,20 +379,26 @@ router.get('/users', required('admin', 'manager'), wrap(async (req, res) => {
   const { rows } = await query(
     `SELECT u.id,u.name,u.email,u.role,u.team,u.is_active,u.is_online,u.in_rotation,u.max_active_chats,
             (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active_chats
-       FROM users u ORDER BY u.id`);
+       FROM users u WHERE u.company_id=$1 ORDER BY u.id`, [C()]);
   res.json(rows);
 }));
 router.post('/users', required('admin'), wrap(async (req, res) => {
   const { name, email, password, role = 'agent', team = 'general', max_active_chats = 150 } = req.body;
+  const em = String(email || '').trim().toLowerCase();
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'Enter a name' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return res.status(400).json({ error: 'Enter a valid email address' });
+  if (!password || String(password).length < 6) return res.status(400).json({ error: 'The password must be at least 6 characters' });
+  if (!['admin', 'manager', 'agent'].includes(role)) return res.status(400).json({ error: 'Unknown role' });
+  if ((await query('SELECT 1 FROM users WHERE email=$1', [em])).rows[0]) return res.status(409).json({ error: 'That email is already used by someone else' });
   const hash = await bcrypt.hash(password, 10);
   const { rows } = await query(
-    `INSERT INTO users(name,email,password_hash,role,team,max_active_chats) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,team`,
-    [name, String(email).toLowerCase(), hash, role, team, max_active_chats]);
+    `INSERT INTO users(company_id,name,email,password_hash,role,team,max_active_chats) VALUES($7,$1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,team`,
+    [String(name).trim(), em, hash, role, team, max_active_chats, C()]);
   res.json(rows[0]);
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   const uid = Number(req.params.id), b = req.body;
-  const target = (await query('SELECT role, is_active FROM users WHERE id=$1', [uid])).rows[0];
+  const target = (await query('SELECT role, is_active FROM users WHERE id=$1 AND company_id=$2', [uid, C()])).rows[0];
   if (!target) return res.status(404).json({ error: 'Person not found' });
   if ('email' in b) {
     const em = String(b.email || '').trim().toLowerCase();
@@ -358,7 +408,7 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   }
   if ('role' in b && !['admin', 'manager', 'agent'].includes(b.role)) return res.status(400).json({ error: 'Unknown role' });
   const losingAdmin = target.role === 'admin' && target.is_active && (b.is_active === false || ('role' in b && b.role !== 'admin'));
-  if (losingAdmin && (await query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND is_active AND id<>$1`, [uid])).rows[0].n === 0)
+  if (losingAdmin && (await query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND is_active AND id<>$1 AND company_id=$2`, [uid, C()])).rows[0].n === 0)
     return res.status(409).json({ error: 'There must always be one active admin. Add another admin first.' });
   // Changing the email, password, role or active state signs that person out everywhere
   if ('email' in b || b.password || 'role' in b || b.is_active === false) {
@@ -366,14 +416,14 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
     if ('email' in b) await query('UPDATE password_resets SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [uid]);
   }
   const f = ['name', 'email', 'role', 'team', 'is_active', 'max_active_chats', 'in_rotation'].filter(k => k in req.body);
-  if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1', [req.body.team])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
+  if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1 AND company_id=$2', [req.body.team, C()])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
   if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
-  if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [req.params.id, await bcrypt.hash(req.body.password, 10)]); }
-  if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')} WHERE id=$1`, [req.params.id, ...f.map(k => req.body[k])]);
+  if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [uid, await bcrypt.hash(req.body.password, 10)]); }
+  if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')} WHERE id=$1`, [uid, ...f.map(k => req.body[k])]);
   res.json({ ok: true });
 }));
 
-router.get('/templates', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM templates ORDER BY name')).rows)));
+router.get('/templates', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM templates WHERE company_id=$1 ORDER BY name', [C()])).rows)));
 
 
 router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
@@ -382,11 +432,11 @@ router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
       COUNT(*) FILTER (WHERE status='closed')::int AS closed,
       COUNT(*) FILTER (WHERE status='bot')::int AS with_bot,
       COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done')::int AS unassigned,
-      COUNT(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS new_24h FROM conversations`)).rows[0];
+      COUNT(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS new_24h FROM conversations WHERE company_id=$1`, [C()])).rows[0];
   const agents = (await query(`SELECT u.id,u.name,u.team,u.is_online,
       COUNT(c.id) FILTER (WHERE c.status='open')::int AS open_chats,
       COALESCE(SUM(c.unread_count),0)::int AS unread
-      FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE u.role='agent' GROUP BY u.id ORDER BY u.name`)).rows;
+      FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE u.role='agent' AND u.company_id=$1 GROUP BY u.id ORDER BY u.name`, [C()])).rows;
   res.json({ totals, agents });
 }));
 
@@ -396,7 +446,7 @@ router.post('/conversations/:id/not-client', required(), wrap(async (req, res) =
   await markPersonal(c.contact_id); res.json({ ok: true });
 }));
 router.post('/conversations/:id/release', required('admin', 'manager'), wrap(async (req, res) => {
-  const c = (await query(`UPDATE conversations SET status='bot', bot_step='new' WHERE id=$1 AND bot_step='held' RETURNING *`, [req.params.id])).rows[0];
+  const c = (await query(`UPDATE conversations SET status='bot', bot_step='new' WHERE id=$1 AND company_id=$2 AND bot_step='held' RETURNING *`, [Number(req.params.id) || 0, C()])).rows[0];
   if (!c) return res.status(404).json({ error: 'This chat is not on hold' });
   const contact = (await query('SELECT * FROM contacts WHERE id=$1', [c.contact_id])).rows[0];
   await bot.handle(c, contact, { type: 'text', body: '' }); res.json({ ok: true });
@@ -424,7 +474,7 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
     await settings.set('assign', { mode: b.mode === 'turns' ? 'turns' : 'least', batch: Math.min(20, Math.max(1, Math.round(Number(b.batch)) || 1)) });
   } else if (k === 'routing') {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
-    const keys = new Set((await query('SELECT key FROM departments')).rows.map(r => r.key)), v = {};
+    const keys = new Set((await query('SELECT key FROM departments WHERE company_id=$1', [C()])).rows.map(r => r.key)), v = {};
     for (const f of ['info', 'team', 'classes']) { if (b[f] !== undefined) { if (!keys.has(b[f])) return res.status(400).json({ error: 'Unknown department' }); v[f] = b[f]; } }
     await settings.set('routing', { ...(await settings.get('routing')), ...v });
   } else return res.status(404).json({ error: 'unknown setting' });
@@ -432,26 +482,27 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
 }));
 
 // ---- Quick replies ----
-router.get('/quick-replies', required(), wrap(async (req, res) => res.json((await query('SELECT id,shortcut,title,body,buttons FROM quick_replies ORDER BY shortcut')).rows)));
+router.get('/quick-replies', required(), wrap(async (req, res) => res.json((await query('SELECT id,shortcut,title,body,buttons FROM quick_replies WHERE company_id=$1 ORDER BY shortcut', [C()])).rows)));
 router.post('/quick-replies', required('admin', 'manager'), wrap(async (req, res) => {
   const { shortcut, title, body } = req.body;
   if (!shortcut || !title || !body) return res.status(400).json({ error: 'Shortcut, title and text are required' });
   const btns = (Array.isArray(req.body.buttons) ? req.body.buttons : String(req.body.buttons || '').split(',')).map(x => String(x).trim().slice(0, 20)).filter(Boolean).slice(0, 3);
-  res.json((await query('INSERT INTO quick_replies(shortcut,title,body,buttons) VALUES($1,$2,$3,$4) RETURNING *',
-    [String(shortcut).trim().replace(/^\/+/, '').slice(0, 30).replace(/\s+/g, '-'), String(title).slice(0, 80), String(body).slice(0, 1000), btns.length ? JSON.stringify(btns) : null])).rows[0]);
+  res.json((await query('INSERT INTO quick_replies(company_id,shortcut,title,body,buttons) VALUES($5,$1,$2,$3,$4) RETURNING *',
+    [String(shortcut).trim().replace(/^\/+/, '').slice(0, 30).replace(/\s+/g, '-'), String(title).slice(0, 80), String(body).slice(0, 1000), btns.length ? JSON.stringify(btns) : null, C()])).rows[0]);
 }));
-router.delete('/quick-replies/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM quick_replies WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
+router.delete('/quick-replies/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM quick_replies WHERE id=$1 AND company_id=$2', [req.params.id, C()]); res.json({ ok: true }); }));
 
 // ---- Labels ----
-router.get('/labels', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM labels ORDER BY name')).rows)));
+router.get('/labels', required(), wrap(async (req, res) => res.json((await query('SELECT * FROM labels WHERE company_id=$1 ORDER BY name', [C()])).rows)));
 router.post('/labels', required('admin', 'manager'), wrap(async (req, res) => {
   const color = /^#[0-9a-fA-F]{6}$/.test(req.body.color) ? req.body.color : '#0e5a4a';
-  res.json((await query('INSERT INTO labels(name,color) VALUES($1,$2) RETURNING *', [String(req.body.name || '').trim().slice(0, 30), color])).rows[0]);
+  res.json((await query('INSERT INTO labels(company_id,name,color) VALUES($3,$1,$2) RETURNING *', [String(req.body.name || '').trim().slice(0, 30), color, C()])).rows[0]);
 }));
-router.delete('/labels/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM labels WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
+router.delete('/labels/:id', required('admin', 'manager'), wrap(async (req, res) => { await query('DELETE FROM labels WHERE id=$1 AND company_id=$2', [req.params.id, C()]); res.json({ ok: true }); }));
 router.post('/conversations/:id/labels', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   const lid = Number(req.body.label_id);
+  if (!(await query('SELECT 1 FROM labels WHERE id=$1 AND company_id=$2', [lid || 0, C()])).rows[0]) return res.status(404).json({ error: 'Label not found' });
   if (req.body.on) await query('INSERT INTO conversation_labels VALUES($1,$2) ON CONFLICT DO NOTHING', [c.id, lid]);
   else await query('DELETE FROM conversation_labels WHERE conversation_id=$1 AND label_id=$2', [c.id, lid]);
   res.json({ ok: true });
@@ -460,18 +511,18 @@ router.post('/conversations/:id/labels', required(), wrap(async (req, res) => {
 router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => {
   const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 90), d = String(days);
   const tz = process.env.REPORT_TZ || 'Asia/Karachi';
-  const since = `now() - ($1 || ' days')::interval`;
+  const since = `now() - ($1 || ' days')::interval`, cid = Number(C()); // cid is a number from the database
   const [kpi, perDay, intents, sources, agents, msgs, med] = await Promise.all([
     query(`SELECT COUNT(*) FILTER (WHERE created_at > ${since})::int AS new_chats,
         COUNT(*) FILTER (WHERE status='open')::int AS open,
         COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done')::int AS unassigned,
         COUNT(*) FILTER (WHERE status='bot')::int AS with_bot,
-        COUNT(*) FILTER (WHERE status='closed')::int AS closed FROM conversations`, [d]),
+        COUNT(*) FILTER (WHERE status='closed')::int AS closed FROM conversations WHERE company_id=${cid}`, [d]),
     query(`SELECT to_char(g,'YYYY-MM-DD') AS day, COALESCE(x.n,0)::int AS chats
         FROM generate_series(((now() AT TIME ZONE $2)::date - ($1::int - 1))::timestamp, (now() AT TIME ZONE $2)::date::timestamp, interval '1 day') g
-        LEFT JOIN (SELECT (created_at AT TIME ZONE $2)::date AS dd, COUNT(*) AS n FROM conversations GROUP BY 1) x ON x.dd = g::date ORDER BY g`, [days, tz]),
-    query(`SELECT COALESCE(intent,'unknown') AS k, COUNT(*)::int AS n FROM conversations WHERE created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
-    query(`SELECT COALESCE(ct.source,'organic') AS k, COUNT(*)::int AS n FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
+        LEFT JOIN (SELECT (created_at AT TIME ZONE $2)::date AS dd, COUNT(*) AS n FROM conversations WHERE company_id=${cid} GROUP BY 1) x ON x.dd = g::date ORDER BY g`, [days, tz]),
+    query(`SELECT COALESCE(intent,'unknown') AS k, COUNT(*)::int AS n FROM conversations WHERE company_id=${cid} AND created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
+    query(`SELECT COALESCE(ct.source,'organic') AS k, COUNT(*)::int AS n FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.company_id=${cid} AND c.created_at > ${since} GROUP BY 1 ORDER BY n DESC`, [d]),
     query(`SELECT u.id, u.name, u.team, COUNT(c.id)::int AS assigned, COUNT(c.first_reply)::int AS replied,
         percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (c.first_reply - c.assigned_at))) AS median_reply_sec,
         (SELECT COUNT(*) FROM messages m WHERE m.sender_id=u.id AND m.sender_type='agent' AND m.created_at > ${since})::int AS msgs_sent,
@@ -480,12 +531,12 @@ router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => 
       FROM users u LEFT JOIN LATERAL (
         SELECT c2.id, c2.assigned_at, (SELECT MIN(m.created_at) FROM messages m WHERE m.conversation_id=c2.id AND m.sender_type='agent' AND m.created_at >= c2.assigned_at) AS first_reply
         FROM conversations c2 WHERE c2.assigned_to=u.id AND c2.assigned_at > ${since}) c ON TRUE
-      WHERE u.role='agent' AND u.is_active GROUP BY u.id ORDER BY assigned DESC, u.name`, [d]),
-    query(`SELECT COUNT(*) FILTER (WHERE direction='in')::int AS inbound, COUNT(*) FILTER (WHERE sender_type='agent')::int AS agent_out,
-        COUNT(*) FILTER (WHERE sender_type='bot')::int AS bot_out FROM messages WHERE created_at > ${since}`, [d]),
+      WHERE u.company_id=${cid} AND u.role='agent' AND u.is_active GROUP BY u.id ORDER BY assigned DESC, u.name`, [d]),
+    query(`SELECT COUNT(*) FILTER (WHERE m.direction='in')::int AS inbound, COUNT(*) FILTER (WHERE m.sender_type='agent')::int AS agent_out,
+        COUNT(*) FILTER (WHERE m.sender_type='bot')::int AS bot_out FROM messages m JOIN conversations cv ON cv.id=m.conversation_id WHERE cv.company_id=${cid} AND m.created_at > ${since}`, [d]),
     query(`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (fr - assigned_at))) AS sec FROM (
         SELECT assigned_at, (SELECT MIN(m.created_at) FROM messages m WHERE m.conversation_id=c.id AND m.sender_type='agent' AND m.created_at >= c.assigned_at) AS fr
-        FROM conversations c WHERE assigned_at > ${since}) t WHERE fr IS NOT NULL`, [d])
+        FROM conversations c WHERE c.company_id=${cid} AND assigned_at > ${since}) t WHERE fr IS NOT NULL`, [d])
   ]);
   res.json({ days, kpi: kpi.rows[0], perDay: perDay.rows, intents: intents.rows, sources: sources.rows, agents: agents.rows, messages: msgs.rows[0], median_reply_sec: med.rows[0].sec });
 }));

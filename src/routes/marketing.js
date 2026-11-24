@@ -6,6 +6,9 @@ const { audience, paramsFor } = require('../broadcast');
 const { markPersonal } = require('../personal');
 const settings = require('../settings');
 const numbers = require('../numbers');
+const tenant = require('../tenant');
+const C = () => tenant.cid(); // the signed-in person's company; every query below is limited to it
+const envToken = () => C() === 1 ? process.env.WA_ACCESS_TOKEN : null; // the server's own token belongs to company 1 only
 const router = express.Router();
 const mgr = required('admin', 'manager');
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
@@ -26,7 +29,7 @@ router.post('/whatsapp/numbers', admin, wrap(async (req, res) => {
   if (await numbers.byPhoneId(pid)) return res.status(409).json({ error: 'This number is already added' });
   let info = {};
   if (!DRY()) {
-    const tk = token || process.env.WA_ACCESS_TOKEN;
+    const tk = token || envToken();
     if (!tk) return res.status(400).json({ error: 'Paste an access token for this number' });
     try { info = await wa.graphWith(tk, `${pid}?fields=display_phone_number,verified_name`); }
     catch (e) { return res.status(400).json({ error: 'Meta did not accept this Phone number ID and token: ' + e.message }); }
@@ -34,7 +37,7 @@ router.post('/whatsapp/numbers', admin, wrap(async (req, res) => {
   const row = await numbers.add({ label, phone_number_id: pid, token, waba_id: waba, display_phone: info.display_phone_number, verified_name: info.verified_name, make_default: !!req.body.make_default });
   let subscribed = null; // best effort: make sure Meta sends this account's messages to our webhook
   if (waba && !DRY()) {
-    try { await fetch(`${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${process.env.WA_API_VERSION || 'v21.0'}/${waba}/subscribed_apps`, { method: 'POST', headers: { Authorization: `Bearer ${token || process.env.WA_ACCESS_TOKEN}` } }).then(r => { subscribed = r.ok; }); }
+    try { await fetch(`${process.env.GRAPH_BASE || 'https://graph.facebook.com'}/${process.env.WA_API_VERSION || 'v21.0'}/${waba}/subscribed_apps`, { method: 'POST', headers: { Authorization: `Bearer ${token || envToken()}` } }).then(r => { subscribed = r.ok; }); }
     catch { subscribed = false; }
   }
   res.json({ ...row, subscribed });
@@ -42,7 +45,7 @@ router.post('/whatsapp/numbers', admin, wrap(async (req, res) => {
 
 router.patch('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
   const id = Number(req.params.id);
-  const cur = (await query('SELECT id FROM wa_numbers WHERE id=$1', [id])).rows[0];
+  const cur = await numbers.get(id);
   if (!cur) return res.status(404).json({ error: 'Number not found' });
   const { label, access_token, clear_token, waba_id, make_default, calls_enabled } = req.body;
   if (label !== undefined) { if (!String(label).trim()) return res.status(400).json({ error: 'The name cannot be empty' }); await query('UPDATE wa_numbers SET label=$2 WHERE id=$1', [id, String(label).trim().slice(0, 40)]); }
@@ -60,18 +63,18 @@ router.patch('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
 
 router.delete('/whatsapp/numbers/:id', admin, wrap(async (req, res) => {
   const id = Number(req.params.id);
-  const n = (await query('SELECT id, label, is_default FROM wa_numbers WHERE id=$1', [id])).rows[0];
+  const n = await numbers.get(id);
   if (!n) return res.status(404).json({ error: 'Number not found' });
   if (n.is_default) return res.status(409).json({ error: 'This is the default number. Make another number the default first.' });
   const used = (await query('SELECT (SELECT COUNT(*) FROM conversations WHERE wa_number_id=$1)::int AS c, (SELECT COUNT(*) FROM broadcasts WHERE wa_number_id=$1)::int AS b', [id])).rows[0];
   if (used.c || used.b) return res.status(409).json({ error: `${used.c} chat(s) and ${used.b} broadcast(s) use this number. Keep it here so they can still send and receive.` });
-  await query('DELETE FROM wa_numbers WHERE id=$1', [id]);
+  await query('DELETE FROM wa_numbers WHERE id=$1 AND company_id=$2', [id, C()]);
   res.json({ ok: true });
 }));
 
 // ---- WhatsApp connection check (one result per number) ----
 async function checkNumber(n) {
-  const out = { id: n.id, label: n.label, phone_number_id: n.phone_number_id, is_default: n.is_default, calls_enabled: n.calls_enabled, waba_id: n.waba_id || process.env.WA_WABA_ID || null };
+  const out = { id: n.id, label: n.label, phone_number_id: n.phone_number_id, is_default: n.is_default, calls_enabled: n.calls_enabled, waba_id: n.waba_id || (C() === 1 && process.env.WA_WABA_ID) || null };
   let w; try { w = wa.forNumber(n.id); } catch (e) { return { ...out, token_ok: false, token_error: e.message }; }
   try { out.number = await w.graph(`${n.phone_number_id}?fields=display_phone_number,verified_name,quality_rating`); out.token_ok = true;
         if (out.number.display_phone_number && out.number.display_phone_number !== n.display_phone) await query('UPDATE wa_numbers SET display_phone=$2, verified_name=$3 WHERE id=$1', [n.id, out.number.display_phone_number, out.number.verified_name || null]); }
@@ -92,8 +95,8 @@ router.get('/whatsapp/status', mgr, wrap(async (req, res) => {
 }));
 router.post('/whatsapp/detect', mgr, wrap(async (req, res) => {
   const ids = (req.body.ids || []).map(sanitizeId).filter(Boolean).slice(0, 10), results = [];
-  const n = req.body.number_id ? (await query('SELECT * FROM wa_numbers WHERE id=$1', [Number(req.body.number_id)])).rows[0] : (await query('SELECT * FROM wa_numbers WHERE is_default')).rows[0];
-  const phone = n ? n.phone_number_id : process.env.WA_PHONE_NUMBER_ID, w = wa.forNumber(n && n.id);
+  const n = req.body.number_id ? await numbers.get(Number(req.body.number_id)) : await numbers.getDefault();
+  const phone = n ? n.phone_number_id : (C() === 1 ? process.env.WA_PHONE_NUMBER_ID : null), w = wa.forNumber(n && n.id);
   for (const id of ids) {
     try { const d = (await w.graph(`${id}/phone_numbers?fields=id,display_phone_number`)).data || []; results.push({ id, numbers: d.map(x => x.display_phone_number), has_ours: d.some(x => x.id === phone) }); }
     catch (e) { results.push({ id, error: e.message }); }
@@ -118,10 +121,10 @@ router.post('/templates', mgr, wrap(async (req, res) => {
     const cat = String(category).toUpperCase();
     const r = await wa.createTemplate({ name, language, category: cat, components });
     res.json((await query(
-      `INSERT INTO templates(name,language,body,category,status,meta_id,var_count,footer,buttons) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
-       ON CONFLICT (name) DO UPDATE SET language=EXCLUDED.language, body=EXCLUDED.body, category=EXCLUDED.category, status=EXCLUDED.status,
+      `INSERT INTO templates(company_id,name,language,body,category,status,meta_id,var_count,footer,buttons) VALUES($10,$1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (company_id,name) DO UPDATE SET language=EXCLUDED.language, body=EXCLUDED.body, category=EXCLUDED.category, status=EXCLUDED.status,
          meta_id=EXCLUDED.meta_id, var_count=EXCLUDED.var_count, footer=EXCLUDED.footer, buttons=EXCLUDED.buttons, rejected_reason=NULL RETURNING *`,
-      [name, language, body, cat.toLowerCase(), r.status || 'PENDING', r.id, n, footer || null, JSON.stringify(btns)])).rows[0]);
+      [name, language, body, cat.toLowerCase(), r.status || 'PENDING', r.id, n, footer || null, JSON.stringify(btns), C()])).rows[0]);
   } catch (e) { res.status(502).json({ error: e.message }); }
 }));
 router.post('/templates/sync', mgr, wrap(async (req, res) => {
@@ -130,32 +133,34 @@ router.post('/templates/sync', mgr, wrap(async (req, res) => {
     for (const t of list) {
       const body = (t.components || []).find(c => c.type === 'BODY')?.text || '';
       await query(
-        `INSERT INTO templates(name,language,body,category,status,meta_id,rejected_reason,var_count) VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-         ON CONFLICT (name) DO UPDATE SET language=EXCLUDED.language, body=EXCLUDED.body, category=EXCLUDED.category, status=EXCLUDED.status,
+        `INSERT INTO templates(company_id,name,language,body,category,status,meta_id,rejected_reason,var_count) VALUES($9,$1,$2,$3,$4,$5,$6,$7,$8)
+         ON CONFLICT (company_id,name) DO UPDATE SET language=EXCLUDED.language, body=EXCLUDED.body, category=EXCLUDED.category, status=EXCLUDED.status,
            meta_id=EXCLUDED.meta_id, rejected_reason=EXCLUDED.rejected_reason, var_count=EXCLUDED.var_count`,
-        [t.name, t.language, body, String(t.category || 'utility').toLowerCase(), t.status, t.id, t.rejected_reason || null, varCount(body)]);
+        [t.name, t.language, body, String(t.category || 'utility').toLowerCase(), t.status, t.id, t.rejected_reason || null, varCount(body), C()]);
     }
     res.json({ synced: list.length });
   } catch (e) { res.status(502).json({ error: e.message }); }
 }));
-router.delete('/templates/:id', mgr, wrap(async (req, res) => { await query(`DELETE FROM templates WHERE id=$1 AND status='local'`, [req.params.id]); res.json({ ok: true }); }));
+router.delete('/templates/:id', mgr, wrap(async (req, res) => { await query(`DELETE FROM templates WHERE id=$1 AND company_id=$2 AND status='local'`, [req.params.id, C()]); res.json({ ok: true }); }));
 
 // ---- Contacts ----
 router.get('/contacts', mgr, wrap(async (req, res) => {
-  const w = ['TRUE'], p = [];
+  const w = ['ct.company_id=$1'], p = [C()];
   if (req.query.q) { p.push(`%${req.query.q}%`); w.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   if (req.query.list) { p.push(req.query.list); w.push(`ct.list_name=$${p.length}`); }
   const rows = (await query(
     `SELECT ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.source, ct.list_name, ct.opted_out, ct.is_personal, c.status AS chat_status, u.name AS agent
        FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id LEFT JOIN users u ON u.id=c.assigned_to
       WHERE ${w.join(' AND ')} ORDER BY ct.id DESC LIMIT 200`, p)).rows;
-  res.json({ rows, total: (await query('SELECT COUNT(*)::int AS n FROM contacts')).rows[0].n });
+  res.json({ rows, total: (await query('SELECT COUNT(*)::int AS n FROM contacts WHERE company_id=$1', [C()])).rows[0].n });
 }));
 router.get('/contacts/lists', mgr, wrap(async (req, res) =>
-  res.json((await query(`SELECT list_name, COUNT(*)::int AS n FROM contacts WHERE list_name IS NOT NULL GROUP BY 1 ORDER BY 1`)).rows)));
+  res.json((await query(`SELECT list_name, COUNT(*)::int AS n FROM contacts WHERE company_id=$1 AND list_name IS NOT NULL GROUP BY 1 ORDER BY 1`, [C()])).rows)));
 router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
-  if ('is_personal' in req.body) { if (req.body.is_personal) await markPersonal(req.params.id); else await query('UPDATE contacts SET is_personal=FALSE WHERE id=$1', [req.params.id]); }
-  if ('opted_out' in req.body) await query('UPDATE contacts SET opted_out=$2 WHERE id=$1', [req.params.id, !!req.body.opted_out]);
+  const id = Number(req.params.id) || 0;
+  if (!(await query('SELECT 1 FROM contacts WHERE id=$1 AND company_id=$2', [id, C()])).rows[0]) return res.status(404).json({ error: 'Contact not found' });
+  if ('is_personal' in req.body) { if (req.body.is_personal) await markPersonal(id); else await query('UPDATE contacts SET is_personal=FALSE WHERE id=$1 AND company_id=$2', [id, C()]); }
+  if ('opted_out' in req.body) await query('UPDATE contacts SET opted_out=$2 WHERE id=$1 AND company_id=$3', [id, !!req.body.opted_out, C()]);
   res.json({ ok: true });
 }));
 router.post('/contacts/ignore', mgr, wrap(async (req, res) => {
@@ -163,7 +168,7 @@ router.post('/contacts/ignore', mgr, wrap(async (req, res) => {
   for (const raw of (req.body.numbers || []).slice(0, 5000)) {
     let d = String(raw).replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = cc + d.slice(1);
     if (d.length < 8 || d.length > 15) continue;
-    const c = (await query(`INSERT INTO contacts(wa_id,source,is_personal) VALUES($1,'personal',TRUE) ON CONFLICT (wa_id) DO UPDATE SET is_personal=TRUE RETURNING id`, [d])).rows[0];
+    const c = (await query(`INSERT INTO contacts(company_id,wa_id,source,is_personal) VALUES($2,$1,'personal',TRUE) ON CONFLICT (company_id,wa_id) DO UPDATE SET is_personal=TRUE RETURNING id`, [d, C()])).rows[0];
     await markPersonal(c.id); n++;
   }
   res.json({ ignored: n });
@@ -181,9 +186,9 @@ router.post('/contacts/import', mgr, wrap(async (req, res) => {
   }
   if (!seen.size) return res.status(400).json({ error: 'No valid phone numbers found' });
   const out = await query(
-    `INSERT INTO contacts(wa_id,name,source,list_name,opt_in_source) SELECT x.w, x.n, 'import', $3, $4 FROM unnest($1::text[], $2::text[]) AS x(w, n)
-     ON CONFLICT (wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name) RETURNING (xmax = 0) AS inserted`,
-    [[...seen.keys()], [...seen.values()], String(list_name).trim().slice(0, 60), `import by ${req.user.name}`]);
+    `INSERT INTO contacts(company_id,wa_id,name,source,list_name,opt_in_source) SELECT $5, x.w, x.n, 'import', $3, $4 FROM unnest($1::text[], $2::text[]) AS x(w, n)
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name) RETURNING (xmax = 0) AS inserted`,
+    [[...seen.keys()], [...seen.values()], String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C()]);
   const added = out.rows.filter(r => r.inserted).length;
   res.json({ added, updated: out.rows.length - added, skipped: bad });
 }));
@@ -202,32 +207,34 @@ router.get('/broadcasts', mgr, wrap(async (req, res) => res.json((await query(
           COUNT(*) FILTER (WHERE r.status='queued')::int AS queued,
           COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM messages m JOIN conversations c ON c.id=m.conversation_id
                                           WHERE c.contact_id=r.contact_id AND m.direction='in' AND m.created_at > r.sent_at))::int AS replied
-     FROM broadcasts b LEFT JOIN broadcast_recipients r ON r.broadcast_id=b.id GROUP BY b.id ORDER BY b.id DESC LIMIT 50`)).rows)));
+     FROM broadcasts b LEFT JOIN broadcast_recipients r ON r.broadcast_id=b.id WHERE b.company_id=$1 GROUP BY b.id ORDER BY b.id DESC LIMIT 50`, [C()])).rows)));
 router.post('/broadcasts', mgr, wrap(async (req, res) => {
   const { name, template_name, var_map = [], segment = {}, scheduled_at, consent, wa_number_id } = req.body;
   if (!consent) return res.status(400).json({ error: 'Please confirm everyone in this audience agreed to receive these messages' });
   if (!String(name || '').trim()) return res.status(400).json({ error: 'Give the broadcast a name' });
-  const t = (await query('SELECT * FROM templates WHERE name=$1', [template_name])).rows[0];
+  const t = (await query('SELECT * FROM templates WHERE name=$1 AND company_id=$2', [template_name, C()])).rows[0];
   if (!t) return res.status(404).json({ error: 'Template not found' });
   if (t.status !== 'APPROVED' && !DRY()) return res.status(409).json({ error: 'Meta has not approved this template yet' });
   const vm = Array.isArray(var_map) ? var_map.slice(0, t.var_count) : [];
   if (vm.length < t.var_count || vm.some(m => m.type === 'text' && !String(m.value || '').trim())) return res.status(400).json({ error: `Fill in all ${t.var_count} template variables` });
   let numId = null;
-  if (wa_number_id) { numId = Number(wa_number_id); if (!(await query('SELECT 1 FROM wa_numbers WHERE id=$1', [numId])).rows[0]) return res.status(400).json({ error: 'That WhatsApp number does not exist' }); }
+  if (wa_number_id) { numId = Number(wa_number_id); if (!(await numbers.get(numId))) return res.status(400).json({ error: 'That WhatsApp number does not exist' }); }
   const people = await audience(segment);
   if (!people.length) return res.status(400).json({ error: 'No contacts match this audience' });
   const when = scheduled_at && new Date(scheduled_at) > new Date() ? new Date(scheduled_at) : new Date();
   const b = (await query(
-    `INSERT INTO broadcasts(name,template_name,language,segment,var_map,scheduled_at,created_by,wa_number_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [String(name).trim().slice(0, 80), t.name, t.language, JSON.stringify(segment), JSON.stringify(vm), when, req.user.id, numId])).rows[0];
+    `INSERT INTO broadcasts(company_id,name,template_name,language,segment,var_map,scheduled_at,created_by,wa_number_id) VALUES($9,$1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [String(name).trim().slice(0, 80), t.name, t.language, JSON.stringify(segment), JSON.stringify(vm), when, req.user.id, numId, C()])).rows[0];
   await query(
     `INSERT INTO broadcast_recipients(broadcast_id,contact_id,wa_id,params) SELECT $1, x.id, x.w, x.p::jsonb FROM unnest($2::int[], $3::text[], $4::text[]) AS x(id, w, p)`,
     [b.id, people.map(p => p.id), people.map(p => p.wa_id), people.map(p => JSON.stringify(paramsFor(vm, p)))]);
   res.json({ id: b.id, recipients: people.length });
 }));
 router.post('/broadcasts/:id/cancel', mgr, wrap(async (req, res) => {
-  await query(`UPDATE broadcasts SET status='cancelled', finished_at=now() WHERE id=$1 AND status IN ('scheduled','sending')`, [req.params.id]);
-  await query(`UPDATE broadcast_recipients SET status='skipped' WHERE broadcast_id=$1 AND status='queued'`, [req.params.id]);
+  const b = (await query('SELECT id FROM broadcasts WHERE id=$1 AND company_id=$2', [Number(req.params.id) || 0, C()])).rows[0];
+  if (!b) return res.status(404).json({ error: 'Broadcast not found' });
+  await query(`UPDATE broadcasts SET status='cancelled', finished_at=now() WHERE id=$1 AND status IN ('scheduled','sending')`, [b.id]);
+  await query(`UPDATE broadcast_recipients SET status='skipped' WHERE broadcast_id=$1 AND status='queued'`, [b.id]);
   res.json({ ok: true });
 }));
 
@@ -235,23 +242,23 @@ router.post('/broadcasts/:id/cancel', mgr, wrap(async (req, res) => {
 router.get('/drips', mgr, wrap(async (req, res) => res.json((await query(
   `SELECT d.*, COUNT(e.id)::int AS enrolled, COUNT(*) FILTER (WHERE e.status='active')::int AS running,
           COUNT(*) FILTER (WHERE e.status='done')::int AS done, COUNT(*) FILTER (WHERE e.status='stopped')::int AS stopped
-     FROM drips d LEFT JOIN drip_enrollments e ON e.drip_id=d.id GROUP BY d.id ORDER BY d.id DESC`)).rows)));
+     FROM drips d LEFT JOIN drip_enrollments e ON e.drip_id=d.id WHERE d.company_id=$1 GROUP BY d.id ORDER BY d.id DESC`, [C()])).rows)));
 router.post('/drips', mgr, wrap(async (req, res) => {
   const { name, stop_on_reply = true, steps = [] } = req.body;
   if (!String(name || '').trim()) return res.status(400).json({ error: 'Give the follow-up a name' });
   if (!Array.isArray(steps) || !steps.length || steps.length > 5) return res.status(400).json({ error: 'Add between 1 and 5 steps' });
   const clean = [];
   for (const s of steps) {
-    const t = (await query('SELECT * FROM templates WHERE name=$1', [s.template])).rows[0];
+    const t = (await query('SELECT * FROM templates WHERE name=$1 AND company_id=$2', [s.template, C()])).rows[0];
     if (!t) return res.status(400).json({ error: 'Choose a template for every step' });
     if (t.status !== 'APPROVED' && !DRY()) return res.status(409).json({ error: `Meta has not approved "${t.name}" yet` });
     const vm = (s.var_map || []).slice(0, t.var_count);
     if (vm.length < t.var_count || vm.some(x => x.type === 'text' && !String(x.value || '').trim())) return res.status(400).json({ error: `Fill in all ${t.var_count} variables for "${t.name}"` });
     clean.push({ delay_hours: Math.min(Math.max(Number(s.delay_hours) || 0, 0), 720), template: t.name, var_map: vm });
   }
-  res.json((await query('INSERT INTO drips(name,stop_on_reply,steps) VALUES($1,$2,$3) RETURNING *', [String(name).trim().slice(0, 80), !!stop_on_reply, JSON.stringify(clean)])).rows[0]);
+  res.json((await query('INSERT INTO drips(company_id,name,stop_on_reply,steps) VALUES($4,$1,$2,$3) RETURNING *', [String(name).trim().slice(0, 80), !!stop_on_reply, JSON.stringify(clean), C()])).rows[0]);
 }));
-router.patch('/drips/:id', mgr, wrap(async (req, res) => { await query('UPDATE drips SET active=$2 WHERE id=$1', [req.params.id, !!req.body.active]); res.json({ ok: true }); }));
-router.delete('/drips/:id', mgr, wrap(async (req, res) => { await query('DELETE FROM drips WHERE id=$1', [req.params.id]); res.json({ ok: true }); }));
+router.patch('/drips/:id', mgr, wrap(async (req, res) => { await query('UPDATE drips SET active=$2 WHERE id=$1 AND company_id=$3', [req.params.id, !!req.body.active, C()]); res.json({ ok: true }); }));
+router.delete('/drips/:id', mgr, wrap(async (req, res) => { await query('DELETE FROM drips WHERE id=$1 AND company_id=$2', [req.params.id, C()]); res.json({ ok: true }); }));
 
 module.exports = router;
