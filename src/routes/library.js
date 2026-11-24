@@ -12,14 +12,14 @@ const mgr = required('admin', 'manager');
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 
 // How much each company may keep in its library. Change with MEDIA_LIBRARY_MAX_MB on the server (default 100).
-const LIMIT_MB = () => Math.max(1, Number(process.env.MEDIA_LIBRARY_MAX_MB) || 100);
+const plan = require('../plan'); // library space comes from the company's plan; MEDIA_LIBRARY_MAX_MB applies when the plan has no limit
 const FILE_COLS = `f.id, f.name, f.mime, f.size, f.created_at, (SELECT name FROM users WHERE id=f.created_by) AS added_by,
   (SELECT COUNT(*)::int FROM auto_replies a WHERE a.company_id=f.company_id AND EXISTS (SELECT 1 FROM jsonb_array_elements(a.steps) s WHERE s->>'media_id' = f.id::text)) AS used_in`;
 
 // ---- Media Library ----
 router.get('/media-library', required(), wrap(async (req, res) => {
   const files = (await query(`SELECT ${FILE_COLS} FROM media_library f WHERE f.company_id=$1 ORDER BY f.id DESC`, [C()])).rows;
-  res.json({ files: files.map(f => ({ ...f, kind: mediaStore.kindOf(f.mime) })), used: files.reduce((n, f) => n + f.size, 0), limit: LIMIT_MB() * 1024 * 1024 });
+  res.json({ files: files.map(f => ({ ...f, kind: mediaStore.kindOf(f.mime) })), used: files.reduce((n, f) => n + f.size, 0), limit: (await plan.storageMb()) * 1024 * 1024 });
 }));
 
 // Raw body upload: POST /media-library?filename=..&mime=..
@@ -31,7 +31,8 @@ router.post('/media-library', mgr, express.raw({ type: () => true, limit: '16mb'
   if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr|ogg)/.test(mime)) return res.status(415).json({ error: 'WhatsApp accepts audio only as MP3, AAC, M4A, AMR or OGG' });
   if (mediaStore.kindOf(mime) === 'image' && buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Photos must be under 5 MB' });
   const used = Number((await query('SELECT COALESCE(SUM(size),0) AS n FROM media_library WHERE company_id=$1', [C()])).rows[0].n);
-  if (used + buf.length > LIMIT_MB() * 1024 * 1024) return res.status(413).json({ error: `Your library is full (${LIMIT_MB()} MB). Delete files you no longer need.` });
+  const maxMb = await plan.storageMb();
+  if (used + buf.length > maxMb * 1024 * 1024) return res.status(413).json({ error: `Your library is full (${maxMb} MB). Delete files you no longer need.` });
   const f = (await query('INSERT INTO media_library(company_id,name,mime,size,data,created_by) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,name,mime,size,created_at',
     [C(), name, mime, buf.length, buf, req.user.id])).rows[0];
   res.json({ ...f, kind: mediaStore.kindOf(f.mime) });

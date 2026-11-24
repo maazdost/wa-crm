@@ -107,7 +107,8 @@ const EVENTS = [
   ['POST', /^\/social\/(facebook|instagram)\/rules$/, 'Social Media', (r) => `Created ${/instagram/.test(r.path) ? 'an Instagram' : 'a Facebook'} rule`, (r) => r.body.name],
   ['PATCH', /^\/social\/rules\/(\d+)$/, 'Social Media', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on a social rule' : 'Switched off a social rule') : 'Changed a social rule', byId('social_rules')],
   ['DELETE', /^\/social\/rules\/(\d+)$/, 'Social Media', 'Deleted a social rule', byId('social_rules')],
-  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => r.body.status === 'paused' ? 'Paused a company' : 'Changed a company']
+  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => 'plan' in (r.body || {}) ? 'Changed the plan of a company' : r.body.status === 'paused' ? 'Paused a company' : 'Changed a company', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['PUT', /^\/super\/plans\/(\w+)$/, 'Companies', 'Changed the limits of a plan', look(async (key) => ((await query('SELECT name AS n FROM plans WHERE key=$1', [key])).rows[0] || {}).n)]
 ];
 async function log({ cid, userId, userName, role, area, action, detail, ip }) {
   try {

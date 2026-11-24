@@ -111,5 +111,40 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('a waiting chat with no agent shows under All and Unread', unB.length === 1 && allB.length === 1 && allB[0].id === unB[0].id
     && (await j('/api/conversations?status=open&view=unread', {}, Bt)).data.length === 1 && (await j('/api/conversations/counts', {}, Bt)).data.unread === 1);
 
+  // Plans and limits
+  const setPlan = (body) => j('/api/super/companies/' + bId, { method: 'PATCH', body }, A.token);
+  const planB = async () => (await j('/api/plan', {}, Bt)).data, planA = (await j('/api/plan', {}, A.token)).data;
+  const p0 = await planB();
+  check('a company that signed up starts on Free and the first company has no limits', p0.plan === 'free' && p0.limits.members === 3 && p0.limits.broadcast === 500 && planA.plan === 'custom' && planA.limits.members === null && planA.limits.storage_mb === null);
+  check('only the super admin can change plans', (await j('/api/super/companies/' + bId, { method: 'PATCH', body: { plan: 'pro' } }, Bt)).status === 403 && (await j('/api/super/plans', {}, Bt)).status === 403
+    && (await j('/api/super/plans/free', { method: 'PUT', body: { members: 99 } }, Bt)).status === 403 && (await planB()).plan === 'free');
+  await setPlan({ plan: 'custom', limits: { members: p0.usage.members, numbers: p0.usage.numbers, storage_mb: 1 } });
+  const mk = (n) => j('/api/users', { method: 'POST', body: { name: 'Lim ' + n, email: `lim${n}${tag}@beta.co`, password: 'pw123456', role: 'agent' } }, Bt);
+  const no = await mk(1);
+  check('the team member limit stops a new member with a clear message', no.status === 402 && /Custom plan allows \d+ team member/.test(no.data.error));
+  const noNum = await j('/api/whatsapp/numbers', { method: 'POST', body: { label: 'Extra', phone_number_id: '77' + tag + '001' } }, Bt);
+  check('the number limit stops a new WhatsApp number', noNum.status === 402 && /WhatsApp number/.test(noNum.data.error));
+  check('the plan sets the library space', (await j('/api/media-library', {}, Bt)).data.limit === 1048576);
+  await setPlan({ plan: 'custom', limits: {} });
+  const yes = await mk(2);
+  check('without a limit the member is added', yes.status === 200 && (await planB()).limits.members === null);
+  await setPlan({ plan: 'custom', limits: { members: p0.usage.members } });
+  await j('/api/users/' + yes.data.id, { method: 'PATCH', body: { is_active: false } }, Bt);
+  check('a switched off member cannot be switched on past the limit', (await j('/api/users/' + yes.data.id, { method: 'PATCH', body: { is_active: true } }, Bt)).status === 402);
+  await setPlan({ plan: 'pro', trial_ends: '2020-01-01', plan_note: 'Paid by bank transfer' });
+  const tp = await planB();
+  check('an ended trial falls back to Free and the company keeps working', tp.plan === 'pro' && tp.effective === 'free' && tp.trial_over === true && tp.limits.members === 3 && (await j('/api/conversations', {}, Bt)).status === 200);
+  await setPlan({ plan: 'pro', trial_ends: '2099-01-01' });
+  const rp = await planB();
+  check('a running trial has the Pro limits', rp.effective === 'pro' && rp.trial_over === false && rp.trial_ends === '2099-01-01' && rp.limits.members === 15);
+  await j('/api/super/plans/pro', { method: 'PUT', body: { members: 20, numbers: 5, broadcast: '', storage_mb: 2000 } }, A.token);
+  const ep = await planB();
+  check('plan limits can be changed by the super admin', ep.limits.members === 20 && ep.limits.broadcast === null && (await j('/api/super/plans', {}, A.token)).data.length === 3);
+  await j('/api/super/plans/pro', { method: 'PUT', body: { members: 15, numbers: 5, broadcast: 50000, storage_mb: 2000 } }, A.token);
+  check('a wrong plan and a wrong date are refused', (await setPlan({ plan: 'gold' })).status === 400 && (await setPlan({ plan: 'pro', trial_ends: 'soon' })).status === 400 && (await j('/api/super/plans/gold', { method: 'PUT', body: {} }, A.token)).status === 404);
+  const co2 = (await j('/api/super/companies', {}, A.token)).data.find(c => c.id === bId);
+  check('the companies list shows plan and usage', co2.plan === 'pro' && co2.trial_ends === '2099-01-01' && co2.members === p0.usage.members && co2.broadcast === 0 && co2.trial_over === false);
+  await setPlan({ plan: 'custom', limits: {} });
+
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
 })();

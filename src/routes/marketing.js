@@ -27,6 +27,7 @@ router.post('/whatsapp/numbers', admin, wrap(async (req, res) => {
   if (!label) return res.status(400).json({ error: 'Give the number a name, for example "Sales" or "Support"' });
   if (pid.length < 8) return res.status(400).json({ error: 'Paste the Phone number ID from Meta (a long number, not the phone number itself)' });
   if (await numbers.byPhoneId(pid)) return res.status(409).json({ error: 'This number is already added' });
+  const over = await require('../plan').check('numbers'); if (over) return res.status(402).json({ error: over });
   let info = {};
   if (!DRY()) {
     const tk = token || envToken();
@@ -221,6 +222,7 @@ router.post('/broadcasts', mgr, wrap(async (req, res) => {
   if (wa_number_id) { numId = Number(wa_number_id); if (!(await numbers.get(numId))) return res.status(400).json({ error: 'That WhatsApp number does not exist' }); }
   const people = await audience(segment);
   if (!people.length) return res.status(400).json({ error: 'No contacts match this audience' });
+  const over = await require('../plan').check('broadcast', people.length); if (over) return res.status(402).json({ error: over });
   const when = scheduled_at && new Date(scheduled_at) > new Date() ? new Date(scheduled_at) : new Date();
   const b = (await query(
     `INSERT INTO broadcasts(company_id,name,template_name,language,segment,var_map,scheduled_at,created_by,wa_number_id) VALUES($9,$1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,

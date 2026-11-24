@@ -92,6 +92,7 @@ router.post('/whatsapp/embedded-signup', admin, wrap(async (req, res) => {
       [existing.id, numbers.encrypt(token), waba, info.display_phone_number || null, info.verified_name || null, tenant.cid()]);
     row = { id: existing.id, label: existing.label, updated: true };
   } else {
+    const over = await require('../plan').check('numbers'); if (over) return res.status(402).json({ error: over });
     const label = String(req.body.label || info.verified_name || 'WhatsApp').trim().slice(0, 40) || 'WhatsApp';
     row = await numbers.add({ label, phone_number_id: pid, token, waba_id: waba, display_phone: info.display_phone_number, verified_name: info.verified_name, make_default: false });
   }

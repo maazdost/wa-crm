@@ -420,6 +420,9 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .soc-c{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.soc-c>div{flex:1;min-width:220px}.soc-c h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px}.soc-c p{margin:0}.soc-c .qmic{margin:0;width:44px;height:44px;border-radius:12px}
 .soc-t{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.soc-t select{width:auto;flex:none}.soc-t input{flex:1;min-width:180px}
 .soc-r{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--field);display:grid;gap:10px}.soc-r small{color:var(--mute);display:block;margin-bottom:3px}.soc-b{background:var(--tint);color:var(--tint-ink);border-radius:10px;padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;width:fit-content;max-width:100%}
+.plg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}.plt{table-layout:fixed;width:100%}.plt th{white-space:normal;vertical-align:bottom}.plt th:first-child{width:92px}.plt input{width:100%;min-width:0}.cot td small{white-space:nowrap}.cot th{white-space:normal}.cob{white-space:nowrap}.cot td,.cot th{padding-left:12px;padding-right:12px}.hotn{color:#d9534f;font-weight:700}.plh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.plu{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-top:14px}.plu small{color:var(--mute)}.plu>div>small{display:block;font-size:12px}.plu b{font-size:20px}.plu b small{font-size:13px;font-weight:500}#m-cplan .mcard{width:min(600px,100%)}#m-plans .mcard{width:min(820px,100%)}
+@media (max-width:760px){.plg{grid-template-columns:1fr}.plt{table-layout:auto}.plt input{width:120px}.cob{white-space:normal}}
 .sofl{display:grid;gap:6px;min-width:0}#m-so .mcard{width:min(640px,100%);min-width:0}#sof,#sof>*{min-width:0}.slg td{vertical-align:top}.slg small{color:var(--mute)}.slc{min-width:0;overflow-wrap:anywhere}
 @media (max-width:760px){.soc-t select,.soc-t button{flex:1 1 100%}.soc-c .ghost{flex:1 1 100%;justify-content:center}.slc{text-align:end;max-width:72%}}
 [dir=rtl] .kw.big{padding:4px 10px 4px 6px}
@@ -1300,17 +1303,56 @@ function connect() {
 function openPage() { document.body.classList.add('chat-open'); S.active = null; hidePanel(); $('#chat').hidden = true; const el = $('#team'); el.hidden = false; el.scrollTop = 0; return el; }
 async function showCompanies() {
   const el = openPage();
-  const cs = await api('/super/companies'); if (cs.error) return toast(cs.error); if (S.nav !== 'co') return;
-  const when = t => t ? new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-  el.innerHTML = phead('Companies', 'Every business using TeamInbox Pro. Pausing a company signs its team out. Their chats are kept, and new WhatsApp messages are still saved.') + `
+  const [cs, pl] = await Promise.all([api('/super/companies'), api('/super/plans')]); if (cs.error) return toast(cs.error); if (S.nav !== 'co') return;
+  const plans = arr(pl), when = t => t ? new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const pname = k => k === 'custom' ? 'Custom' : (plans.find(x => x.key === k) || { name: k }).name;
+  const limOf = c => c.plan === 'custom' ? (c.limits || {}) : (plans.find(x => x.key === (c.trial_over ? 'free' : c.plan)) || {});
+  const use = (n, l) => l == null ? `${n}` : `<span${n >= l ? ' class="hotn"' : ''}>${n}</span> <small class="mute">/ ${l}</small>`;
+  const planCell = c => `<em class="chip ${c.plan === 'custom' ? '' : 'ok'}">${esc(pname(c.plan))}</em>${c.trial_over ? '<br><em class="chip closed">Trial ended, now on Free</em>' : c.trial_ends && c.plan !== 'custom' && c.plan !== 'free' ? `<br><small class="mute">Trial until ${when(c.trial_ends + 'T00:00:00')}</small>` : ''}`;
+  const boxes = dis => `<div class="plg">${PLAN_LIMITS.map(([k, l]) => `<label class="fld"><span>${l}</span><input type="number" min="0" step="1" data-lk="${k}" placeholder="${tr('No limit')}"${dis ? ' disabled' : ''}></label>`).join('')}</div>`;
+  el.innerHTML = phead('Companies', 'Every business using TeamInbox Pro, its plan and what it uses. Pausing a company signs its team out. Their chats are kept, and new WhatsApp messages are still saved.', `<button class="ghost" id="plb">${ico('sliders', 16)}Plan limits</button>`) + `
   <div class="stats">${kpi('building', cs.length, 'Companies')}${kpi('check', cs.filter(c => c.status === 'active').length, 'Active', 'blue')}${kpi('phone', cs.reduce((n, c) => n + c.numbers, 0), 'WhatsApp numbers', 'violet')}${kpi('users', cs.reduce((n, c) => n + c.users, 0), 'Team members', 'amber')}</div>
-  <div class="tbl"><table><thead><tr><th>Company</th><th>Admin</th><th>Team</th><th>Numbers</th><th>Chats</th><th>Last activity</th><th>Joined</th><th>Status</th><th></th></tr></thead><tbody>
-  ${cs.map(c => `<tr><td>${userCell(c.name, 'ID ' + c.id)}</td><td>${esc(c.admin_email || '—')}</td><td>${c.users}</td><td>${c.numbers}</td><td>${c.chats}</td><td>${when(c.last_activity)}</td><td>${when(c.created_at)}</td>
-  <td><em class="chip ${c.status === 'active' ? 'ok' : 'warn'}">${c.status === 'active' ? 'Active' : 'Paused'}</em></td><td class="tdm">${c.id === S.user.company_id ? '<small class="mute">Your company</small>' : `<button class="ghost" data-cs="${c.id}" data-to="${c.status === 'active' ? 'paused' : 'active'}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>`}</td></tr>`).join('')}</tbody></table></div>`;
+  <div class="tbl"><table class="cot"><thead><tr><th>Company</th><th>Admin</th><th>Plan</th><th>Team</th><th>Numbers</th><th>Broadcasts this month</th><th>Last activity</th><th>Status</th><th></th></tr></thead><tbody>
+  ${cs.map(c => { const l = limOf(c); return `<tr><td>${userCell(c.name, 'ID ' + c.id)}</td><td>${esc(c.admin_email || '—')}</td><td>${planCell(c)}</td><td>${use(c.members, l.members)}</td><td>${use(c.numbers, l.numbers)}</td><td>${use(c.broadcast, l.broadcast)}</td><td>${when(c.last_activity)}</td>
+  <td><em class="chip ${c.status === 'active' ? 'ok' : 'warn'}">${c.status === 'active' ? 'Active' : 'Paused'}</em></td><td class="tdm cob"><button class="ghost" data-cp="${c.id}">Plan</button> ${c.id === S.user.company_id ? '' : `<button class="ghost" data-cs="${c.id}" data-to="${c.status === 'active' ? 'paused' : 'active'}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>`}</td></tr>`; }).join('')}</tbody></table></div>
+  ${modal('m-cplan', 'Plan', `<form id="cpf"><p class="mute" id="cpn" data-notr style="margin:0 0 10px"></p>
+    <label class="fld"><span>Plan</span><select id="cp1">${plans.map(x => `<option value="${x.key}">${esc(x.name)}</option>`).join('')}<option value="custom">Custom</option></select></label>
+    <label class="fld" id="cp2b"><span>Trial ends on (leave empty when there is no trial)</span><input type="date" id="cp2"></label>
+    <div class="qsec" style="margin-bottom:12px"><div class="qsec-h"><b>Limits</b></div>${boxes(0)}<small class="mute" id="cp3n"></small></div>
+    <label class="fld"><span>Note for yourself (the company does not see it)</span><input id="cp4" maxlength="300" placeholder="e.g. Paid until March by bank transfer"></label>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save plan</button></div></form>`, 1)}
+  ${modal('m-plans', 'Plan limits', `<form id="plf"><p class="mute" style="margin:0 0 12px">Leave a box empty for no limit. A change applies at once to every company on that plan.</p>
+    <div class="tbl" style="margin:0 0 4px"><table class="plt"><thead><tr><th>Plan</th>${PLAN_LIMITS.map(x => `<th>${x[1]}</th>`).join('')}</tr></thead><tbody>
+    ${plans.map(x => `<tr data-pk="${x.key}"><td><b>${esc(x.name)}</b></td>${PLAN_LIMITS.map(([k, l]) => `<td><input type="number" min="0" step="1" data-lk="${k}" value="${x[k] == null ? '' : x[k]}" placeholder="${tr('No limit')}" aria-label="${l}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save limits</button></div></form>`, 1)}`;
   $('#tb').onclick = showInbox;
   el.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => {
     if (b.dataset.to === 'paused' && !await sure('Pause this company?', 'Its team will be signed out until you resume it.', { ok: 'Pause company', danger: 1 })) return;
     const r = await api('/super/companies/' + b.dataset.cs, 'PATCH', { status: b.dataset.to }); if (r.error) return toast(r.error); showCompanies(); });
+  let cur = null;
+  const fill = () => { const k = $('#cp1').value, custom = k === 'custom', src = custom ? (cur.plan === 'custom' ? cur.limits || {} : {}) : plans.find(x => x.key === k) || {};
+    $('#cp2b').hidden = custom || k === 'free';
+    $('#cpf').querySelectorAll('[data-lk]').forEach(i => { i.disabled = !custom; i.value = src[i.dataset.lk] == null ? '' : src[i.dataset.lk]; });
+    $('#cp3n').textContent = tr(custom ? 'Leave a box empty for no limit.' : 'These limits belong to the plan. Change them with the Plan limits button.'); };
+  el.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { cur = cs.find(c => c.id == b.dataset.cp); $('#cpn').textContent = cur.name; $('#cp1').value = cur.plan; $('#cp2').value = cur.trial_ends || ''; $('#cp4').value = cur.plan_note || ''; fill(); $('#m-cplan').hidden = false; });
+  $('#cp1').onchange = fill;
+  const read = box => Object.fromEntries([...box.querySelectorAll('[data-lk]')].map(i => [i.dataset.lk, i.value.trim()]));
+  $('#cpf').onsubmit = async e => { e.preventDefault(); const r = await api('/super/companies/' + cur.id, 'PATCH', { plan: $('#cp1').value, trial_ends: $('#cp2b').hidden ? '' : $('#cp2').value, plan_note: $('#cp4').value, limits: read($('#cpf')) });
+    if (r.error) return toast(r.error); toast('Plan saved'); showCompanies(); };
+  $('#plb').onclick = () => { $('#m-plans').hidden = false; };
+  $('#plf').onsubmit = async e => { e.preventDefault(); for (const row of $('#plf').querySelectorAll('[data-pk]')) { const r = await api('/super/plans/' + row.dataset.pk, 'PUT', read(row)); if (r.error) return toast(r.error); } toast('Plan limits saved'); showCompanies(); };
+}
+
+// The four things a plan limits, in the order they are shown.
+const PLAN_LIMITS = [['members', 'Team members'], ['numbers', 'WhatsApp numbers'], ['broadcast', 'Broadcast messages a month'], ['storage_mb', 'Media Library space (MB)']];
+// "Plan and usage" card on the Settings page: the company's plan and a bar for each limit.
+async function drawPlanCard() {
+  const box = $('#planp'); if (!box) return; const p = await api('/plan'); if (p.error || !$('#planp')) return;
+  const day = d => new Date(d + 'T00:00:00').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+  const row = ([k, l]) => { const lim = p.limits[k], used = k === 'storage_mb' ? p.usage.storage_mb : p.usage[k], pct = lim == null ? 0 : lim === 0 ? 100 : Math.min(100, Math.round(used / lim * 100));
+    return `<div><small>${k === 'broadcast' ? 'Broadcast messages this month' : l}</small><b>${used} <small>${lim == null ? tr('No limit') : tr('of') + ' ' + lim}</small></b>${lim == null ? '' : `<div class="ubar"><i style="width:${pct}%"${pct > 85 ? ' class="hot"' : ''}></i></div>`}</div>`; };
+  box.innerHTML = `<h3 class="plh">Plan and usage<em class="chip ok">${esc(p.name)}</em>${p.trial_over ? '<em class="chip closed">Trial ended</em>' : p.trial_ends ? `<em class="chip warn">Trial until ${day(p.trial_ends)}</em>` : ''}</h3>
+    <p class="mute">${p.trial_over ? `Your ${esc(p.plan_name)} trial has ended, so the Free plan applies now. Your chats keep working. Contact us to continue on ${esc(p.plan_name)}.` : 'What your plan includes and how much of it you use. Contact us to change your plan.'}</p><div class="plu">${PLAN_LIMITS.map(row).join('')}</div>`;
 }
 
 /* ---------- Team (managers/admins) ---------- */
@@ -1454,6 +1496,7 @@ async function showSettings(mode) {
   el.innerHTML = phead(HEAD[0], HEAD[1], mode === 'qr' ? `<button class="btn" data-open="m-qr">${ico('plus', 16)}Add quick reply</button>` : '') + `
   ${TABS.length > 1 ? `<div class="ptabs" id="stabs">${TABS.map(x => `<button data-t="${x[0]}" class="${x[0] === cur ? 'on' : ''}">${x[1]}</button>`).join('')}</div>` : ''}
   <div class="stwrap">
+  ${admin ? `<div class="panel" id="planp" ${sec('general')}><h3>Plan and usage</h3><p class="mute">Loading…</p></div>` : ''}
   ${admin ? `<div class="panel" ${sec('general')}><h3>Company</h3><p class="mute">The name your team sees in the app.</p><label class="fld"><span>Company name</span><input id="coname" maxlength="80" value="${esc(S.user.company || '')}"></label><button class="btn" id="cosave">Save name</button></div>` : ''}
   <div class="panel" id="wp" ${sec('wa')}><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>${admin ? '<div id="esu"></div>' : ''}
     ${admin ? `<p style="margin:14px 0 0"><button class="ghost" data-open="m-num">${ico('plus', 16)}Add a number with IDs from Meta</button></p>` : '<p class="mute">Only an admin can add or remove numbers.</p>'}
@@ -1490,6 +1533,7 @@ async function showSettings(mode) {
     <form id="lf2" style="display:flex;gap:8px;margin-top:12px"><input id="l1" placeholder="Tag name, e.g. Hot lead" required style="flex:1"><input type="color" id="l2" value="#0e5a4a" style="width:56px;padding:2px;flex:none"><button class="btn">${ico('plus', 16)}Add</button></form></div>
   </div>`;
   if ($('#stabs')) $('#stabs').onclick = e => { const t = e.target.closest('button'); if (!t) return; S.stTab[mode] = t.dataset.t; el.querySelectorAll('[data-sec]').forEach(x => { x.hidden = x.dataset.sec !== t.dataset.t; }); $('#stabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === t)); };
+  drawPlanCard();
   if ($('#cosave')) $('#cosave').onclick = async () => { const name = $('#coname').value.trim(); const r = await api('/company', 'PATCH', { name }); if (r.error) return toast(r.error);
     S.user.company = name; localStorage.setItem('wa_auth', JSON.stringify({ token: S.token, user: S.user })); const ac = $('#accco'); if (ac) ac.textContent = name; if ($('#wsname')) $('#wsname').textContent = name; toast('Company name saved'); };
   $('#tb').onclick = showInbox;

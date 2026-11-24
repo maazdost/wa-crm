@@ -387,3 +387,25 @@ CREATE TABLE IF NOT EXISTS social_log (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_social_log_company ON social_log(company_id, platform, id DESC);
+
+-- ============================================================================
+-- Plans and limits for client companies. An empty (NULL) limit means "no limit".
+-- Existing companies become Custom with no limits, so nothing changes for them.
+-- Safe to run again and again: nothing is deleted, and limits you changed are kept.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS plans (
+  key TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  sort INT NOT NULL DEFAULT 0,
+  members INT,
+  numbers INT,
+  broadcast INT,
+  storage_mb INT
+);
+INSERT INTO plans(key, name, sort, members, numbers, broadcast, storage_mb) VALUES
+  ('free', 'Free', 1, 3, 1, 500, 100), ('starter', 'Starter', 2, 5, 2, 5000, 500), ('pro', 'Pro', 3, 15, 5, 50000, 2000)
+  ON CONFLICT (key) DO NOTHING;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'custom';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS trial_ends DATE;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_note TEXT NOT NULL DEFAULT '';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS limits JSONB NOT NULL DEFAULT '{}';

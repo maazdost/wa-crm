@@ -19,7 +19,7 @@ async function create({ company, name, email, password }) {
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
-    const co = (await c.query('INSERT INTO companies(name) VALUES($1) RETURNING *', [company])).rows[0];
+    const co = (await c.query(`INSERT INTO companies(name, plan) VALUES($1, 'free') RETURNING *`, [company])).rows[0];
     const u = (await c.query(
       `INSERT INTO users(company_id,name,email,password_hash,role,team) VALUES($1,$2,$3,$4,'admin','general') RETURNING *`,
       [co.id, name, email, await bcrypt.hash(password, 10)])).rows[0];
@@ -33,7 +33,11 @@ async function create({ company, name, email, password }) {
 }
 
 const list = async () => (await query(
-  `SELECT co.id, co.name, co.status, co.created_at,
+  `SELECT co.id, co.name, co.status, co.created_at, co.plan, to_char(co.trial_ends, 'YYYY-MM-DD') AS trial_ends, co.plan_note, co.limits,
+          (co.plan IN ('starter','pro') AND co.trial_ends IS NOT NULL AND co.trial_ends < (now() AT TIME ZONE 'Asia/Karachi')::date) AS trial_over,
+          (SELECT COUNT(*)::int FROM users u WHERE u.company_id=co.id AND u.is_active) AS members,
+          (SELECT COUNT(*)::int FROM broadcast_recipients r JOIN broadcasts b ON b.id=r.broadcast_id WHERE b.company_id=co.id AND b.created_at >= date_trunc('month', now()) AND (b.status <> 'cancelled' OR r.status <> 'queued')) AS broadcast,
+          (SELECT COALESCE(SUM(size),0)::bigint FROM media_library m WHERE m.company_id=co.id) AS storage_bytes,
           (SELECT COUNT(*)::int FROM users u WHERE u.company_id=co.id) AS users,
           (SELECT COUNT(*)::int FROM wa_numbers n WHERE n.company_id=co.id) AS numbers,
           (SELECT COUNT(*)::int FROM conversations c WHERE c.company_id=co.id) AS chats,

@@ -8,6 +8,7 @@ const { assignConversation } = require('../assign');
 const rt = require('../realtime');
 const mediaStore = require('../media');
 const push = require('../push');
+const plan = require('../plan');
 const router = express.Router();
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const isAgent = (u) => u.role === 'agent';
@@ -108,8 +109,26 @@ router.post('/auth/signup', wrap(async (req, res) => {
 
 // ---- Super admin (emails listed in SUPER_ADMIN_EMAILS): see every company, pause or resume one ----
 router.get('/super/companies', required('super'), wrap(async (req, res) => res.json(await require('../companies').list())));
+// Plans: the limits of Free, Starter and Pro, changed by the super admin
+router.get('/super/plans', required('super'), wrap(async (req, res) => res.json(await plan.plans())));
+router.put('/super/plans/:key', required('super'), wrap(async (req, res) => {
+  const l = plan.cleanLimits(req.body), name = String(req.body.name || '').trim().slice(0, 30);
+  const r = (await query(`UPDATE plans SET members=$2, numbers=$3, broadcast=$4, storage_mb=$5, name=COALESCE(NULLIF($6,''), name) WHERE key=$1 RETURNING key`, [req.params.key, l.members, l.numbers, l.broadcast, l.storage_mb, name])).rows[0];
+  r ? res.json({ ok: true }) : res.status(404).json({ error: 'Plan not found' });
+}));
+// The signed-in company's own plan and how much of it is used
+router.get('/plan', required('admin', 'manager'), wrap(async (req, res) => res.json({ ...(await plan.current()), usage: await plan.usage() })));
 router.patch('/super/companies/:id', required('super'), wrap(async (req, res) => {
   const id = Number(req.params.id), status = req.body.status;
+  if ('plan' in req.body) { // plan, trial end date, note and (for Custom) its own limits
+    const b = req.body, p = String(b.plan);
+    if (!plan.PLAN_KEYS.includes(p)) return res.status(400).json({ error: 'Unknown plan' });
+    const te = (p === 'starter' || p === 'pro') && b.trial_ends ? String(b.trial_ends) : null;
+    if (te && (!/^\d{4}-\d{2}-\d{2}$/.test(te) || isNaN(Date.parse(te)))) return res.status(400).json({ error: 'Choose a valid trial end date' });
+    const r = (await query('UPDATE companies SET plan=$2, trial_ends=$3, plan_note=$4, limits=$5 WHERE id=$1 RETURNING id',
+      [id, p, te, String(b.plan_note || '').trim().slice(0, 300), JSON.stringify(p === 'custom' ? plan.cleanLimits(b.limits) : {})])).rows[0];
+    return r ? res.json({ ok: true }) : res.status(404).json({ error: 'Company not found' });
+  }
   if (!['active', 'paused'].includes(status)) return res.status(400).json({ error: 'Unknown status' });
   if (id === req.user.cid && status === 'paused') return res.status(409).json({ error: 'You cannot pause your own company' });
   const r = (await query('UPDATE companies SET status=$2 WHERE id=$1 RETURNING id', [id, status])).rows[0];
@@ -392,6 +411,7 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
   if (!password || String(password).length < 6) return res.status(400).json({ error: 'The password must be at least 6 characters' });
   if (!['admin', 'manager', 'agent'].includes(role)) return res.status(400).json({ error: 'Unknown role' });
   if ((await query('SELECT 1 FROM users WHERE email=$1', [em])).rows[0]) return res.status(409).json({ error: 'That email is already used by someone else' });
+  const over = await plan.check('members'); if (over) return res.status(402).json({ error: over });
   const hash = await bcrypt.hash(password, 10);
   const { rows } = await query(
     `INSERT INTO users(company_id,name,email,password_hash,role,team,max_active_chats) VALUES($7,$1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,team`,
@@ -409,6 +429,7 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
     b.email = em;
   }
   if ('role' in b && !['admin', 'manager', 'agent'].includes(b.role)) return res.status(400).json({ error: 'Unknown role' });
+  if (b.is_active === true && !target.is_active) { const over = await plan.check('members'); if (over) return res.status(402).json({ error: over }); }
   const losingAdmin = target.role === 'admin' && target.is_active && (b.is_active === false || ('role' in b && b.role !== 'admin'));
   if (losingAdmin && (await query(`SELECT COUNT(*)::int AS n FROM users WHERE role='admin' AND is_active AND id<>$1 AND company_id=$2`, [uid, C()])).rows[0].n === 0)
     return res.status(409).json({ error: 'There must always be one active admin. Add another admin first.' });
