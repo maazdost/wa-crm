@@ -96,6 +96,13 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const tpl = await j(`/api/conversations/${own.id}/template`, { method: 'POST', body: { name: 'followup_interest' } }, a1.token);
   check('template send works when window closed', tpl.status === 200);
   check('manager stats endpoint', (await j('/api/stats', {}, admin)).data.totals?.open >= 4);
+  const rep = await j('/api/reports', {}, admin);
+  check('report gives totals, one row per day and agents', rep.status === 200 && rep.data.daily.length === 30 && rep.data.summary.inbound >= 12 && rep.data.agents.some(a => a.id === a1.user.id && a.msgs_sent >= 1) && rep.data.hours.length === 24);
+  const today = rep.data.to, one = await j(`/api/reports?from=${today}&to=${today}`, {}, admin);
+  check('report for one day and bad ranges', one.data.daily.length === 1 && one.data.daily[0].inbound >= 12 && (await j('/api/reports?from=2020-01-01&to=2026-01-01', {}, admin)).status === 400);
+  const ha = await j('/api/health-audit', {}, admin);
+  check('health audit returns a score and checks', ha.status === 200 && ha.data.score >= 0 && ha.data.score <= 100 && ha.data.checks.length >= 5 && ha.data.checks.every(c => c.level && c.title));
+  check('agent cannot open reports or health audit', (await j('/api/reports', {}, a1.token)).status === 403 && (await j('/api/health-audit', {}, a1.token)).status === 403);
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

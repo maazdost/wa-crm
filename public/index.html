@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>Team inbox</title>
+<title>TeamInbox Pro</title>
 <style>
 :root{--ink:#111b21;--ink2:#3b4a54;--mute:#667781;--line:#e9edef;--line2:#d1d7db;--bg:#f0f2f5;--surface:#fff;--hover:#f5f6f6;--sel:#f0f2f5;--in:#fff;--out:#d9fdd3;--lav:#e8e6fb;--chat:#efeae2;--field:#f0f2f5;--inp:#fff;--pill:#f0f2f5;--pillon:#d9fdd3;--pillon-ink:#0a6e57;--icon:#54656f;--card:#fff;--tint:#e1f6ec;--tint-ink:#0a6e57;--tint-line:#cdebdd;--warnbg:#fff4cc;--warn:#8a5a00;--warn-line:#f0e3a5;--redbg:#fdecea;--red:#c0372b;--red-line:#f6cdc8;--notes:#fffbea;--notes-line:#f0e6b8;--rail:#f0f2f5;--railon:#d9dbdf;--menu:#fff;--toast:#111b21;--thead:#fafbfb;--quote:rgba(11,20,26,.06);--brand:#00a884;--brand-d:#008069;--pine2:#008069;--blue:#53bdeb;--ok:#25d366;--sh:0 1px .5px rgba(11,20,26,.13);--sh2:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16);--tx:#fff;--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23b9b1a2' stroke-width='1.2' opacity='.26'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:light}
 [data-theme="dark"]{--ink:#e9edef;--ink2:#c8d0d4;--mute:#8696a0;--line:#222d34;--line2:#33424b;--bg:#202c33;--surface:#111b21;--hover:#182229;--sel:#2a3942;--in:#202c33;--out:#005c4b;--lav:#2f2c55;--chat:#0b141a;--field:#202c33;--inp:#2a3942;--pill:#202c33;--pillon:#103529;--pillon-ink:#25d366;--icon:#aebac1;--card:#1d282f;--tint:#103529;--tint-ink:#7be3be;--tint-line:#1a4a3d;--warnbg:#3a3014;--warn:#f0c14d;--warn-line:#54471b;--redbg:#3a1d1a;--red:#ff8a80;--red-line:#5a2b27;--notes:#2d2a14;--notes-line:#4a4420;--rail:#202c33;--railon:#374248;--menu:#233138;--toast:#2a3942;--thead:#1a252b;--quote:rgba(255,255,255,.07);--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='.07'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:dark}
@@ -309,6 +309,52 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .qtwo{display:grid;grid-template-columns:1fr 1fr;gap:12px}.qtwo .fld{margin:0}
 #m-qm .mcard{width:min(680px,100%);min-width:0}#m-qm .mb,#qmf,.qsec,.qsec>*,.qstep,.qstep>*{min-width:0}.modal{grid-template-columns:minmax(0,auto)}
 @media (max-width:760px){.qtwo{grid-template-columns:1fr}.qstep-h label{font-size:12px;white-space:nowrap}.qtype button{flex:none}.qsec{padding:10px}.qbtn{flex-wrap:wrap}.qbtn select{flex:1 1 100%}.ph .search{display:none}}
+/* Reports and Health Audit */
+.rpc{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin:0 0 16px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.rpc label{display:grid;gap:4px;font-size:12px;color:var(--mute);font-weight:600}
+.rpc input{width:auto}
+.rpd{display:flex;align-items:center;gap:7px;margin:0 0 14px;color:var(--mute);font-size:13px}
+.chart.hrs{gap:3px}
+.chart .col{min-width:0}
+.chart.hrs small,.chart.dense small{white-space:nowrap;min-height:14px}
+.tscroll{max-height:420px;overflow:auto}
+.tscroll thead th{position:sticky;top:0;z-index:1}
+.tbl-h [data-x]{display:inline-flex;align-items:center;gap:6px}
+.hgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.hscore{display:flex;align-items:center;gap:22px}
+.hscore h3{font-size:20px;margin:0 0 4px}
+.hscore p{margin:0 0 12px}
+.ring{--c:var(--brand);width:124px;height:124px;border-radius:50%;flex:none;display:grid;place-content:center;text-align:center;background:radial-gradient(closest-side,var(--card) 80%,transparent 81%),conic-gradient(var(--c) calc(var(--p)*1%),var(--pill) 0)}
+.ring b{font-size:34px;line-height:1;font-weight:700}
+.ring small{color:var(--mute);font-size:12px}
+.hscore.warn .ring{--c:var(--warn)}
+.hscore.bad .ring{--c:var(--red)}
+.hcount{display:flex;gap:8px;flex-wrap:wrap}
+.hcount .chip{margin:0}
+.hrow{display:flex;gap:14px;align-items:flex-start;padding:14px 16px;border-top:1px solid var(--line)}
+.hrow:first-child{border-top:0}
+.hrow>div{flex:1;min-width:0}
+.hrow b{font-size:14.5px}
+.hrow p{margin:3px 0 0;color:var(--mute);font-size:13px;line-height:1.45}
+.hrow p.hfix{color:var(--ink)}
+.hrow .chip{margin:2px 0 0}
+.hic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--tint);color:var(--tint-ink)}
+.hrow.warn .hic{background:var(--warnbg);color:var(--warn)}
+.hrow.bad .hic{background:var(--redbg);color:var(--red)}
+.hrow.info .hic{background:var(--pill);color:var(--icon)}
+@media (max-width:760px){
+.hgrid{grid-template-columns:minmax(0,1fr);gap:0}
+.hscore{gap:16px}
+.ring{width:96px;height:96px}
+.ring b{font-size:26px}
+.rpc input{width:100%}
+.rpc label{flex:1;min-width:130px}
+.hrow{flex-wrap:wrap}
+.hrow>div{flex-basis:calc(100% - 50px)}
+.hrow .chip{margin-left:44px}
+.chart.dense{gap:3px}
+.chart.dense .col:not(:nth-child(5n+1)) small{visibility:hidden}
+}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -395,13 +441,18 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
-  ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+// Every page has its own address, so refresh, back, forward and bookmarks work.
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', tg: 'tags', st: 'settings', co: 'companies' };
+const routeKey = p => Object.keys(ROUTES).find(k => '/' + ROUTES[k] === String(p).replace(/\/+$/, ''));
+function setUrl(k) { const p = '/' + ROUTES[k], n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, rp: showReports, ha: showHealth })[k]();
   syncNav();
 }
-function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
+function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
 // On pages the menu is open unless you fold it; in Live Chat it is folded unless you open it. Each choice is remembered.
 const navIsMin = pg => pg ? localStorage.getItem('ti_nav') === 'min' : localStorage.getItem('ti_navchat') !== 'full';
 function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
@@ -561,7 +612,7 @@ function showSignup() {
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
     setTimeout(() => toast('Welcome! Next step: open Settings and connect your WhatsApp number.'), 800); };
 }
-function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; showLogin(); }
+function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
 
 /* ---------- Shell + list ---------- */
 async function boot() {
@@ -598,7 +649,7 @@ async function boot() {
   $('#navtg').onclick = () => { const sh = $('.shell'), m = sh.classList.toggle('navmin'); localStorage.setItem(sh.classList.contains('onpage') ? 'ti_nav' : 'ti_navchat', m ? 'min' : 'full'); };
   $('#modebtn').onclick = () => { setPref({ mode: effTheme() === 'dark' ? 'light' : 'dark' }); applyTheme(); $('#modebtn').innerHTML = ico(effTheme() === 'dark' ? 'sun' : 'moon', 18); };
   if (mgr) api('/whatsapp/numbers').then(ns => { const n = arr(ns).find(x => x.is_default) || arr(ns)[0], p = $('#numpill'); if (!p) return; p.hidden = false; p.classList.toggle('off', !n); p.innerHTML = n ? `${ico('phone', 13)}<span>${esc(n.display_phone || n.label)}${arr(ns).length > 1 ? ' +' + (arr(ns).length - 1) : ''}</span>` : '<i></i><span>No WhatsApp number yet</span>'; if (!n) p.onclick = () => goNav('st'); });
-  if (mgr && innerWidth > 760) goNav('dash');
+  S.urlReady = false; const first = routeKey(location.pathname), go = first && items.some(n => n[0] === first) ? first : mgr && innerWidth > 760 ? 'dash' : 'inbox'; if (go === 'inbox') syncNav(); else goNav(go);
   $('#themebtn').onclick = () => { closeOverlays(); themeDialog(null); };
   document.removeEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
   $('#pwb').onclick = async () => { closeOverlays(); const cur = await ask('Change password', { note: 'First, type your current password.', type: 'password', ok: 'Next' }); if (cur === null) return; const nw = await ask('New password', { note: 'At least 8 characters.', type: 'password', min: 8, ok: 'Change password' }); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
@@ -649,9 +700,10 @@ function rowMenu(id, x, y) {
 }
 function renderList(quiet) {
   const el = $('#list'), cnt = S.counts || {}, unreadMsgs = S.convs.reduce((n, c) => n + (c.unread_count || 0), 0);
-  document.title = (cnt.unread ? `(${cnt.unread}) ` : '') + 'Team inbox';
+  document.title = (cnt.unread ? `(${cnt.unread}) ` : '') + (S.ptitle || 'TeamInbox Pro');
   document.querySelectorAll('.nb').forEach(b => { b.hidden = !cnt.unread; b.textContent = cnt.unread > 99 ? '99+' : cnt.unread; });
   const sub = $('#sub'); if (sub) sub.textContent = S.tab === 'archived' ? 'Archived chats' : `${S.convs.length} ${S.convs.length === 1 ? 'chat' : 'chats'}${unreadMsgs ? ' · ' + unreadMsgs + ' unread' : ''}`;
+  if (!el) return;
   const top = el.scrollTop;
   const head = S.tab === 'archived' ? `<button class="archrow" id="archback">${ico('back', 20)}<span>Archived chats</span></button>` : (cnt.archived ? `<button class="archrow" id="archopen">${ico('archive', 20)}<span>Archived</span><b>${cnt.archived}</b></button>` : '');
   el.innerHTML = head + (!S.convs.length ? `<div class="nochats">${ico('inbox', 36)}<b>${S.tab === 'archived' ? 'No archived chats' : S.tab === 'open' ? 'No open chats yet' : 'Nothing here'}</b>${S.tab === 'open' ? '<span>New clients appear here as soon as the bot hands them over.</span>' : ''}</div>` :
@@ -1502,6 +1554,86 @@ async function showQuickMsg() {
   sc.querySelectorAll('[data-qe]').forEach(b => b.onclick = () => open(by(b.dataset.qe)));
   sc.querySelectorAll('[data-qd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.qd); if (!(await sure('Delete this quick message?', `"${r.name}" will stop answering clients.`, { ok: 'Delete', danger: true }))) return; await api('/auto-replies/' + r.id, 'DELETE'); toast('Quick message deleted'); showQuickMsg(); });
 }
+/* ---------- Reports ---------- */
+const csvCell = v => { v = v == null ? '' : String(v); if (/^[=+\-@\t]/.test(v)) v = "'" + v; return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+function downloadCsv(name, rows) { saveDoc(URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })), name); toast('Saved ' + name); }
+const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const pctTxt = v => v == null ? '—' : v + '%';
+const niceDay = s => new Date(s + 'T00:00:00').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+function rpRange(preset) {
+  const now = new Date(), back = n => new Date(now.getFullYear(), now.getMonth(), now.getDate() - n);
+  if (preset === 'today') return [ymd(now), ymd(now)];
+  if (preset === 'month') return [ymd(new Date(now.getFullYear(), now.getMonth(), 1)), ymd(now)];
+  if (preset === 'lastmonth') return [ymd(new Date(now.getFullYear(), now.getMonth() - 1, 1)), ymd(new Date(now.getFullYear(), now.getMonth(), 0))];
+  return [ymd(back((+preset || 30) - 1)), ymd(now)];
+}
+async function showReports() {
+  const R = S.rp = S.rp || { preset: '30' };
+  if (R.preset !== 'custom' || !R.from || !R.to) [R.from, R.to] = rpRange(R.preset);
+  const PRE = [['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days'], ['90', 'Last 90 days'], ['month', 'This month'], ['lastmonth', 'Last month'], ['custom', 'Custom dates']];
+  const sc = screen('Reports', 'How your team and your WhatsApp numbers performed in the dates you choose. Every table can be saved as a file for Excel.',
+    `<select id="rpp" aria-label="Dates">${PRE.map(p => `<option value="${p[0]}"${p[0] === R.preset ? ' selected' : ''}>${p[1]}</option>`).join('')}</select><button class="btn" id="rpx">${ico('download', 16)}Export all</button>`);
+  $('#rpp').onchange = e => { R.preset = e.target.value; if (R.preset !== 'custom') showReports(); else { $('#rpc').hidden = false; $('#rpf').focus(); } };
+  sc.innerHTML = `<div class="rpc" id="rpc"${R.preset === 'custom' ? '' : ' hidden'}><label>From <input type="date" id="rpf" value="${R.from}"></label><label>To <input type="date" id="rpt" value="${R.to}"></label><button class="ghost" id="rpgo">Show</button></div><div id="rpb"><p class="mute">Loading…</p></div>`;
+  $('#rpgo').onclick = () => { const f = $('#rpf').value, t = $('#rpt').value; if (!f || !t) return toast('Choose both dates'); R.from = f; R.to = t; showReports(); };
+  const d = await api(`/reports?from=${R.from}&to=${R.to}`); if (S.nav !== 'rp') return; if (d.error) { $('#rpb').innerHTML = emptyState('chart', 'Could not load the report', esc(d.error)); return; }
+  const s = d.summary, days = d.daily, max = Math.max(1, ...days.map(x => x.new_chats)), hmax = Math.max(1, ...d.hours.map(x => x.n));
+  const names = { info: 'More info', team: 'Join the team', classes: 'Classes', unknown: 'Not answered', ad: 'From ads', organic: 'Organic', import: 'Imported', personal: 'Personal' };
+  const hbars = (list, key = 'k') => { const top = Math.max(1, ...list.map(x => x.n)); return list.length ? list.map(x => `<div class="hb"><span title="${esc(names[x[key]] || x[key])}">${esc(names[x[key]] || x[key])}</span><i style="width:${x.n / top * 100}%${x.color ? ';background:' + esc(x.color) : ''}"></i><b>${x.n}</b></div>`).join('') : '<p class="mute">Nothing in these dates</p>'; };
+  const hr12 = h => (h % 12 || 12) + (h < 12 ? ' am' : ' pm');
+  const busiest = d.hours.reduce((a, x) => x.n > a.n ? x : a, { n: 0, hour: 0 });
+  const xbtn = id => `<span style="flex:1"></span><button class="ghost" data-x="${id}">${ico('download', 14)}Export</button>`;
+  const T = { // every table once: used for the screen and for the files
+    agents: { name: 'agents', head: ['Agent', 'Department', 'Chats received', 'Replied', 'Median first reply (seconds)', 'Messages sent', 'Open now', 'Closed'], rows: d.agents.map(a => [a.name, a.team, a.assigned, a.replied, a.median_reply_sec == null ? '' : Math.round(a.median_reply_sec), a.msgs_sent, a.open_now, a.closed_now]) },
+    daily: { name: 'daily', head: ['Date', 'New chats', 'Messages received', 'Sent by agents', 'Sent by bot', 'Failed'], rows: days.map(x => [x.day, x.new_chats, x.inbound, x.agent_out, x.bot_out, x.failed]) },
+    broadcasts: { name: 'broadcasts', head: ['Broadcast', 'Template', 'Date', 'Status', 'Recipients', 'Sent', 'Delivered', 'Read', 'Failed'], rows: d.broadcasts.map(b => [b.name, b.template_name, b.at, b.status, b.total, b.sent, b.delivered, b.read, b.failed]) },
+    quick: { name: 'quick-messages', head: ['Quick message', 'Switched on', 'Times sent (all time)', 'Last sent'], rows: d.quick.map(q => [q.name, q.active ? 'Yes' : 'No', q.sent_count, q.last_sent || '']) },
+    summary: { name: 'summary', head: ['Measure', 'Value'], rows: [['From', d.from], ['To', d.to], ['New chats', s.new_chats], ['New contacts', s.new_contacts], ['Messages received', s.inbound], ['Sent by agents', s.agent_out], ['Sent by bot', s.bot_out], ['Templates sent', s.template_out],
+      ['Delivered %', s.delivered_pct ?? ''], ['Read %', s.read_pct ?? ''], ['Failed %', s.failed_pct ?? ''], ['Median first reply (seconds)', s.median_reply_sec == null ? '' : Math.round(s.median_reply_sec)]] }
+  };
+  const file = n => `teaminbox-${n}-${d.from}-to-${d.to}.csv`;
+  $('#rpb').innerHTML = `<p class="rpd">${ico('clock', 15)}${d.from === d.to ? niceDay(d.from) : niceDay(d.from) + ' to ' + niceDay(d.to)} · ${days.length} day${days.length === 1 ? '' : 's'}</p>
+  <div class="stats s4">${kpi('userplus', s.new_chats, 'New chats')}${kpi('users', s.new_contacts, 'New contacts', 'blue')}${kpi('inbox', s.inbound, 'Messages received', 'blue')}${kpi('send', s.agent_out, 'Sent by agents', 'amber')}
+    ${kpi('zap', s.bot_out, 'Sent automatically', 'violet')}${kpi('clock', fmtDur(s.median_reply_sec), 'Median first reply')}${kpi('check', pctTxt(s.delivered_pct), 'Delivered', 'blue')}${kpi('eye', pctTxt(s.read_pct), 'Read by clients', s.failed_pct >= 10 ? 'red' : '')}</div>
+  <div class="dgrid"><div class="panel"><h3>New chats per day</h3><p class="mute">${s.new_chats} new chats in these dates</p><div class="chart${days.length > 16 ? ' dense' : ''}">${days.map(x => `<div class="col" title="${x.day}: ${x.new_chats}"><i style="height:${Math.round(x.new_chats / max * 140)}px"></i><small>${days.length > 31 ? '' : x.day.slice(8)}</small></div>`).join('')}</div></div>
+    <div class="panel"><h3>Busiest hours</h3><p class="mute">${busiest.n ? `Most client messages arrive around ${hr12(busiest.hour)}` : 'No client messages in these dates'}</p><div class="chart hrs">${d.hours.map(x => `<div class="col" title="${hr12(x.hour)}: ${x.n}"><i style="height:${Math.round(x.n / hmax * 140)}px"></i><small>${x.hour % 6 === 0 ? hr12(x.hour) : ''}</small></div>`).join('')}</div></div></div>
+  <div class="two"><div class="panel"><h3>Where clients came from</h3>${hbars(d.sources)}</div><div class="panel"><h3>What clients asked for</h3>${hbars(d.intents)}</div></div>
+  <div class="two"><div class="panel"><h3>Tags on active chats</h3>${hbars(d.tags, 'name')}</div><div class="panel"><h3>Message delivery</h3>
+    <div class="hb"><span>Delivered</span><i style="width:${s.delivered_pct || 0}%"></i><b>${pctTxt(s.delivered_pct)}</b></div><div class="hb"><span>Read</span><i style="width:${s.read_pct || 0}%"></i><b>${pctTxt(s.read_pct)}</b></div><div class="hb"><span>Failed</span><i style="width:${s.failed_pct || 0}%;background:var(--red)"></i><b>${pctTxt(s.failed_pct)}</b></div>
+    <p class="mute" style="margin:12px 0 0">${s.outbound} messages sent, ${s.template_out} of them templates. ${s.failed} failed.</p></div></div>
+  <div class="tbl"><div class="tbl-h"><b>Agent performance</b>${xbtn('agents')}</div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Closed</th></tr></thead><tbody>
+    ${d.agents.map(a => `<tr><td>${userCell(a.name, a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.closed_now}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet.</td></tr>'}</tbody></table></div>
+  <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
+    ${days.slice().reverse().map(x => `<tr><td>${niceDay(x.day)}</td><td>${x.new_chats}</td><td>${x.inbound}</td><td>${x.agent_out}</td><td>${x.bot_out}</td><td>${x.failed ? `<em class="chip closed">${x.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div></div>
+  ${d.broadcasts.length ? `<div class="tbl"><div class="tbl-h"><b>Bulk broadcasts</b>${xbtn('broadcasts')}</div><table><thead><tr><th>Broadcast</th><th>Date</th><th>Recipients</th><th>Delivered</th><th>Read</th><th>Failed</th></tr></thead><tbody>
+    ${d.broadcasts.map(b => `<tr><td><b>${esc(b.name)}</b><br><small class="mute">${esc(b.template_name)}</small></td><td>${esc(b.at)}</td><td>${b.total}</td><td>${b.delivered} <small class="mute">${pctTxt(b.total ? Math.round(b.delivered / b.total * 100) : null)}</small></td><td>${b.read} <small class="mute">${pctTxt(b.total ? Math.round(b.read / b.total * 100) : null)}</small></td><td>${b.failed ? `<em class="chip closed">${b.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div>` : ''}
+  ${d.quick.length ? `<div class="tbl"><div class="tbl-h"><b>Quick messages</b><small class="mute">All time</small>${xbtn('quick')}</div><table><thead><tr><th>Quick message</th><th>Status</th><th>Times sent</th><th>Last sent</th></tr></thead><tbody>
+    ${d.quick.map(q => `<tr><td><b>${esc(q.name)}</b></td><td><em class="chip ${q.active ? 'ok' : ''}">${q.active ? 'On' : 'Off'}</em></td><td>${q.sent_count}</td><td>${esc(q.last_sent || '—')}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
+  $('#rpb').onclick = e => { const b = e.target.closest('[data-x]'); if (b) { const t = T[b.dataset.x]; downloadCsv(file(t.name), [t.head, ...t.rows]); } };
+  $('#rpx').onclick = () => { const out = []; for (const k of ['summary', 'daily', 'agents', 'broadcasts', 'quick']) { const t = T[k]; if (k !== 'summary' && !t.rows.length) continue; out.push([t.name.toUpperCase()], t.head, ...t.rows, []); } downloadCsv(file('report'), out); };
+}
+
+/* ---------- Health Audit ---------- */
+async function showHealth() {
+  const sc = screen('Health Audit', 'A check of everything that keeps your WhatsApp working: number quality, delivery, templates, team and automation. Problems come first, each with what to do.',
+    `<button class="btn" id="hago">${ico('refresh', 16)}Check again</button>`);
+  $('#hago').onclick = showHealth;
+  sc.innerHTML = '<p class="mute">Checking your numbers with Meta…</p>';
+  const d = await api('/health-audit'); if (S.nav !== 'ha') return; if (d.error) { sc.innerHTML = emptyState('shield', 'Could not run the check', esc(d.error)); return; }
+  const tone = d.bad ? 'bad' : d.warn ? 'warn' : 'ok', word = d.bad ? 'Needs action' : d.warn ? 'Needs attention' : 'Healthy';
+  const LV = { bad: ['x', 'Fix now'], warn: ['info', 'Look at this'], info: ['info', 'Note'], ok: ['check', 'Good'] };
+  const Q = { GREEN: ['ok', 'High quality'], YELLOW: ['warn', 'Medium quality'], RED: ['closed', 'Low quality'] };
+  const dl = d.delivery;
+  sc.innerHTML = `<div class="hgrid"><div class="panel hscore ${tone}"><div class="ring" style="--p:${d.score}"><b>${d.score}</b><small>of 100</small></div><div><h3>${word}</h3>
+      <p class="mute">${d.bad ? `${d.bad} thing${d.bad === 1 ? '' : 's'} to fix now` : d.warn ? `${d.warn} thing${d.warn === 1 ? '' : 's'} to look at` : 'Nothing needs your attention'}. Checked ${fmtT(d.checked_at)}.</p>
+      <div class="hcount"><em class="chip closed">${d.bad} to fix</em><em class="chip warn">${d.warn} to look at</em><em class="chip ok">${d.ok} good</em></div></div></div>
+    <div class="panel"><h3>WhatsApp numbers</h3>${d.numbers.length ? d.numbers.map(n => { const q = n.test_mode ? ['', 'Test mode'] : !n.reachable ? ['closed', 'Not connected'] : Q[n.quality] || ['', 'Not rated yet'];
+      return `<div class="numrow"><span>${ico('phone', 18)}</span><div><b>${esc(n.label)}</b><small>${esc(n.display_phone || '')}${n.verified_name ? ' · ' + esc(n.verified_name) : ''}${n.limit ? ' · ' + esc(n.limit) + ' new clients a day' : ''}</small></div><em class="chip ${q[0]}">${q[1]}</em></div>`; }).join('') : '<p class="mute">No number connected yet.</p>'}</div></div>
+  <div class="stats s4">${kpi('send', dl.outbound, 'Sent in 7 days')}${kpi('check', pctTxt(dl.delivered_pct), 'Delivered', 'blue')}${kpi('eye', pctTxt(dl.read_pct), 'Read by clients', 'violet')}${kpi('ban', pctTxt(dl.failed_pct), 'Failed', dl.failed_pct >= 3 ? 'red' : 'amber')}</div>
+  <div class="tbl"><div class="tbl-h"><b>Checks</b><small class="mute">${d.checks.length} checked</small></div><div class="hlist">${d.checks.map(c => `<div class="hrow ${c.level}"><span class="hic">${ico(LV[c.level][0], 16)}</span><div><b>${esc(c.title)}</b><p>${esc(c.detail || '')}</p>${c.fix ? `<p class="hfix"><strong>What to do:</strong> ${esc(c.fix)}</p>` : ''}</div><em class="chip">${esc(c.area)}</em></div>`).join('')}</div></div>
+  <div class="tbl"><div class="tbl-h"><b>Why messages failed</b><small class="mute">Last 30 days</small></div>${d.errors.length ? `<table><thead><tr><th>Reason from WhatsApp</th><th>Messages</th><th>Last time</th></tr></thead><tbody>${d.errors.map(e => `<tr><td>${esc(e.reason)}</td><td>${e.n}</td><td>${esc(e.last)}</td></tr>`).join('')}</tbody></table>` : emptyState('check', 'No failed messages', 'Nothing failed in the last 30 days.')}</div>`;
+}
+
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
     `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="btn" data-open="m-imp">${ico('plus', 16)}Import contacts</button>`);
