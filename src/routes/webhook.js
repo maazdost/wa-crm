@@ -8,6 +8,7 @@ const { saveInbound, saveOutbound } = require('../messages');
 const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
+const autoreply = require('../autoreply');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
@@ -110,7 +111,9 @@ async function handleMessage(m, profileName, numId) {
   }
   rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
   if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id });
-  await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
+  // Quick Message: an automatic reply when the message contains one of the company's keywords (the agent still sees and owns the chat)
+  const quick = await autoreply.maybeReply(conv, waId, msg).catch(e => { console.error('quick message', e.message); return false; });
+  if (!quick) await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
 }
 
 router.post('/', (req, res) => {

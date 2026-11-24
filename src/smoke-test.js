@@ -43,6 +43,27 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const after = (await j(`/api/conversations/${own.id}/messages`, {}, a1.token)).data;
   check('sticky ownership kept', after.conversation.assigned_to === a1.user.id);
   check('bot silent after handoff', after.messages.filter(m => m.sender_type === 'bot').length === 3);
+  // Media Library and Quick Message (automatic keyword reply)
+  const up = await fetch(B + '/api/media-library?filename=fees.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + admin },
+    body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') });
+  const file = await up.json();
+  check('manager saves a file in the media library', up.status === 200 && (await j('/api/media-library', {}, admin)).data.files?.some(f => f.id === file.id));
+  check('agent cannot add library files', (await fetch(B + '/api/media-library?filename=x.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + a1.token }, body: Buffer.from('x') })).status === 403);
+  check('agent sends a library file in own chat', (await j(`/api/conversations/${own.id}/library/${file.id}`, { method: 'POST', body: { caption: 'Our fees' } }, a1.token)).status === 200);
+  const rule = (await j('/api/auto-replies', { method: 'POST', body: { name: 'Fees', keywords: 'fee, fees', body: 'Our fee is 100 per month.', media_id: file.id } }, admin)).data;
+  const botCount = async () => (await j(`/api/conversations/${own.id}/messages`, {}, a1.token)).data.messages.filter(m => m.sender_type === 'bot').length;
+  const before = await botCount();
+  await inbound(own.wa_id, { text: { body: 'I had a coffee' } }); await sleep(300);
+  check('quick message ignores words that only look similar', await botCount() === before);
+  await inbound(own.wa_id, { text: { body: 'What are your FEES?' } }); await sleep(400);
+  const msgs = (await j(`/api/conversations/${own.id}/messages`, {}, a1.token)).data;
+  check('quick message replies to its keyword with the saved file', msgs.messages.some(m => m.sender_type === 'bot' && m.body === 'Our fee is 100 per month.' && m.media_id) && msgs.conversation.assigned_to === a1.user.id);
+  await j('/api/auto-replies/' + rule.id, { method: 'PATCH', body: { active: false } }, admin);
+  await inbound(own.wa_id, { text: { body: 'fees again' } }); await sleep(300);
+  check('switched off quick message stays silent', await botCount() === before + 1);
+  await j('/api/auto-replies/' + rule.id, { method: 'DELETE' }, admin);
+  await j('/api/media-library/' + file.id, { method: 'DELETE' }, admin);
+
   // Window closed -> text rejected, template allowed
   await fetch; // no-op
   const { Pool } = require('pg'); require('dotenv').config();

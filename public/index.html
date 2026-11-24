@@ -274,6 +274,20 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .callbar small{color:#bfe6dc}.callbar button{border:0;border-radius:999px;padding:9px 14px;font-weight:700;color:#fff;cursor:pointer;background:#ffffff26}.callbar .end{background:#d93a3a}
 .callpill{align-self:center;background:var(--card);border-radius:999px;padding:6px 14px;font-size:13px;margin:6px 0;box-shadow:var(--sh);display:flex;align-items:center;gap:6px}.callpill.miss{color:#d93a3a}.callpill time{color:var(--icon);margin-left:6px;font-size:11.5px}
 .okm{color:#0a7c5a;font-size:13.5px}.qbtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 12px;font-size:12.5px;color:var(--icon)}.qbtns i{font-style:normal;border:1px solid #8884;border-radius:999px;padding:3px 10px}
+/* Media Library and Quick Message */
+.tog{position:relative;display:inline-block;width:38px;height:22px;flex:none;vertical-align:middle}.tog input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}.tog i{position:absolute;inset:0;border-radius:999px;background:var(--line2);transition:background .15s}.tog i:after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s}.tog input:checked+i{background:var(--brand)}.tog input:checked+i:after{transform:translateX(16px)}.tog input:focus-visible+i{outline:2px solid var(--brand);outline-offset:2px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.mfile{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.mthumb{border:0;padding:0;height:132px;background:var(--field);display:grid;place-items:center;color:var(--icon);cursor:pointer;overflow:hidden}.mthumb img{width:100%;height:100%;object-fit:cover;display:block}.mthumb:hover{filter:brightness(.97)}
+.mmeta{display:flex;align-items:center;gap:2px;padding:10px 6px 10px 12px}.mmeta div{flex:1;min-width:0}.mmeta b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mmeta small{display:block;color:var(--mute);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px!important;border-bottom:1px solid var(--line)}.lbar .ptabs{flex:1;min-width:0;margin-bottom:-1px!important;border-bottom:0}.lbar .search{flex:0 1 260px;margin-bottom:8px}
+.ubar{height:6px;border-radius:999px;background:var(--line);margin-top:8px;overflow:hidden}.ubar i{display:block;height:100%;border-radius:999px;background:var(--brand)}.ubar i.hot{background:#d9534f}
+.kw{display:inline-block;background:var(--tint);color:var(--tint-ink);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:600;margin:0 4px 4px 0}
+.qmtxt{max-width:380px;min-width:160px;white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.qmf{display:flex;align-items:center;gap:5px;margin-top:6px}
+.pick{display:grid;gap:2px;max-height:50vh;overflow:auto}.pick button{display:flex;align-items:center;gap:12px;border:0;background:none;text-align:left;padding:8px;border-radius:10px;color:var(--ink);min-width:0}.pick button:hover{background:var(--field)}.pick b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}.pick small{display:block;color:var(--mute);font-size:12px}
+.pth{width:44px;height:44px;border-radius:8px;background:var(--field);display:grid;place-items:center;color:var(--icon);overflow:hidden;flex:none}.pth img{width:100%;height:100%;object-fit:cover}
+.b .tg+.ghost,.b .tg+img,.b .tg+audio{display:block;margin-top:4px}.menu.clipm{left:0;right:auto;top:auto;bottom:calc(100% + 10px)}
+@media (max-width:760px){.mgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mthumb{height:104px}.lbar .search{flex:1 1 100%}}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -301,6 +315,9 @@ function win(c) {
 
 /* ---------- Icons + small UI helpers ---------- */
 const ICONS = {
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  image: '<rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+  play: '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
   phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
@@ -355,12 +372,12 @@ const avatar = (name, size = 44) => `<span class="av" style="width:${size}px;hei
 const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a conversation</b><span>Pick a chat on the left to read it and reply. Every client stays with one team member from start to finish.</span>`;
 // key, label, icon, managers only, super admin only, menu group
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
-  ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
+  ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
@@ -568,7 +585,7 @@ async function boot() {
   $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   renderTabs(); $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tab = b.dataset.t; renderTabs(); loadList(); };
   if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
-  S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter();
+  S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib();
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
   setInterval(tick, 30000);
@@ -850,13 +867,14 @@ function renderComposer() {
     };
     return;
   }
-  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
+  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><div class="menuwrap"><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><div class="menu clipm" id="clipm" hidden><button data-a="dev">${ico('clip', 18)}<span>From this device</span></button><button data-a="lib">${ico('image', 18)}<span>From Media Library</span></button></div></div><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
   const t = $('#txt');
   t.oninput = () => { syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else { $('#qr').hidden = true; typingPing(); } };
-  $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them in Settings.'); showQr(''); };
+  $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them on the Quick Replies page.'); showQr(''); };
   t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!$('#qr').hidden && t.value.startsWith('/') && S.qrList.length) return pickQr(0); sendText(); } };
   $('#send').onclick = sendText; $('#mic').onclick = startRec; syncSend();
-  $('#clip').onclick = () => $('#file').click();
+  $('#clip').onclick = () => { if (!S.lib || !S.lib.length) return $('#file').click(); const m = $('#clipm'), was = m.hidden; closeOverlays(); m.hidden = !was; };
+  $('#clipm').onclick = e => { const b = e.target.closest('button'); if (!b) return; closeOverlays(); if (b.dataset.a === 'dev') $('#file').click(); else pickLib(); };
   $('#file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
   t.onpaste = e => { const f = e.clipboardData && e.clipboardData.files[0]; if (f) { e.preventDefault(); sendFile(f); } };
 }
@@ -1283,6 +1301,125 @@ async function showTemplates() {
     const r = await api('/templates', 'POST', { name: $('#t1').value.trim(), category: $('#t2').value, language: $('#t3').value.trim() || 'en', body: $('#t4').value, examples: sp('#t5'), footer: $('#t6').value.trim(), buttons: sp('#t7') });
     if (r.error) return toast(r.error); toast('Submitted. Use Refresh from Meta to see the decision.'); showTemplates(); };
   sc.querySelectorAll('[data-dt]').forEach(b => b.onclick = async () => { await api('/templates/' + b.dataset.dt, 'DELETE'); showTemplates(); });
+}
+/* ---------- Media Library ---------- */
+const fmtSize = n => n < 1024 ? n + ' B' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+const KIND = { image: ['image', 'Photo'], video: ['play', 'Video'], audio: ['mic', 'Audio'], document: ['file', 'Document'] };
+const LIB_ACCEPT = 'image/jpeg,image/png,video/mp4,audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/amr,.mp3,.m4a,.ogg,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv';
+const libBlobs = {};
+async function libBlob(id) {
+  if (libBlobs[id]) return libBlobs[id];
+  const r = await fetch(API + '/api/media-library/' + id + '/file', { headers: { Authorization: 'Bearer ' + S.token } });
+  if (!r.ok) throw new Error('unavailable');
+  return libBlobs[id] = URL.createObjectURL(await r.blob());
+}
+const libThumb = (f, s = 34) => f.kind === 'image' ? `<img data-lib="${f.id}" alt="">` : ico(KIND[f.kind][0], s);
+function libThumbs(root) { root.querySelectorAll('img[data-lib]').forEach(async im => { try { im.src = await libBlob(im.dataset.lib); } catch { im.removeAttribute('data-lib'); } }); }
+async function loadLib() { const d = await api('/media-library'); S.lib = arr(d.files); return d; }
+async function libOpen(f) { try { const u = await libBlob(f.id); if (f.kind === 'image') lightbox(u); else saveDoc(u, f.name); } catch { toast('This file is no longer available'); } }
+async function libUpload(files) {
+  let ok = 0;
+  for (const f of files) {
+    if (f.size > 16 * 1024 * 1024) { toast(f.name + ' is over 16 MB'); continue; }
+    if (/^image\/(jpeg|png)$/.test(f.type) && f.size > 5 * 1024 * 1024) { toast(f.name + ': photos must be under 5 MB'); continue; }
+    toast('Uploading ' + f.name + '…');
+    const r = await fetch(API + '/api/media-library?' + new URLSearchParams({ filename: f.name, mime: f.type || 'application/octet-stream' }), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + S.token }, body: f });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(d.error || 'Could not upload ' + f.name); continue; }
+    ok++;
+  }
+  if (ok) toast(ok === 1 ? 'File saved in the library' : ok + ' files saved in the library');
+  if (S.nav === 'ml') showLibrary();
+}
+async function showLibrary() {
+  const sc = screen('Media Library', 'Save photos, videos, voice notes and documents once. Then send them in any chat with the paperclip, or attach them to a Quick Message.',
+    `<input type="file" id="lfile" hidden multiple accept="${LIB_ACCEPT}"><button class="btn" id="lup">${ico('plus', 16)}Upload files</button>`);
+  const d = await loadLib(); if (d.error) return toast(d.error); if (S.nav !== 'ml') return;
+  const list = S.lib, n = k => list.filter(f => f.kind === k).length, pct = Math.min(100, Math.round(d.used / d.limit * 100));
+  const TABS = [['all', 'All files'], ['image', 'Photos'], ['video', 'Videos'], ['audio', 'Audio'], ['document', 'Documents']];
+  if (!TABS.some(t => t[0] === S.libTab)) S.libTab = 'all';
+  sc.innerHTML = `<div class="stats">${kpi('image', list.length, 'Files saved')}${kpi('image', n('image'), 'Photos', 'blue')}${kpi('file', n('document') + n('video') + n('audio'), 'Documents, videos and audio', 'amber')}
+    <div class="kpi"><span>${ico('archive', 22)}</span><div style="flex:1;min-width:0"><small>Space used</small><b>${fmtSize(d.used)} <small style="display:inline">of ${fmtSize(d.limit)}</small></b><div class="ubar"><i style="width:${pct}%"${pct > 85 ? ' class="hot"' : ''}></i></div></div></div></div>
+  ${list.length ? `<div class="lbar"><div class="ptabs" id="ltabs">${TABS.map(t => `<button data-t="${t[0]}" class="${t[0] === S.libTab ? 'on' : ''}">${t[1]}</button>`).join('')}</div><div class="search">${ico('search', 18)}<input id="lq" placeholder="Search files"></div></div><div id="lgrid"></div>`
+    : emptyState('image', 'Your library is empty', 'Upload the files your team sends often, such as the fee structure, brochure or location photo.', `<button class="btn" id="lup2">${ico('plus', 16)}Upload files</button>`)}`;
+  const pick = () => $('#lfile').click();
+  $('#lup').onclick = pick; if ($('#lup2')) $('#lup2').onclick = pick;
+  $('#lfile').onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) libUpload(fs); };
+  if (!list.length) return;
+  const draw = () => {
+    const q = $('#lq').value.trim().toLowerCase(), rows = list.filter(f => (S.libTab === 'all' || f.kind === S.libTab) && (!q || f.name.toLowerCase().includes(q)));
+    $('#lgrid').innerHTML = rows.length ? `<div class="mgrid">${rows.map(f => `<div class="mfile"><button class="mthumb" data-lo="${f.id}" title="${f.kind === 'image' ? 'View' : 'Download'}" aria-label="Open ${esc(f.name)}">${libThumb(f)}</button>
+      <div class="mmeta"><div><b title="${esc(f.name)}">${esc(f.name)}</b><small>${fmtSize(f.size)} · ${fmtD(f.created_at)}</small></div>
+      <button class="rowbtn" data-lr="${f.id}" title="Rename" aria-label="Rename">${ico('edit', 16)}</button><button class="rowbtn" data-ld="${f.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></div></div>`).join('')}</div>`
+      : emptyState('search', 'No files match', 'Try another word or another tab.');
+    libThumbs($('#lgrid'));
+  };
+  const by = id => list.find(f => f.id == id);
+  $('#ltabs').onclick = e => { const t = e.target.closest('button'); if (!t) return; S.libTab = t.dataset.t; $('#ltabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === t)); draw(); };
+  $('#lq').oninput = draw;
+  $('#lgrid').onclick = async e => {
+    const o = e.target.closest('[data-lo]'), r = e.target.closest('[data-lr]'), x = e.target.closest('[data-ld]');
+    if (o) return libOpen(by(o.dataset.lo));
+    if (r) { const f = by(r.dataset.lr), nm = await ask('Rename file', { value: f.name, ok: 'Rename' }); if (!nm || !nm.trim()) return; const res = await api('/media-library/' + f.id, 'PATCH', { name: nm }); if (res.error) return toast(res.error); showLibrary(); }
+    if (x) { const f = by(x.dataset.ld);
+      if (!(await sure('Delete this file?', `${f.name} will be removed from the library.${f.used_in ? ` It is attached to ${f.used_in} quick message${f.used_in > 1 ? 's' : ''}, which will then send text only.` : ''} Files already sent to clients stay in their chats.`, { ok: 'Delete', danger: true }))) return;
+      const res = await api('/media-library/' + f.id, 'DELETE'); if (res.error) return toast(res.error); delete libBlobs[f.id]; toast('File deleted'); showLibrary(); }
+  };
+  draw();
+}
+// Paperclip in a chat: choose a saved file and send it. The typed text goes as the caption.
+function pickLib() {
+  const old = $('#m-pick'); if (old) old.remove();
+  const box = document.createElement('div');
+  box.innerHTML = modal('m-pick', 'Send from Media Library', `<div class="search" style="max-width:none;margin-bottom:10px">${ico('search', 18)}<input id="pkq" placeholder="Search files"></div><div class="pick" id="pkl"></div><p class="mute" style="margin:12px 0 0;font-size:12.5px">The text you typed in the chat is sent with the file as its caption.</p>`);
+  const m = box.firstElementChild; document.body.appendChild(m); m.hidden = false;
+  const draw = () => { const q = $('#pkq').value.trim().toLowerCase(), rows = S.lib.filter(f => !q || f.name.toLowerCase().includes(q));
+    $('#pkl').innerHTML = rows.map(f => `<button type="button" data-pf="${f.id}"><span class="pth">${libThumb(f, 20)}</span><span style="min-width:0"><b>${esc(f.name)}</b><small>${KIND[f.kind][1]} · ${fmtSize(f.size)}</small></span></button>`).join('') || '<p class="mute" style="margin:8px">No files match.</p>';
+    libThumbs($('#pkl')); };
+  $('#pkq').oninput = draw; draw(); if (innerWidth > 760) $('#pkq').focus();
+  $('#pkl').onclick = e => { const b = e.target.closest('[data-pf]'); if (!b) return; const f = S.lib.find(x => x.id == b.dataset.pf); m.remove(); if (f) sendLib(f); };
+}
+async function sendLib(f) {
+  const id = S.active, cap = ($('#txt') && $('#txt').value.trim()) || '';
+  toast('Sending ' + f.name + '…');
+  const d = await api(`/conversations/${id}/library/${f.id}`, 'POST', { caption: cap });
+  if (d.error) { toast(d.error); if (d.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } return; }
+  if (cap && $('#txt')) { $('#txt').value = ''; syncSend(); }
+  if (S.active === id) addMsg(d);
+  loadList();
+}
+
+/* ---------- Quick Message (automatic keyword replies) ---------- */
+async function showQuickMsg() {
+  const sc = screen('Quick Message', 'Automatic replies. When a client writes one of your keywords, the saved reply goes out at once, day or night. The chat still stays with its agent.',
+    `<button class="btn" id="qmn">${ico('plus', 16)}New quick message</button>`);
+  const [rs] = await Promise.all([api('/auto-replies'), loadLib()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
+  const list = arr(rs), on = list.filter(r => r.active).length;
+  sc.innerHTML = `<div class="stats">${kpi('reply', list.length, 'Quick messages')}${kpi('check', on, 'Switched on', 'blue')}${kpi('send', list.reduce((n, r) => n + r.sent_count, 0), 'Replies sent', 'amber')}</div>
+  <div class="tbl">${list.length ? `<table><thead><tr><th>Name</th><th>When the client writes</th><th>We reply</th><th>Sent</th><th>On</th><th></th></tr></thead><tbody>
+  ${list.map(r => `<tr><td><b>${esc(r.name)}</b></td><td style="max-width:260px">${arr(r.keywords).map(k => `<span class="kw">${esc(k)}</span>`).join('')}<br><small class="mute">${r.match_type === 'exact' ? 'Only when it is the whole message' : 'Anywhere in the message'}</small></td>
+    <td><div class="qmtxt">${esc(r.body)}</div>${r.media_name ? `<small class="mute qmf">${ico('clip', 13)}${esc(r.media_name)}</small>` : ''}${r.buttons && r.buttons.length ? `<div class="qbtns" style="padding:6px 0 0">${r.buttons.map(x => `<i>${esc(x)}</i>`).join('')}</div>` : ''}</td>
+    <td style="white-space:nowrap"><b>${r.sent_count}</b>${r.last_sent_at ? `<br><small class="mute">last ${fmtD(r.last_sent_at)}</small>` : ''}</td>
+    <td><label class="tog" title="Switch on or off"><input type="checkbox" data-qt="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label></td>
+    <td class="tdm"><button class="rowbtn" data-qe="${r.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-qd="${r.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></td></tr>`).join('')}</tbody></table>`
+    : emptyState('reply', 'No quick messages yet', 'For example: when a client writes "fees" or "price", reply with your fee details and the fee structure file.', `<button class="btn" id="qmn2">${ico('plus', 16)}New quick message</button>`)}</div>
+  ${modal('m-qm', 'Quick message', `<form id="qmf">${field('qm1', 'Name (only your team sees it)', '')}
+  ${field('qm2', 'Keywords, separated by commas, e.g. fees, price, charges', '')}
+  <label class="fld"><span>Reply when</span><select id="qm3"><option value="contains">The keyword is anywhere in the message</option><option value="exact">The keyword is the whole message</option></select></label>
+  ${field('qm4', 'Reply text', '', 1)}
+  <label class="fld"><span>Attach a file from the Media Library (optional)</span><select id="qm5"><option value="">No file</option>${S.lib.map(f => `<option value="${f.id}">${esc(f.name)} (${KIND[f.kind][1]}, ${fmtSize(f.size)})</option>`).join('')}</select></label>
+  ${field('qm6', 'Buttons under the reply, up to 3, separated by commas (optional)', '')}
+  <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn" id="qmsave">Save</button></div></form>`, 1)}`;
+  const by = id => list.find(r => r.id == id);
+  const open = r => { S.qmEdit = r ? r.id : null; $('#qm1').value = r ? r.name : ''; $('#qm2').value = r ? arr(r.keywords).join(', ') : ''; $('#qm3').value = r ? r.match_type : 'contains'; $('#qm4').value = r ? r.body : '';
+    $('#qm5').value = r && r.media_id ? r.media_id : ''; $('#qm6').value = r && r.buttons ? r.buttons.join(', ') : ''; $('#m-qm .dlg-h b').textContent = r ? 'Edit quick message' : 'New quick message'; $('#m-qm').hidden = false; if (innerWidth > 760) $('#qm1').focus(); };
+  $('#qmn').onclick = () => open(null); if ($('#qmn2')) $('#qmn2').onclick = () => open(null);
+  $('#qmf').onsubmit = async e => { e.preventDefault();
+    const r = await api('/auto-replies' + (S.qmEdit ? '/' + S.qmEdit : ''), S.qmEdit ? 'PATCH' : 'POST', { name: $('#qm1').value, keywords: $('#qm2').value, match_type: $('#qm3').value, body: $('#qm4').value, media_id: $('#qm5').value || null, buttons: $('#qm6').value });
+    if (r.error) return toast(r.error); toast(S.qmEdit ? 'Quick message updated' : 'Quick message added and switched on'); showQuickMsg(); };
+  sc.querySelectorAll('[data-qt]').forEach(c => c.onchange = async () => { const r = await api('/auto-replies/' + c.dataset.qt, 'PATCH', { active: c.checked }); if (r.error) { c.checked = !c.checked; return toast(r.error); } toast(c.checked ? 'Switched on' : 'Switched off'); showQuickMsg(); });
+  sc.querySelectorAll('[data-qe]').forEach(b => b.onclick = () => open(by(b.dataset.qe)));
+  sc.querySelectorAll('[data-qd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.qd); if (!(await sure('Delete this quick message?', `"${r.name}" will stop replying to clients.`, { ok: 'Delete', danger: true }))) return; await api('/auto-replies/' + r.id, 'DELETE'); toast('Quick message deleted'); showQuickMsg(); });
 }
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you or was imported. Imported people must have agreed to receive WhatsApp messages from you.',

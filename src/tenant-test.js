@@ -64,6 +64,15 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await j('/api/settings/bot', { method: 'PUT', body: { greet: 'Beta changed greeting' } }, Bt);
   check('settings are separate', (await j('/api/settings', {}, A.token)).data.bot.greet !== 'Beta changed greeting');
 
+  // Media Library and Quick Message stay inside each company
+  const lf = await (await fetch(B + '/api/media-library?filename=a.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + A.token }, body: Buffer.from('x') })).json();
+  const ar = (await j('/api/auto-replies', { method: 'POST', body: { name: 'A rule', keywords: 'hello', body: 'Hi from A' } }, A.token)).data;
+  check('other company cannot see library files', !(await j('/api/media-library', {}, Bt)).data.files.some(f => f.id === lf.id) && (await fetch(B + `/api/media-library/${lf.id}/file`, { headers: { Authorization: 'Bearer ' + Bt } })).status === 404);
+  check('other company cannot see or use quick messages', !(await j('/api/auto-replies', {}, Bt)).data.some(r => r.id === ar.id)
+    && (await j('/api/auto-replies/' + ar.id, { method: 'PATCH', body: { active: false } }, Bt)).status === 404
+    && (await j('/api/auto-replies', { method: 'POST', body: { name: 'B rule', keywords: 'x', body: 'y', media_id: lf.id } }, Bt)).status === 400);
+  await j('/api/auto-replies/' + ar.id, { method: 'DELETE' }, A.token); await j('/api/media-library/' + lf.id, { method: 'DELETE' }, A.token);
+
   // Super admin
   check('normal admin cannot list companies', (await j('/api/super/companies', {}, Bt)).status === 403);
   const cos = (await j('/api/super/companies', {}, A.token)).data;
