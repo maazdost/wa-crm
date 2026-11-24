@@ -14,6 +14,7 @@ const PERMS = {
     automation: { label: 'Quick Message, Quick Replies and Follow-ups', hint: 'Create and change automatic messages', on: true, rules: [['ANY', /^\/(auto-replies|drips)(\/|$)/], ['POST|DELETE', /^\/quick-replies(\/|$)/]] },
     library: { label: 'Media Library', hint: 'Upload, rename and delete saved files', on: true, rules: [['POST|PATCH|DELETE', /^\/media-library(\/|$)/]] },
     catalog: { label: 'Catalogs', hint: 'Add, change and delete products', on: true, rules: [['POST|PATCH|DELETE', /^\/products(\/|$)/]] },
+    social: { label: 'Facebook and Instagram Automation', hint: 'Create and change automatic replies to comments and messages', on: true, rules: [['ANY', /^\/social(\/|$)/]] },
     tags: { label: 'Tags', hint: 'Create and delete tags', on: true, rules: [['POST|DELETE', /^\/labels(\/|$)/]] },
     settings: { label: 'Settings, Bot and Away', hint: 'Change the welcome bot, away message and assignment rules', on: true, rules: [['PUT', /^\/settings\//]] },
     reports: { label: 'Reports and Health Audit', hint: 'Open reports and export them', on: true, rules: [['ANY', /^\/(reports|health-audit)(\/|$)/]] },
@@ -103,6 +104,9 @@ const EVENTS = [
   ['POST', /^\/products$/, 'Catalogs', 'Added a product', (r) => r.body.name],
   ['PATCH', /^\/products\/(\d+)$/, 'Catalogs', (r) => Object.keys(r.body || {}).join() === 'in_stock' ? (r.body.in_stock ? 'Marked a product in stock' : 'Marked a product out of stock') : 'Changed a product', byId('products')],
   ['DELETE', /^\/products\/(\d+)$/, 'Catalogs', 'Deleted a product', byId('products')],
+  ['POST', /^\/social\/(facebook|instagram)\/rules$/, 'Social Media', (r) => `Created ${/instagram/.test(r.path) ? 'an Instagram' : 'a Facebook'} rule`, (r) => r.body.name],
+  ['PATCH', /^\/social\/rules\/(\d+)$/, 'Social Media', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on a social rule' : 'Switched off a social rule') : 'Changed a social rule', byId('social_rules')],
+  ['DELETE', /^\/social\/rules\/(\d+)$/, 'Social Media', 'Deleted a social rule', byId('social_rules')],
   ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => r.body.status === 'paused' ? 'Paused a company' : 'Changed a company']
 ];
 async function log({ cid, userId, userName, role, area, action, detail, ip }) {

@@ -104,6 +104,24 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('product stock switch and delete work', sw.data.in_stock === false && sw.data.name === 'Gold Course' && (await j('/api/products', {}, admin)).data.products.length === 0);
   await j('/api/media-library/' + file.id, { method: 'DELETE' }, admin);
 
+  // Facebook and Instagram Automation: rules and the test run
+  const fbr = (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Price', trigger: 'comment', match_type: 'contains', keywords: ['price', 'Price', 'fee'], reply_text: 'Hi {{first_name}}, check your inbox.', private_text: 'Hello {{name}}, our fee is 100.' } }, admin)).data;
+  const fba = (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Thanks', trigger: 'comment', match_type: 'any', reply_text: 'Thank you!' } }, admin)).data;
+  await j('/api/social/instagram/rules', { method: 'POST', body: { name: 'IG info', trigger: 'dm', match_type: 'exact', keywords: ['info'], reply_text: 'Here is the info.' } }, admin);
+  const try1 = (await j('/api/social/facebook/test', { method: 'POST', body: { trigger: 'comment', text: 'What is the PRICE?', name: 'Ayesha Khan' } }, admin)).data;
+  const try2 = (await j('/api/social/facebook/test', { method: 'POST', body: { trigger: 'comment', text: 'nice coffee', name: 'Bilal' } }, admin)).data;
+  const try3 = (await j('/api/social/instagram/test', { method: 'POST', body: { trigger: 'dm', text: 'information' } }, admin)).data;
+  const fbPage = (await j('/api/social/facebook', {}, admin)).data;
+  check('social rules answer the right comment with the right reply', fbr.id && fbr.keywords.length === 2 && try1.matched && try1.rule.id === fbr.id && try1.reply === 'Hi Ayesha, check your inbox.' && try1.private_reply === 'Hello Ayesha Khan, our fee is 100.'
+    && try2.matched && try2.rule.id === fba.id && try3.matched === false && fbPage.rules.length === 2 && fbPage.connected === false && fbPage.log.length === 2 && fbPage.log.every(l => l.status === 'test') && fbPage.rules.every(r => r.sent_count === 0));
+  await j('/api/social/rules/' + fba.id, { method: 'PATCH', body: { active: false } }, admin);
+  check('social rule switch, wrong rules and agents are handled', (await j('/api/social/facebook/test', { method: 'POST', body: { text: 'nice coffee' } }, admin)).data.matched === false
+    && (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Bad', match_type: 'contains', keywords: [], reply_text: 'x' } }, admin)).status === 400
+    && (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Bad', match_type: 'any' } }, admin)).status === 400 && (await j('/api/social/tiktok', {}, admin)).status === 404
+    && (await j('/api/social/facebook', {}, a1.token)).status === 403 && (await j('/api/social/rules/' + fbr.id, { method: 'DELETE' }, a1.token)).status === 403);
+  await j('/api/social/rules/' + fbr.id, { method: 'DELETE' }, admin); await j('/api/social/rules/' + fba.id, { method: 'DELETE' }, admin);
+  check('social rules can be deleted and the log stays', (await j('/api/social/facebook', {}, admin)).data.rules.length === 0 && (await j('/api/social/facebook', {}, admin)).data.log.length === 2);
+
   // Window closed -> text rejected, template allowed
   await fetch; // no-op
   const { Pool } = require('pg'); require('dotenv').config();

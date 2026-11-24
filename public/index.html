@@ -417,6 +417,11 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 [dir=rtl] .qmic{margin-right:0;margin-left:4px}
 [dir=rtl] .qadd>span{margin-right:0;margin-left:2px}
 [dir=rtl] .qins span{margin-right:0;margin-left:auto}
+.soc-c{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.soc-c>div{flex:1;min-width:220px}.soc-c h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px}.soc-c p{margin:0}.soc-c .qmic{margin:0;width:44px;height:44px;border-radius:12px}
+.soc-t{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.soc-t select{width:auto;flex:none}.soc-t input{flex:1;min-width:180px}
+.soc-r{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--field);display:grid;gap:10px}.soc-r small{color:var(--mute);display:block;margin-bottom:3px}.soc-b{background:var(--tint);color:var(--tint-ink);border-radius:10px;padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;width:fit-content;max-width:100%}
+.sofl{display:grid;gap:6px;min-width:0}#m-so .mcard{width:min(640px,100%);min-width:0}#sof,#sof>*{min-width:0}.slg td{vertical-align:top}.slg small{color:var(--mute)}.slc{min-width:0;overflow-wrap:anywhere}
+@media (max-width:760px){.soc-t select,.soc-t button{flex:1 1 100%}.soc-c .ghost{flex:1 1 100%;justify-content:center}.slc{text-align:end;max-width:72%}}
 [dir=rtl] .kw.big{padding:4px 10px 4px 6px}
 [dir=rtl] .pmnote .ghost{margin-left:0;margin-right:6px}
 [dir=rtl] .ib .ub,[dir=rtl] .navmin .ni .nb,[dir=rtl] .shell .ni .nb{right:auto;left:6px}
@@ -543,6 +548,7 @@ const ICONS = {
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
   chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  thumb: '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>', camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>', target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -596,17 +602,18 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
+  ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
-const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase()}/${ROUTES[k]}`; };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
+const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -1727,6 +1734,82 @@ function showAds() {
   ['qm', 'rp'].forEach((k, i) => { if (!document.querySelector(`[data-nav="${k}"]`)) sc.querySelectorAll('.two .panel')[i].hidden = true; });
 }
 
+/* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */
+async function showSocial(pf) {
+  const FB = pf === 'facebook', key = FB ? 'fb' : 'ig', icon = FB ? 'thumb' : 'camera';
+  const sc = screen(FB ? 'Facebook Automation' : 'Instagram Automation', FB ? 'Answer comments on your Facebook Page posts and Messenger messages automatically, and bring people to WhatsApp.' : 'Answer comments on your Instagram posts and reels and direct messages automatically, and bring people to WhatsApp.',
+    `<button class="btn" id="son">${ico('plus', 16)}New rule</button>`);
+  const [d, ns] = await Promise.all([api('/social/' + pf), api('/whatsapp/numbers')]); if (d.error) return toast(d.error); if (S.nav !== key) return;
+  const list = arr(d.rules), num = arr(ns).find(x => x.is_default) || arr(ns)[0], wa = num ? String(num.display_phone || '').replace(/\D/g, '') : '', waLink = wa ? 'https://wa.me/' + wa : '';
+  const TR = { comment: ['note', 'Comment on a post'], dm: ['chat', 'Direct message'] };
+  const whenTxt = r => r.trigger === 'comment' ? (r.match_type === 'any' ? 'Answers every comment' : r.match_type === 'exact' ? 'Comment is exactly' : 'Comment contains') : (r.match_type === 'any' ? 'Answers every message' : r.match_type === 'exact' ? 'Message is exactly' : 'Message contains');
+  const card = r => { const kw = arr(r.keywords);
+    return `<div class="qcard qmcard${r.active ? '' : ' off'}"><header><span class="qmic">${ico(TR[r.trigger][0], 18)}</span><b data-notr title="${esc(r.name)}">${esc(r.name)}</b>
+      <label class="tog" title="Switch on or off"><input type="checkbox" data-st="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label>
+      <button class="rowbtn" data-se="${r.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-sd="${r.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></header>
+      <div class="qmtr"><small>${whenTxt(r)}</small>${kw.length ? `<span class="kw" data-notr title="${esc(kw[0])}">${esc(kw[0])}</span>` : ''}${kw.length > 1 ? `<span class="kw more">+${kw.length - 1}</span>` : ''}</div>
+      <p data-notr>${esc(r.reply_text || r.private_text)}</p>
+      <footer><span>${ico(TR[r.trigger][0], 14)}${TR[r.trigger][1]}</span>${r.trigger === 'comment' && r.reply_text ? `<span>${ico('reply', 14)}Public reply</span>` : ''}${r.private_text ? `<span>${ico('lock', 14)}Private message</span>` : ''}<span>${ico('send', 14)}Sent ${r.sent_count}</span></footer></div>`; };
+  const ins = `<i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button>${waLink ? `<button type="button" data-ins="${waLink}">+ WhatsApp link</button>` : ''}`;
+  sc.innerHTML = `<div class="panel soc-c"><span class="qmic">${ico(icon, 22)}</span><div><h3>${FB ? 'Connect your Facebook Page' : 'Connect your Instagram account'}<em class="chip warn">Waiting for Meta verification</em></h3>
+      <p class="mute">Meta lets an app answer comments and messages only after your business is verified. You can build and try your rules now. They start answering on the day your account is connected.</p></div>
+      <button class="ghost" id="socc">${ico('lock', 16)}${FB ? 'Connect Facebook Page' : 'Connect Instagram account'}</button></div>
+  <div class="stats">${kpi(icon, list.length, 'Rules')}${kpi('zap', list.filter(r => r.active).length, 'Switched on', 'blue')}${kpi('send', list.reduce((n, r) => n + r.sent_count, 0), 'Replies sent', 'amber')}</div>
+  ${list.length ? `<div class="cards">${list.map(card).join('')}</div>`
+    : `<div class="tbl">${emptyState(icon, 'No rules yet', 'Add your first rule. For example: when someone comments the word price, reply in public and send the details in a private message.', `<button class="btn" id="son2">${ico('plus', 16)}New rule</button>`)}</div>`}
+  <div class="panel"><h3>Try your rules</h3><p class="mute" style="margin:0">Type a comment or a message the way a client would. You see which rule answers and what it says. Nothing is sent.</p>
+    <div class="soc-t"><select id="stt" aria-label="Kind"><option value="comment">Comment on a post</option><option value="dm">Direct message</option></select><input id="stx" maxlength="1000" placeholder="e.g. What is the price?"><button class="btn" id="stb">${ico('play', 16)}Try it</button></div><div id="sto"></div></div>
+  <div class="tbl"><div class="tbl-h"><b>Recent activity</b></div><div id="slog"></div></div>
+  ${modal('m-so', 'Rule', `<form id="sof"><label class="fld"><span>Name (only your team sees it)</span><input id="so1" maxlength="80" placeholder="e.g. Price question"></label>
+    <div class="qsec"><div class="qsec-h"><b>When to answer</b></div>
+      <select id="so2" aria-label="When"><option value="comment">Someone comments on a post</option><option value="dm">Someone sends a direct message</option></select>
+      <select id="so3" aria-label="Words"><option value="contains">It contains one of these words</option><option value="exact">It is exactly one of these</option><option value="any">Always, whatever they write</option></select>
+      <div id="sokb" class="sofl"><div class="kwadd"><input id="sok" maxlength="100" placeholder="Type a word, for example price, then press Enter"><button type="button" class="ghost" id="soka">${ico('plus', 15)}Add</button></div><div id="sokw" class="kwl"></div></div></div>
+    <div class="qsec"><div class="qsec-h"><b>What to answer</b></div>
+      <div class="sofl"><div class="qins"><span id="so4l">Reply under the comment</span>${ins}</div><textarea id="so4" rows="3" maxlength="1000"></textarea></div>
+      <div class="sofl" id="so5b"><div class="qins"><span>Private message to the person</span>${ins}</div><textarea id="so5" rows="3" maxlength="1000" placeholder="Optional. Good for the price or your WhatsApp link, so it stays out of public view."></textarea></div></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`, 1)}`;
+
+  const drawLog = rows => { $('#slog').innerHTML = rows.length ? `<table class="slg"><thead><tr><th>When</th><th>Who wrote</th><th>They wrote</th><th>Rule</th><th>What was answered</th><th>Status</th></tr></thead><tbody>${rows.map(l => `<tr><td class="alw">${new Date(l.created_at).toLocaleDateString([], { day: "numeric", month: "short" })}, ${fmtT(l.created_at)}</td><td data-notr>${esc(l.from_name || '—')}</td>
+      <td><div class="slc"><span data-notr>${esc(l.text)}</span><br><small>${TR[l.trigger] ? TR[l.trigger][1] : ''}</small></div></td><td data-notr>${esc(l.rule_name)}</td><td><div class="slc">${l.reply ? `<span data-notr>${esc(l.reply)}</span>` : ''}${l.reply && l.private_reply ? '<br>' : ''}${l.private_reply ? `<small>Private message</small><br><span data-notr>${esc(l.private_reply)}</span>` : ''}</div></td>
+      <td><em class="chip ${l.status === 'sent' ? 'ok' : l.status === 'test' ? '' : 'closed'}">${l.status === 'sent' ? 'Sent' : l.status === 'test' ? 'Test' : 'Failed'}</em></td></tr>`).join('')}</tbody></table>`
+      : emptyState('clock', 'Nothing here yet', 'Each time a rule answers, it shows here.'); labelTables(); };
+  drawLog(arr(d.log));
+
+  let R = null;
+  const drawKw = () => { $('#sokw').innerHTML = R.keywords.map((k, i) => `<span class="kw big" data-notr>${esc(k)}<button type="button" data-kx="${i}" aria-label="Remove">${ico('x', 13)}</button></span>`).join('') || '<small class="mute">Nothing added yet.</small>'; };
+  const addKw = () => { const v = $('#sok').value.replace(/\s+/g, ' ').trim(); if (!v) return; if (R.keywords.length >= 30) return toast('A rule can have up to 30 words'); if (!R.keywords.some(k => k.toLowerCase() === v.toLowerCase())) R.keywords.push(v); $('#sok').value = ''; drawKw(); };
+  const sync = () => { const dm = $('#so2').value === 'dm'; $('#sokb').hidden = $('#so3').value === 'any'; $('#so5b').hidden = dm; $('#so4l').textContent = tr(dm ? 'Reply to send' : 'Reply under the comment');
+    $('#so4').placeholder = tr(dm ? 'e.g. Hi {{first_name}}, thank you for your message. Our team will answer you soon.' : 'e.g. Hi {{first_name}}, we sent you the details in a private message.'); };
+  const open = r => {
+    R = r ? { id: r.id, keywords: [...arr(r.keywords)] } : { id: null, keywords: [] };
+    $('#so1').value = r ? r.name : ''; $('#so2').value = r ? r.trigger : 'comment'; $('#so3').value = r ? r.match_type : 'contains'; $('#so4').value = r ? r.reply_text : ''; $('#so5').value = r ? r.private_text : ''; $('#sok').value = '';
+    $('#m-so .dlg-h b').textContent = tr(r ? 'Edit rule' : 'New rule'); sync(); drawKw(); $('#m-so').hidden = false; $('#m-so .mb').scrollTop = 0; if (innerWidth > 760 && !r) $('#so1').focus();
+  };
+  const by = id => list.find(r => r.id == id);
+  $('#son').onclick = () => open(null); if ($('#son2')) $('#son2').onclick = () => open(null);
+  $('#socc').onclick = () => toast('This opens after Meta verifies your business');
+  $('#so2').onchange = sync; $('#so3').onchange = sync;
+  $('#soka').onclick = addKw; $('#sok').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKw(); } };
+  $('#sokw').onclick = e => { const x = e.target.closest('[data-kx]'); if (x) { R.keywords.splice(+x.dataset.kx, 1); drawKw(); } };
+  $('#sof').onclick = e => { const b = e.target.closest('[data-ins]'); if (!b) return; const ta = b.closest('.sofl').querySelector('textarea'); ta.setRangeText(b.dataset.ins, ta.selectionStart, ta.selectionEnd, 'end'); ta.focus(); };
+  $('#sof').onsubmit = async e => { e.preventDefault(); addKw();
+    const body = { name: $('#so1').value, trigger: $('#so2').value, match_type: $('#so3').value, keywords: R.keywords, reply_text: $('#so4').value, private_text: $('#so5').value };
+    const r = await api(R.id ? '/social/rules/' + R.id : '/social/' + pf + '/rules', R.id ? 'PATCH' : 'POST', body);
+    if (r.error) return toast(r.error); toast(R.id ? 'Rule updated' : 'Rule added and switched on'); showSocial(pf); };
+  sc.querySelectorAll('[data-st]').forEach(c => c.onchange = async () => { const r = await api('/social/rules/' + c.dataset.st, 'PATCH', { active: c.checked }); if (r.error) { c.checked = !c.checked; return toast(r.error); } toast(c.checked ? 'Switched on' : 'Switched off'); showSocial(pf); });
+  sc.querySelectorAll('[data-se]').forEach(b => b.onclick = () => open(by(b.dataset.se)));
+  sc.querySelectorAll('[data-sd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.sd); if (!(await sure('Delete this rule?', 'It will stop answering comments and messages.', { ok: 'Delete', danger: true }))) return; await api('/social/rules/' + r.id, 'DELETE'); toast('Rule deleted'); showSocial(pf); });
+  const tryIt = async () => { const text = $('#stx').value.trim(), tg = $('#stt').value; if (!text) return toast('Type a comment or message to try');
+    const r = await api('/social/' + pf + '/test', 'POST', { trigger: tg, text }); if (r.error) return toast(r.error); if (S.nav !== key) return;
+    $('#sto').innerHTML = r.matched ? `<div class="soc-r"><div><small>Rule that answers</small><b data-notr>${esc(r.rule.name)}</b></div>
+      ${r.reply ? `<div><small>${tg === 'comment' ? 'Reply under the comment' : 'Reply to send'}</small><div class="soc-b" data-notr>${esc(r.reply)}</div></div>` : ''}${r.private_reply ? `<div><small>Private message to the person</small><div class="soc-b" data-notr>${esc(r.private_reply)}</div></div>` : ''}
+      <small style="margin:0">Nothing was sent. This was only a test, with the sample name Ayesha Khan.</small></div>`
+      : `<div class="soc-r"><b>No rule answers this</b><small style="margin:0">Add a rule with a word from this text, or a rule that answers everything.</small></div>`;
+    const d2 = await api('/social/' + pf); if (!d2.error && S.nav === key) drawLog(arr(d2.log)); };
+  $('#stb').onclick = tryIt; $('#stx').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); tryIt(); } };
+}
+
 /* ---------- Quick Message (automatic keyword replies) ---------- */
 async function showQuickMsg() {
   const sc = screen('Quick Message', 'Automatic messages for your ads and common questions. When a client sends the message you choose, for example the ready-made first message of an ad, your saved messages go out in order, day or night.',
@@ -1903,7 +1986,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
@@ -1957,7 +2040,7 @@ async function showActivity() {
     <select id="alu" aria-label="Person"><option value="">Everyone</option></select><select id="ala" aria-label="Area"><option value="">All areas</option></select></div><div id="alb"><p class="mute" style="padding:16px">Loading…</p></div></div>`;
   const qs = extra => { const p = new URLSearchParams(extra || {}); if (F.preset !== 'all') { const [a, b] = rpRange(F.preset); p.set('from', a); p.set('to', b); } for (const k of ['q', 'user_id', 'area']) if (F[k]) p.set(k, F[k]); return p.toString(); };
   let rows = [], more = false;
-  const AREA = { Account: 'user', Agents: 'users', Chats: 'chat', Permissions: 'lock', Settings: 'sliders', Templates: 'file', Broadcasts: 'megaphone', Tags: 'tag', 'Quick Message': 'reply', 'Quick Replies': 'zap', 'Media Library': 'image', 'Follow-ups': 'clock', Contacts: 'users', 'WhatsApp numbers': 'phone', Company: 'building', Companies: 'building' };
+  const AREA = { 'Social Media': 'thumb', Account: 'user', Agents: 'users', Chats: 'chat', Permissions: 'lock', Settings: 'sliders', Templates: 'file', Broadcasts: 'megaphone', Tags: 'tag', 'Quick Message': 'reply', 'Quick Replies': 'zap', 'Media Library': 'image', 'Follow-ups': 'clock', Contacts: 'users', 'WhatsApp numbers': 'phone', Company: 'building', Companies: 'building' };
   const draw = () => {
     $('#alb').innerHTML = rows.length ? `<table class="alt"><thead><tr><th>When</th><th>Who</th><th>What happened</th><th>Area</th></tr></thead><tbody>${rows.map(r => `<tr><td class="alw">${esc(r.at)}</td><td>${userCell(r.user_name, r.role, 32)}</td><td><b>${esc(r.action)}</b>${r.detail ? `<br><small class="mute">${esc(r.detail)}</small>` : ''}</td><td><em class="chip alc">${ico(AREA[r.area] || 'info', 13)}${esc(r.area)}</em></td></tr>`).join('')}</tbody></table>
       ${more ? '<div class="almore"><button class="ghost" id="alm">Show older</button></div>' : ''}` : emptyState('clock', 'Nothing here yet', F.q || F.user_id || F.area || F.preset !== 'all' ? 'Nothing matches these filters. Try other dates or clear the search.' : 'Actions will appear here as your team works.');

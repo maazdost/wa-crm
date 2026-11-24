@@ -349,3 +349,41 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id, id DESC);
+
+-- ============================================================================
+-- Facebook and Instagram Automation: rules that answer a comment or a direct message, and a list of what they did.
+-- keywords: ["price", "fee"]   match_type: any (every comment) | contains | exact
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS social_rules (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook','instagram')),
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL DEFAULT 'comment' CHECK (trigger IN ('comment','dm')),
+  match_type TEXT NOT NULL DEFAULT 'contains' CHECK (match_type IN ('any','contains','exact')),
+  keywords JSONB NOT NULL DEFAULT '[]',
+  reply_text TEXT NOT NULL DEFAULT '',
+  private_text TEXT NOT NULL DEFAULT '',
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  sent_count INT NOT NULL DEFAULT 0,
+  last_sent_at TIMESTAMPTZ,
+  created_by INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_social_rules_company ON social_rules(company_id, platform, active);
+CREATE TABLE IF NOT EXISTS social_log (
+  id BIGSERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  rule_id INT REFERENCES social_rules(id) ON DELETE SET NULL,
+  rule_name TEXT NOT NULL DEFAULT '',
+  platform TEXT NOT NULL,
+  trigger TEXT NOT NULL,
+  from_name TEXT NOT NULL DEFAULT '',
+  text TEXT NOT NULL DEFAULT '',
+  reply TEXT NOT NULL DEFAULT '',
+  private_reply TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'sent',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_social_log_company ON social_log(company_id, platform, id DESC);

@@ -70,6 +70,13 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('other company keeps its own permissions and activity log', (await j('/api/permissions', {}, Bt)).data.manager.find(x => x.key === 'reports').on === true
     && bLog.length > 0 && bLog.every(r => r.user_name === 'Bea') && !bLog.some(r => r.action === 'Changed permissions'));
   await j('/api/permissions', { method: 'PUT', body: { manager: { reports: true } } }, A.token);
+  // Facebook and Instagram rules stay inside each company
+  const sr = (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'A social', match_type: 'any', reply_text: 'Hi from A' } }, A.token)).data;
+  check('social rules are separate', sr.id && (await j('/api/social/facebook', {}, Bt)).data.rules.length === 0 && (await j('/api/social/facebook/test', { method: 'POST', body: { text: 'hello' } }, Bt)).data.matched === false
+    && (await j('/api/social/rules/' + sr.id, { method: 'PATCH', body: { active: false } }, Bt)).status === 404 && (await j('/api/social/facebook', {}, Bt)).data.log.length === 0);
+  await j('/api/social/rules/' + sr.id, { method: 'DELETE' }, Bt);
+  check('other company cannot delete a social rule', (await j('/api/social/facebook', {}, A.token)).data.rules.some(r => r.id === sr.id));
+  await j('/api/social/rules/' + sr.id, { method: 'DELETE' }, A.token);
   // Catalogs stay inside each company
   const pa = (await j('/api/products', { method: 'POST', body: { name: 'A product', price: 10 } }, A.token)).data;
   check('products are separate', pa.id && !(await j('/api/products', {}, Bt)).data.products.some(p => p.id === pa.id) && (await j('/api/products/' + pa.id, { method: 'PATCH', body: { name: 'stolen' } }, Bt)).status === 404
