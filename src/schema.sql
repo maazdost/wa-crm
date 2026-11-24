@@ -326,3 +326,26 @@ CREATE TABLE IF NOT EXISTS activity_log (
 );
 CREATE INDEX IF NOT EXISTS idx_activity_company ON activity_log(company_id, id DESC);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS notify JSONB NOT NULL DEFAULT '{}';
+
+-- ============================================================================
+-- Catalogs: the products each company sells. The photo is a file in the Media Library.
+-- A Quick Message step can send a product: { "type": "product", "product_id": 7, "delay": 0 }
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL,
+  price NUMERIC(12,2),
+  currency TEXT NOT NULL DEFAULT 'PKR',
+  description TEXT NOT NULL DEFAULT '',
+  link TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  in_stock BOOLEAN NOT NULL DEFAULT TRUE,
+  media_id INT REFERENCES media_library(id) ON DELETE SET NULL,
+  sent_count INT NOT NULL DEFAULT 0,
+  created_by INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id, id DESC);

@@ -97,10 +97,17 @@ async function run(rule, conv, contact, waId) {
   const steps = (Array.isArray(rule.steps) ? rule.steps : []).slice(0, 10);
   const ids = [...new Set(steps.map(s => Number(s.media_id)).filter(Boolean))];
   const files = ids.length ? (await query('SELECT * FROM media_library WHERE company_id=$1 AND id = ANY($2::int[])', [cid, ids])).rows : [];
+  const pids = [...new Set(steps.map(s => Number(s.product_id)).filter(Boolean))];
+  const products = pids.length ? (await query('SELECT * FROM products WHERE company_id=$1 AND id = ANY($2::int[])', [cid, pids])).rows : [];
   (async () => {
     for (const step of steps) {
       const wait = Math.min(60, Math.max(0, Number(step.delay) || 0));
       if (wait) await sleep(wait * 1000);
+      if (step.type === 'product') { // a product from the catalog; a product that was deleted since is skipped
+        const p = products.find(x => x.id === Number(step.product_id));
+        if (p) await require('./catalog').send(next, waId, p).catch(e => console.error('quick message product', e.message));
+        continue;
+      }
       await sendStep(rule, next, waId, contact, step, files.find(f => f.id === Number(step.media_id))).catch(e => console.error('quick message step', e.message));
     }
   })();

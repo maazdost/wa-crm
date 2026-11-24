@@ -429,9 +429,56 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 [dir=rtl] .hrow .chip{margin-left:0;margin-right:44px}
 [dir=rtl] .tb .nb{left:auto;right:56%}
 }
+
+/* Catalogs */
+.pcard .mthumb{height:150px;position:relative}.pcard .mthumb .chip{position:absolute;top:8px;inset-inline-start:8px}.pcard.off .mthumb img,.pcard.off .mthumb svg{opacity:.5}
+.pbody{padding:12px 12px 8px;display:grid;gap:3px;min-width:0}.pbody b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pprice{font-weight:700;font-size:14px;color:var(--tint-ink)}
+.pbody small{color:var(--mute);font-size:12.5px;line-height:1.35;min-height:34px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pfoot{display:flex;align-items:center;gap:2px;margin-top:auto;padding:6px 6px 8px 12px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2)}.pfoot .ck{flex:1}
+.pform{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px}.pform>*{min-width:0}.prow{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px}
+.pprev{background-color:var(--chat);background-image:var(--doodle);border-radius:14px;padding:14px;align-self:start;position:sticky;top:0}.pprev>small{display:block;color:var(--mute);font-size:12px;margin-bottom:8px}
+.pbub{background:var(--out);border-radius:8px;padding:6px 8px;box-shadow:var(--sh);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}.pbub img{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:6px;margin-bottom:5px}
+.pick button.on{background:var(--sel)}.pchk{width:22px;height:22px;border-radius:50%;border:2px solid var(--line2);display:grid;place-items:center;flex:none;color:transparent}.pick button.on .pchk{background:var(--brand);border-color:var(--brand);color:#fff}
+.pick .chip{flex:none}#m-pp .dlg-f{gap:12px}
+[dir=rtl] .pfoot{padding:6px 12px 8px 6px}[dir=rtl] .pick button{text-align:right}
+@media (max-width:760px){.pform{grid-template-columns:minmax(0,1fr)}.pprev{position:static}.pcard .mthumb{height:112px}.pfoot .ck{font-size:12px}}
+
+/* iPhone: the browser zooms the whole page in when a field with small text is tapped, and stays zoomed. Fields with 16px text are left alone. */
+@supports (-webkit-touch-callout:none){input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea{font-size:16px!important}}
+
+/* With a mouse the tab row cannot be swiped, so on computers the tabs go onto a second line instead of hiding. */
+@media (min-width:761px){.tabs{flex-wrap:wrap;overflow:visible}}
+
+/* ---------- polish pass ---------- */
+select:not([multiple]){appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-inline-end:34px!important;text-overflow:ellipsis;cursor:pointer}
+[dir=rtl] select:not([multiple]){background-position:left 10px center}
+.pha .btn,.pha .ghost,.pha select{min-height:38px}.pha .ghost{font-size:13.5px;padding:8px 14px}
+.ck .tog{margin-inline-end:2px}
+td .ghost+.ghost{margin-inline-start:6px}
+@media (max-width:1100px){.ph .search{flex:1 1 220px;min-width:0}}
+@media (max-width:760px){
+  .b>p{padding-inline-end:16px}
+  table:not(.keep):not(.alt){display:block;min-width:0}
+  table:not(.keep):not(.alt) thead{display:none}
+  table:not(.keep):not(.alt) tbody{display:block}
+  table:not(.keep):not(.alt) tr{display:block;padding:10px 14px;border-bottom:1px solid var(--line)}
+  table:not(.keep):not(.alt) tr:last-child{border-bottom:0}
+  table:not(.keep):not(.alt) td{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:5px 0;border:0;text-align:end;white-space:normal!important;min-width:0;overflow-wrap:anywhere}
+  table:not(.keep):not(.alt) td[data-l]:not([data-l=""])::before{content:attr(data-l);flex:none;margin-inline-end:auto;padding-inline-end:10px;max-width:45%;font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--mute);text-align:start}
+  table:not(.keep):not(.alt) td:first-child{justify-content:flex-start;text-align:start;padding-bottom:7px}
+  table:not(.keep):not(.alt) td:first-child::before{display:none!important}
+  table:not(.keep):not(.alt) td[data-l=""]{justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  table:not(.keep):not(.alt) td[colspan]{justify-content:center;text-align:center}
+  table:not(.keep):not(.alt) td select{width:auto;max-width:62%}
+  table:not(.keep):not(.alt) tbody tr:hover td{background:none}
+  td .ghost,td .ib{min-height:38px}
+}
+[dir=rtl] table:not(.keep):not(.alt) td[data-l]::before{letter-spacing:0}
 </style></head><body>
 <div id="app"></div>
 <script>
+// iPhone and iPad: keep the page at its normal size when a field is tapped (pinch zoom still works there).
+if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) { const vp = document.querySelector('meta[name=viewport]'); if (vp && !/maximum-scale/.test(vp.content)) vp.content += ',maximum-scale=1'; }
 const API = window.API_BASE || '';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -496,6 +543,7 @@ const ICONS = {
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
   chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>', target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   file: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/>',
@@ -547,17 +595,18 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 // key, label, icon, managers only, super admin only, menu group
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
+  ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase()}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -569,6 +618,12 @@ const phead = (title, sub = '', actions = '') => `<header class="ph"><button cla
 const kpi = (icon, value, label, tone = '') => `<div class="kpi${tone ? ' t-' + tone : ''}"><span>${ico(icon, 22)}</span><div><small>${label}</small><b>${value}</b></div></div>`;
 const emptyState = (icon, title, text = '', action = '') => `<div class="empty-s"><span class="emp-ic">${ico(icon, 28)}</span><b>${title}</b>${text ? `<span>${text}</span>` : ''}${action}</div>`;
 const userCell = (name, sub, size = 36) => `<div class="uc">${avatar(name || '?', size)}<div><b>${esc(name || '—')}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div></div>`;
+// Readable names for the short words the database stores.
+const NICE = { info: 'More info', team: 'Join the team', classes: 'Classes', unknown: 'Not answered', new: 'New', ad: 'From ads', organic: 'Organic', import: 'Imported', personal: 'Personal' };
+const nice = v => NICE[v] || (v ? String(v).charAt(0).toUpperCase() + String(v).slice(1) : v);
+// On a phone each table row becomes a card, so every cell carries its column title.
+function labelTables() { document.querySelectorAll('table').forEach(t => { const h = [...t.querySelectorAll('thead th')].map(x => x.textContent.trim()); if (!h.length) return; t.querySelectorAll('tbody tr').forEach(r => [...r.children].forEach((d, i) => { const l = h[i] || ''; if (d.dataset.l !== l) d.dataset.l = l; })); }); }
+new MutationObserver(() => { if (labelTables.q) return; labelTables.q = 1; requestAnimationFrame(() => { labelTables.q = 0; labelTables(); }); }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 // A pop-up form that lives in the page: a button with data-open="id" shows it.
 const modal = (id, title, body, wide) => `<div class="modal" id="${id}" hidden><div class="mcard${wide ? ' wide' : ''}"><div class="dlg-h"><b>${title}</b><button type="button" class="ib" data-close aria-label="Close">${ico('x', 20)}</button></div><div class="mb">${body}</div></div></div>`;
 document.addEventListener('click', e => {
@@ -635,9 +690,9 @@ function floatMenu(items, x, y) {
   m.onclick = e => { const b = e.target.closest('button'); if (!b) return; const it = items[+b.dataset.i]; m.remove(); it[2](); };
 }
 const pad2 = n => String(n).padStart(2, '0');
-const snip = (type, body) => (!body || /^\[\w+\]$/.test(body)) ? ({ image: '📷 Photo', video: '🎥 Video', audio: '🎤 Voice message', document: '📄 Document', sticker: 'Sticker' }[type] || body || '') : body;
+const snip = (type, body) => (!body || /^\[\w+\]$/.test(body)) ? ({ image: '📷 Photo', video: '🎥 Video', audio: '🎤 Voice message', document: '📄 Document', sticker: 'Sticker' }[type] || body || '') : body.replace(/\*([^*\n]+)\*/g, '$1');
 function hlText(t) {
-  const q = S.q; if (!q) return esc(t);
+  const q = S.q; if (!q) return esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
   const lo = t.toLowerCase(), ql = q.toLowerCase(); let out = '', i = 0;
   for (;;) { const k = lo.indexOf(ql, i); if (k < 0) break; out += esc(t.slice(i, k)) + `<mark>${esc(t.slice(k, k + q.length))}</mark>`; i = k + q.length; }
   return out + esc(t.slice(i));
@@ -767,7 +822,7 @@ async function boot() {
   $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
   renderTabs(); $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tab = b.dataset.t; renderTabs(); loadList(); };
   if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
-  S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib();
+  S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib(); loadProducts();
   await loadList(); connect(); initPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
   setInterval(tick, 30000);
@@ -821,7 +876,7 @@ function renderList(quiet) {
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
       <span class="r2"><span class="prev">${esc(snip(c.last_type, c.last_body))}</span><span class="rx">${c.pinned ? `<span class="pinic">${ico('pin', 15)}</span>` : ''}${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : c.marked_unread ? '<i class="ub dotb"></i>' : ''}<button class="rowx" data-x="${c.id}" aria-label="Chat options" tabindex="-1">${ico('chev', 18)}</button></span></span>
-      <span class="r3"><em class="tag">${esc(c.intent || 'new')}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
+      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
   el.scrollTop = top;
   el.querySelectorAll('.row').forEach(r => {
     r.onclick = e => { if (r.__lp) { r.__lp = false; return; } const x = e.target.closest('.rowx'); if (x) { e.stopPropagation(); const b = x.getBoundingClientRect(); return rowMenu(+x.dataset.x, b.left - 150, b.bottom + 4); } openConv(+r.dataset.id); };
@@ -866,7 +921,7 @@ function renderHead() {
     ['fav', 'star', c.favorite ? 'Remove from favourites' : 'Add to favourites'], ['pin', 'pin', c.pinned ? 'Unpin chat' : 'Pin chat'], ['unread', 'mail', 'Mark as unread'], ['archive', 'archive', c.archived ? 'Unarchive chat' : 'Archive chat'], '-',
     ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : (can('close') ? [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']] : [])), ...(can('not_client') ? [['nonclient', 'ban', 'Not a client', true]] : [])];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
-  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
+  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(nice(c.intent || 'new'))}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
   ${c.calls_enabled && c.bot_step !== 'held' && can('calls') ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
   <button class="ib" id="notesbtn" aria-label="Notes" title="Internal notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <button class="ib" id="cpbtn" aria-label="Contact details" title="Contact details">${ico('panel')}</button>
@@ -979,7 +1034,7 @@ function fillPanel() {
   const c = S.conv, top = $('#cptop'); if (!c || !top) return;
   const nm = c.contact_name || '+' + c.wa_id, w = win(c), kv = (k, v) => v ? `<dt>${k}</dt><dd>${esc(v)}</dd>` : '';
   top.innerHTML = `${avatar(nm, 72)}<h2>${esc(nm)}</h2><span class="mute">+${esc(c.wa_id)}</span><em class="chip ${w.cls}">${w.open ? 'Reply window open · ' + w.txt : 'Reply window closed'}</em>`;
-  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', c.source === 'ad' ? 'An ad' : c.source === 'import' ? 'An imported list' : c.source === 'personal' ? 'Personal contact' : 'Organic') + kv('Asked for', c.intent) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
+  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', c.source === 'ad' ? 'An ad' : c.source === 'import' ? 'An imported list' : c.source === 'personal' ? 'Personal contact' : 'Organic') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
     + kv('First contact', c.contact_since ? new Date(c.contact_since).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' }) : '') + kv('Chat status', c.bot_step === 'held' ? 'On hold' : c.status === 'closed' ? 'Closed' : 'Open') + kv('Marketing', c.opted_out ? 'Opted out' : 'Allowed');
 }
 async function exportChat(list) {
@@ -1050,14 +1105,14 @@ function renderComposer() {
     };
     return;
   }
-  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><div class="menuwrap"${can('media') ? '' : ' hidden'}><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><div class="menu clipm" id="clipm" hidden><button data-a="dev">${ico('clip', 18)}<span>From this device</span></button><button data-a="lib">${ico('image', 18)}<span>From Media Library</span></button></div></div><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
+  S.qrBtns = null; el.innerHTML = `<div id="qr" class="qr" hidden></div><div id="qbtns" class="qbtns" hidden></div><div class="cmp"><div class="menuwrap"${can('media') ? '' : ' hidden'}><button class="ib" id="clip" aria-label="Attach a file">${ico('clip')}</button><div class="menu clipm" id="clipm" hidden><button data-a="dev">${ico('clip', 18)}<span>From this device</span></button><button data-a="lib">${ico('image', 18)}<span>From Media Library</span></button><button data-a="prod">${ico('bag', 18)}<span>Products</span></button></div></div><button class="ib" id="qrb" aria-label="Quick replies">${ico('zap')}</button><input type="file" id="file" hidden accept="image/jpeg,image/png,video/mp4,audio/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"><textarea id="txt" rows="1" placeholder="Type a message"></textarea><button class="btn send" id="send" aria-label="Send" hidden>${ico('send', 18)}</button><button class="btn send" id="mic" aria-label="Record a voice note">${ico('mic', 20)}</button></div>`;
   const t = $('#txt');
   t.oninput = () => { syncSend(); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; if (t.value.startsWith('/')) showQr(t.value.slice(1)); else { $('#qr').hidden = true; typingPing(); } };
   $('#qrb').onclick = () => { if (!$('#qr').hidden) { $('#qr').hidden = true; return; } if (!S.quick.length) return toast('No quick replies yet. A manager can add them on the Quick Replies page.'); showQr(''); };
   t.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!$('#qr').hidden && t.value.startsWith('/') && S.qrList.length) return pickQr(0); sendText(); } };
   $('#send').onclick = sendText; $('#mic').onclick = startRec; syncSend();
-  $('#clip').onclick = () => { if (!S.lib || !S.lib.length) return $('#file').click(); const m = $('#clipm'), was = m.hidden; closeOverlays(); m.hidden = !was; };
-  $('#clipm').onclick = e => { const b = e.target.closest('button'); if (!b) return; closeOverlays(); if (b.dataset.a === 'dev') $('#file').click(); else pickLib(); };
+  $('#clip').onclick = () => { const nl = arr(S.lib).length, np = arr(S.products).length; if (!nl && !np) return $('#file').click(); const m = $('#clipm'), was = m.hidden; closeOverlays(); m.querySelector('[data-a=lib]').hidden = !nl; m.querySelector('[data-a=prod]').hidden = !np; m.hidden = !was; };
+  $('#clipm').onclick = e => { const b = e.target.closest('button'); if (!b) return; closeOverlays(); if (b.dataset.a === 'dev') $('#file').click(); else if (b.dataset.a === 'prod') pickProducts(); else pickLib(); };
   $('#file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) sendFile(f); };
   t.onpaste = e => { const f = e.clipboardData && e.clipboardData.files[0]; if (f) { e.preventDefault(); sendFile(f); } };
 }
@@ -1262,7 +1317,7 @@ async function showTeam() {
   <div class="tbl"><div class="tbl-h"><b>Members</b><div class="search">${ico('search', 16)}<input id="uq" placeholder="Search name or email"></div></div>
   <table><thead><tr><th>Member</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>New chats</th><th></th>' : ''}</tr></thead><tbody id="utb">
   ${us.map(u => `<tr><td>${userCell(u.name, u.email)}</td><td><em class="chip${u.role === 'admin' ? ' ok' : u.role === 'manager' ? ' warn' : ''}">${esc(cap(u.role))}</em></td><td>${admin ? `<select data-ut="${u.id}" style="min-width:130px">${dopt(u.team)}</select>` : esc(dname(u.team))}</td><td>${u.active_chats} <span class="mute">/ ${u.max_active_chats}</span></td>
-  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label class="ck"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}> In rotation</label>` : '<span class="mute">—</span>'}</td>
+  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label class="ck"><span class="tog"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}><i></i></span> In rotation</label>` : '<span class="mute">—</span>'}</td>
   <td class="tdm"><button class="rowbtn" data-um="${u.id}" aria-label="Actions for ${esc(u.name)}">${ico('more', 18)}</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
   ${admin ? modal('m-user', 'Add a team member', `<form class="add" id="af"><label class="fld"><span>Full name</span><input id="an" required></label><label class="fld"><span>Email</span><input id="ae" type="email" required></label>
     <label class="fld"><span>Password</span><input id="ap" type="password" minlength="8" placeholder="8 or more characters" autocomplete="new-password" required></label><label class="fld"><span>Department</span><select id="at">${dopt('general')}</select></label>
@@ -1572,14 +1627,114 @@ async function sendLib(f) {
   loadList();
 }
 
+/* ---------- Catalogs (products) ---------- */
+const money = p => p.price == null || p.price === '' ? '' : `${p.currency || 'PKR'} ${Number(p.price).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+// The same text the server sends to the client for a product.
+const prodText = p => { const head = [money(p), p.in_stock ? '' : 'Out of stock'].filter(Boolean).join(' · '); return [`*${p.name}*` + (head ? '\n' + head : ''), p.description, p.link].map(s => String(s || '').trim()).filter(Boolean).join('\n\n'); };
+const waBold = t => esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
+const prodThumb = (p, s = 34) => { const f = p.media_id && arr(S.lib).find(x => x.id == p.media_id); return f ? libThumb(f, s) : ico('bag', s); };
+async function loadProducts() { const d = await api('/products'); S.products = arr(d.products); S.currencies = arr(d.currencies); return d; }
+async function showCatalog() {
+  const sc = screen('Catalogs', 'Your products with photo, price and details. Send them in any chat with the paperclip, or let a Quick Message send them by itself.',
+    `<div class="search">${ico('search', 18)}<input id="pq" placeholder="Search products"></div><button class="btn" id="pnew">${ico('plus', 16)}Add product</button>`);
+  const [d] = await Promise.all([loadProducts(), loadLib()]); if (d.error) return toast(d.error); if (S.nav !== 'cat') return;
+  const list = S.products, cats = [...new Set(list.map(p => p.category).filter(Boolean))].sort((a, b) => a.localeCompare(b)), inS = list.filter(p => p.in_stock).length;
+  if (S.catTab && !cats.includes(S.catTab)) S.catTab = '';
+  const cur = () => S.currencies.length ? S.currencies : ['PKR'];
+  sc.innerHTML = `<div class="stats">${kpi('bag', list.length, 'Products')}${kpi('check', inS, 'In stock', 'blue')}${kpi('ban', list.length - inS, 'Out of stock', 'amber')}${kpi('send', list.reduce((n, p) => n + p.sent_count, 0), 'Times sent', 'violet')}</div>
+  ${list.length ? `${cats.length ? `<div class="lbar"><div class="ptabs" id="ptabs"><button data-t="" class="${S.catTab ? '' : 'on'}">All products</button>${cats.map(c => `<button data-t="${esc(c)}" data-notr class="${S.catTab === c ? 'on' : ''}">${esc(c)}</button>`).join('')}</div></div>` : ''}<div id="pgrid"></div>`
+    : `<div class="tbl">${emptyState('bag', 'No products yet', 'Add what you sell once, with photo and price. Your agents then send it to a client in two taps.', `<button class="btn" id="pnew2">${ico('plus', 16)}Add product</button>`)}</div>`}
+  ${modal('m-prod', 'Product', `<form id="pf"><div class="pform"><div>
+      <label class="fld"><span>Product name</span><input id="p1" maxlength="80" placeholder="e.g. Gold Trading Course" required></label>
+      <div class="prow"><label class="fld"><span>Price (leave empty to hide)</span><input id="p2" type="number" min="0" step="0.01" inputmode="decimal" placeholder="e.g. 15000"></label><label class="fld"><span>Currency</span><select id="p3">${cur().map(c => `<option>${c}</option>`).join('')}</select></label></div>
+      <label class="fld"><span>Category (optional)</span><input id="p4" maxlength="40" list="pcats" placeholder="e.g. Courses"><datalist id="pcats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist></label>
+      <label class="fld"><span>Details</span><textarea id="p5" rows="4" maxlength="600" placeholder="What the client gets"></textarea></label>
+      <label class="fld"><span>Link (optional)</span><input id="p6" maxlength="300" placeholder="https://..."></label>
+      <div class="fld"><span>Photo</span><div class="qfile"><span class="pth" id="pth">${ico('image', 20)}</span><select id="p7"></select><button type="button" class="ghost" id="pup">${ico('plus', 15)}Upload</button></div><input type="file" id="pfile" hidden accept="image/jpeg,image/png"></div>
+      <label class="qopt"><span>In stock</span><span class="tog"><input type="checkbox" id="p8"><i></i></span></label></div>
+    <div class="pprev"><small>How the client sees it</small><div class="pbub" id="pbub" data-notr></div></div></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save product</button></div></form>`, 1)}`;
+  let P = null;
+  const photos = () => S.lib.filter(f => f.kind === 'image');
+  const form = () => ({ name: $('#p1').value.trim(), price: $('#p2').value === '' ? null : Number($('#p2').value), currency: $('#p3').value, category: $('#p4').value.trim(), description: $('#p5').value.trim(), link: $('#p6').value.trim(), media_id: Number($('#p7').value) || null, in_stock: $('#p8').checked });
+  const fillPhotos = id => { $('#p7').innerHTML = '<option value="">No photo</option>' + photos().map(f => `<option value="${f.id}"${f.id == id ? ' selected' : ''}>${esc(f.name)}</option>`).join(''); };
+  const preview = () => { const v = form(), f = S.lib.find(x => x.id == v.media_id);
+    $('#pth').innerHTML = f ? libThumb(f, 20) : ico('image', 20);
+    $('#pbub').innerHTML = (f ? libThumb(f) : '') + waBold(prodText({ ...v, name: v.name || 'Product name' })); libThumbs($('#m-prod')); };
+  const open = p => { P = p;
+    $('#p1').value = p ? p.name : ''; $('#p2').value = p && p.price != null ? p.price : ''; $('#p3').value = p ? p.currency : (localStorage.getItem('ti_cur') || cur()[0]); if (!$('#p3').value) $('#p3').value = cur()[0];
+    $('#p4').value = p ? p.category : (S.catTab || ''); $('#p5').value = p ? p.description : ''; $('#p6').value = p ? p.link : ''; $('#p8').checked = p ? p.in_stock : true; fillPhotos(p && p.media_id);
+    $('#m-prod .dlg-h b').textContent = p ? 'Edit product' : 'Add product'; preview(); $('#m-prod').hidden = false; $('#m-prod .mb').scrollTop = 0; if (innerWidth > 760 && !p) $('#p1').focus(); };
+  $('#pf').oninput = preview; $('#pf').onchange = preview;
+  $('#pup').onclick = () => $('#pfile').click();
+  $('#pfile').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    if (!/^image\/(jpeg|png)$/.test(f.type)) return toast('The product photo must be a JPG or PNG picture');
+    if (f.size > 5 * 1024 * 1024) return toast('Photos must be under 5 MB');
+    toast('Uploading ' + f.name + '…');
+    const r = await fetch(API + '/api/media-library?' + new URLSearchParams({ filename: f.name, mime: f.type }), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + S.token }, body: f });
+    const up = await r.json().catch(() => ({})); if (!r.ok) return toast(up.error || 'Could not upload the photo');
+    await loadLib(); fillPhotos(up.id); preview(); toast('Photo saved in the Media Library'); };
+  $('#pf').onsubmit = async e => { e.preventDefault(); const v = form();
+    const r = await api('/products' + (P ? '/' + P.id : ''), P ? 'PATCH' : 'POST', v); if (r.error) return toast(r.error);
+    localStorage.setItem('ti_cur', v.currency); toast(P ? 'Product updated' : 'Product added'); showCatalog(); };
+  $('#pnew').onclick = () => open(null); if ($('#pnew2')) $('#pnew2').onclick = () => open(null);
+  if (!list.length) return;
+  const draw = () => { const q = $('#pq').value.trim().toLowerCase(), rows = list.filter(p => (!S.catTab || p.category === S.catTab) && (!q || (p.name + ' ' + p.category + ' ' + p.description).toLowerCase().includes(q)));
+    $('#pgrid').innerHTML = rows.length ? `<div class="mgrid pgrid">${rows.map(p => `<div class="mfile pcard${p.in_stock ? '' : ' off'}"><button class="mthumb" data-pe="${p.id}" title="Edit" aria-label="Edit">${prodThumb(p)}${p.in_stock ? '' : '<em class="chip closed">Out of stock</em>'}</button>
+      <div class="pbody"><b data-notr title="${esc(p.name)}">${esc(p.name)}</b><span class="pprice" data-notr>${esc(money(p)) || '&nbsp;'}</span><small data-notr>${esc([p.category, p.description].filter(Boolean).join(' · ')) || '&nbsp;'}</small></div>
+      <div class="pfoot"><label class="ck"><span class="tog"><input type="checkbox" data-ps="${p.id}"${p.in_stock ? ' checked' : ''}><i></i></span> In stock</label><button class="rowbtn" data-pe="${p.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-pd="${p.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></div></div>`).join('')}</div>`
+      : emptyState('search', 'No products match', 'Try another word or another category.');
+    libThumbs($('#pgrid')); };
+  const by = id => list.find(p => p.id == id);
+  $('#pq').oninput = draw;
+  if ($('#ptabs')) $('#ptabs').onclick = e => { const t = e.target.closest('button'); if (!t) return; S.catTab = t.dataset.t; $('#ptabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === t)); draw(); };
+  $('#pgrid').onchange = async e => { const t = e.target.closest('[data-ps]'); if (!t) return; const r = await api('/products/' + t.dataset.ps, 'PATCH', { in_stock: t.checked }); if (r.error) { t.checked = !t.checked; return toast(r.error); } toast(t.checked ? 'Marked in stock' : 'Marked out of stock'); showCatalog(); };
+  $('#pgrid').onclick = async e => { const ed = e.target.closest('[data-pe]'), x = e.target.closest('[data-pd]');
+    if (ed) return open(by(ed.dataset.pe));
+    if (x) { const p = by(x.dataset.pd);
+      if (!(await sure('Delete this product?', `${p.name} will be removed from the catalog.${p.used_in ? ` It is used in ${p.used_in} quick message${p.used_in > 1 ? 's' : ''}, which will then skip it.` : ''} Messages already sent to clients stay in their chats.`, { ok: 'Delete', danger: true }))) return;
+      const r = await api('/products/' + p.id, 'DELETE'); if (r.error) return toast(r.error); toast('Product deleted'); showCatalog(); } };
+  draw();
+}
+// Paperclip in a chat: choose up to 5 products and send them, one message each.
+function pickProducts() {
+  const old = $('#m-pp'); if (old) old.remove();
+  const box = document.createElement('div'), chosen = [];
+  box.innerHTML = modal('m-pp', 'Send products', `<div class="search" style="max-width:none;margin-bottom:10px">${ico('search', 18)}<input id="ppq" placeholder="Search products"></div><div class="pick" id="ppl"></div><div class="dlg-f"><small class="mute" style="flex:1;align-self:center">Choose up to 5. Each product is sent as its own message.</small><button type="button" class="btn" id="ppsend" disabled>Send</button></div>`);
+  const m = box.firstElementChild; document.body.appendChild(m); m.hidden = false;
+  const draw = () => { const q = $('#ppq').value.trim().toLowerCase(), rows = S.products.filter(p => !q || (p.name + ' ' + p.category).toLowerCase().includes(q));
+    $('#ppl').innerHTML = rows.map(p => `<button type="button" data-pp="${p.id}" class="${chosen.includes(p.id) ? 'on' : ''}"><span class="pth">${prodThumb(p, 20)}</span><span style="min-width:0;flex:1"><b data-notr>${esc(p.name)}</b><small data-notr>${esc([money(p), p.category].filter(Boolean).join(' · ')) || '&nbsp;'}</small></span>${p.in_stock ? '' : '<em class="chip closed">Out of stock</em>'}<i class="pchk">${ico('check', 14)}</i></button>`).join('') || '<p class="mute" style="margin:8px">No products match.</p>';
+    libThumbs($('#ppl')); $('#ppsend').disabled = !chosen.length; $('#ppsend').textContent = chosen.length > 1 ? `Send ${chosen.length} products` : 'Send'; };
+  $('#ppq').oninput = draw; draw(); if (innerWidth > 760) $('#ppq').focus();
+  $('#ppl').onclick = e => { const b = e.target.closest('[data-pp]'); if (!b) return; const id = Number(b.dataset.pp), i = chosen.indexOf(id);
+    if (i >= 0) chosen.splice(i, 1); else if (chosen.length >= 5) return toast('You can send up to 5 products at once'); else chosen.push(id); draw(); };
+  $('#ppsend').onclick = () => { m.remove(); sendProducts(chosen); };
+}
+async function sendProducts(ids) {
+  const id = S.active; toast(ids.length > 1 ? 'Sending products…' : 'Sending product…');
+  const d = await api(`/conversations/${id}/products`, 'POST', { ids });
+  if (S.active === id) arr(d.messages).forEach(addMsg);
+  if (d.error) { toast(d.error); if (d.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } }
+  loadList();
+}
+/* ---------- Ad Manager (opens after Meta business verification) ---------- */
+function showAds() {
+  const sc = screen('Ad Manager', 'Your Click to WhatsApp ads next to the chats they bring.');
+  sc.innerHTML = `<div class="tbl">${emptyState('target', 'Ad Manager opens after Meta verification', 'Meta shares ad data only with verified businesses. When your business verification is approved, your Click to WhatsApp ads, what they cost and the chats each ad brought will show here.', '')}</div>
+  <div class="two"><div class="panel"><h3>Answer your ads now</h3><p class="mute">Quick Message already replies to the ready-made first message of each ad, day or night.</p><button class="ghost" id="adq">${ico('reply', 16)}Open Quick Message</button></div>
+  <div class="panel"><h3>See what your ads bring</h3><p class="mute">Reports already shows how many chats came from ads and how they were answered.</p><button class="ghost" id="adr">${ico('chart', 16)}Open Reports</button></div></div>`;
+  $('#adq').onclick = () => goNav('qm'); $('#adr').onclick = () => goNav('rp');
+  ['qm', 'rp'].forEach((k, i) => { if (!document.querySelector(`[data-nav="${k}"]`)) sc.querySelectorAll('.two .panel')[i].hidden = true; });
+}
+
 /* ---------- Quick Message (automatic keyword replies) ---------- */
 async function showQuickMsg() {
   const sc = screen('Quick Message', 'Automatic messages for your ads and common questions. When a client sends the message you choose, for example the ready-made first message of an ad, your saved messages go out in order, day or night.',
     `<div class="search">${ico('search', 18)}<input id="qmq" placeholder="Search quick messages"></div><button class="btn" id="qmn">${ico('plus', 16)}New quick message</button>`);
-  const [rs, us] = await Promise.all([api('/auto-replies'), api('/users'), loadLib()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
+  const [rs, us] = await Promise.all([api('/auto-replies'), api('/users'), loadLib(), loadProducts()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
   const list = arr(rs), agents = arr(us).filter(u => u.is_active && u.role === 'agent'), on = list.filter(r => r.active).length;
-  const TY = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], audio: ['mic', 'Audio'], file: ['file', 'File'] };
-  const first = r => { const s = arr(r.steps).find(x => x.text) || arr(r.steps)[0] || {}; return s.text || `[${(TY[s.type] || TY.text)[1]}]`; };
+  const TY = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], audio: ['mic', 'Audio'], file: ['file', 'File'], product: ['bag', 'Product'] };
+  const first = r => { const s = arr(r.steps).find(x => x.text) || arr(r.steps)[0] || {}, pr = s.type === 'product' && S.products.find(x => x.id == s.product_id); return s.text || (pr && pr.name) || `[${(TY[s.type] || TY.text)[1]}]`; };
   const card = r => { const kw = arr(r.keywords), st = arr(r.steps);
     return `<div class="qcard qmcard${r.active ? '' : ' off'}" data-name="${esc((r.name + ' ' + kw.join(' ')).toLowerCase())}"><header><span class="qmic">${ico('reply', 18)}</span><b title="${esc(r.name)}">${esc(r.name)}</b>
       <label class="tog" title="Switch on or off"><input type="checkbox" data-qt="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label>
@@ -1607,12 +1762,12 @@ async function showQuickMsg() {
   /* ----- the builder: R is the rule being edited ----- */
   let R = null, upFor = null;
   const fileOpts = st => S.lib.filter(f => st.type === 'file' || f.kind === st.type);
-  const stepHtml = (st, i) => { const f = S.lib.find(x => x.id == st.media_id), bt = arr(st.buttons), hasLink = bt.some(b => b.type === 'url');
+  const stepHtml = (st, i) => { const f = S.lib.find(x => x.id == st.media_id), bt = arr(st.buttons), hasLink = bt.some(b => b.type === 'url'), isP = st.type === 'product', pp = isP && S.products.find(x => x.id == st.product_id);
     return `<div class="qstep" data-i="${i}"><div class="qstep-h"><b>#${i + 1}</b><label>Wait <input type="number" min="0" max="60" data-f="delay" value="${Number(st.delay) || 0}"> sec</label><span></span>
       <button type="button" class="rowbtn" data-up title="Move up" aria-label="Move up"${i ? '' : ' disabled'}>${ico('up', 16)}</button><button type="button" class="rowbtn" data-dn title="Move down" aria-label="Move down"${i < R.steps.length - 1 ? '' : ' disabled'}>${ico('chev', 16)}</button><button type="button" class="rowbtn danger" data-rm title="Remove" aria-label="Remove this message">${ico('trash', 16)}</button></div>
       <div class="qtype">${Object.entries(TY).map(([k, v]) => `<button type="button" data-ty="${k}" class="${st.type === k ? 'on' : ''}">${ico(v[0], 14)}${v[1]}</button>`).join('')}</div>
-      ${st.type === 'text' ? '' : `<div class="qfile"><span class="pth">${f ? libThumb(f, 20) : ico(TY[st.type][0], 20)}</span><select data-f="media_id"><option value="">Choose from the Media Library</option>${fileOpts(st).map(x => `<option value="${x.id}"${x.id == st.media_id ? ' selected' : ''}>${esc(x.name)} (${fmtSize(x.size)})</option>`).join('')}</select><button type="button" class="ghost" data-upl>${ico('plus', 15)}Upload</button></div>`}
-      ${st.type === 'audio' ? '<small class="mute">WhatsApp does not allow text or buttons on audio. Add a text message after it.</small>' : `<div class="qins"><span>${st.type === 'text' ? 'Text' : 'Caption'}</span><i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button><button type="button" data-ins="{{whatsapp_name}}">+ WhatsApp name</button></div>
+      ${st.type === 'text' ? '' : isP ? `<div class="qfile"><span class="pth">${pp ? prodThumb(pp, 20) : ico('bag', 20)}</span><select data-f="product_id"><option value="">${S.products.length ? 'Choose a product' : 'Add products on the Catalogs page first'}</option>${S.products.map(x => `<option value="${x.id}"${x.id == st.product_id ? ' selected' : ''}>${esc(x.name)}${money(x) ? ' (' + esc(money(x)) + ')' : ''}</option>`).join('')}</select></div>` : `<div class="qfile"><span class="pth">${f ? libThumb(f, 20) : ico(TY[st.type][0], 20)}</span><select data-f="media_id"><option value="">Choose from the Media Library</option>${fileOpts(st).map(x => `<option value="${x.id}"${x.id == st.media_id ? ' selected' : ''}>${esc(x.name)} (${fmtSize(x.size)})</option>`).join('')}</select><button type="button" class="ghost" data-upl>${ico('plus', 15)}Upload</button></div>`}
+      ${isP ? '<small class="mute">The photo, price, details and link of the product are sent as one message.</small>' : st.type === 'audio' ? '<small class="mute">WhatsApp does not allow text or buttons on audio. Add a text message after it.</small>' : `<div class="qins"><span>${st.type === 'text' ? 'Text' : 'Caption'}</span><i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button><button type="button" data-ins="{{whatsapp_name}}">+ WhatsApp name</button></div>
       <textarea data-f="text" rows="3" maxlength="1000" placeholder="${st.type === 'text' ? 'Type the message' : 'Caption (optional)'}">${esc(st.text || '')}</textarea>
       <div class="qbh"><span>Buttons</span><small>${bt.length} / ${hasLink ? 1 : 3}</small></div>
       ${bt.map((b, j) => `<div class="qbtn" data-j="${j}"><select data-bf="type"><option value="reply"${b.type === 'url' ? '' : ' selected'}>Quick reply</option><option value="url"${b.type === 'url' ? ' selected' : ''}>Website link</option></select><input data-bf="title" maxlength="20" placeholder="Button name" value="${esc(b.title || '')}">${b.type === 'url' ? `<input data-bf="url" placeholder="https://..." value="${esc(b.url || '')}">` : ''}<button type="button" class="rowbtn danger" data-brm aria-label="Remove button">${ico('trash', 15)}</button></div>`).join('')}
@@ -1639,9 +1794,10 @@ async function showQuickMsg() {
     else if (t.dataset.bf === 'title' || t.dataset.bf === 'url') st.buttons[+t.closest('.qbtn').dataset.j][t.dataset.bf] = t.value; };
   $('#qsteps').onchange = e => { const st = S_(e), t = e.target; if (!st) return;
     if (t.dataset.f === 'media_id') { st.media_id = Number(t.value) || null; draw(); }
+    else if (t.dataset.f === 'product_id') { st.product_id = Number(t.value) || null; draw(); }
     else if (t.dataset.bf === 'type') { const j = +t.closest('.qbtn').dataset.j; st.buttons[j].type = t.value; if (t.value === 'url') st.buttons = [st.buttons[j]]; draw(); } };
   $('#qsteps').onclick = e => { const st = S_(e); if (!st) return; const i = R.steps.indexOf(st), c = s => e.target.closest(s);
-    if (c('[data-ty]')) { const ty = c('[data-ty]').dataset.ty; if (ty === st.type) return; st.type = ty; const f = S.lib.find(x => x.id == st.media_id); if (ty === 'text' || (f && ty !== 'file' && f.kind !== ty)) st.media_id = null; if (ty === 'audio') { st.buttons = []; st.text = ''; } return draw(); }
+    if (c('[data-ty]')) { const ty = c('[data-ty]').dataset.ty; if (ty === st.type) return; st.type = ty; if (ty === 'product') { st.buttons = []; st.text = ''; st.media_id = null; } else delete st.product_id; const f = S.lib.find(x => x.id == st.media_id); if (ty === 'text' || (f && ty !== 'file' && f.kind !== ty)) st.media_id = null; if (ty === 'audio') { st.buttons = []; st.text = ''; } return draw(); }
     if (c('[data-up]') && i > 0) { R.steps.splice(i - 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
     if (c('[data-dn]') && i < R.steps.length - 1) { R.steps.splice(i + 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
     if (c('[data-rm]')) { R.steps.splice(i, 1); return draw(); }
@@ -1713,7 +1869,7 @@ async function showReports() {
     <p class="mute" style="margin:12px 0 0">${s.outbound} messages sent, ${s.template_out} of them templates. ${s.failed} failed.</p></div></div>
   <div class="tbl"><div class="tbl-h"><b>Agent performance</b>${xbtn('agents')}</div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Closed</th></tr></thead><tbody>
     ${d.agents.map(a => `<tr><td>${userCell(a.name, a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.closed_now}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet.</td></tr>'}</tbody></table></div>
-  <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
+  <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table class="keep"><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
     ${days.slice().reverse().map(x => `<tr><td>${niceDay(x.day)}</td><td>${x.new_chats}</td><td>${x.inbound}</td><td>${x.agent_out}</td><td>${x.bot_out}</td><td>${x.failed ? `<em class="chip closed">${x.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div></div>
   ${d.broadcasts.length ? `<div class="tbl"><div class="tbl-h"><b>Bulk broadcasts</b>${xbtn('broadcasts')}</div><table><thead><tr><th>Broadcast</th><th>Date</th><th>Recipients</th><th>Delivered</th><th>Read</th><th>Failed</th></tr></thead><tbody>
     ${d.broadcasts.map(b => `<tr><td><b>${esc(b.name)}</b><br><small class="mute">${esc(b.template_name)}</small></td><td>${esc(b.at)}</td><td>${b.total}</td><td>${b.delivered} <small class="mute">${pctTxt(b.total ? Math.round(b.delivered / b.total * 100) : null)}</small></td><td>${b.read} <small class="mute">${pctTxt(b.total ? Math.round(b.read / b.total * 100) : null)}</small></td><td>${b.failed ? `<em class="chip closed">${b.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div>` : ''}
@@ -1747,7 +1903,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
@@ -1837,7 +1993,7 @@ async function showContacts() {
   const draw = async () => {
     const r = await api('/contacts?' + new URLSearchParams({ q: $('#cq').value, list: $('#cl').value })); if (r.error || !$('#ct')) return;
     $('#cn').textContent = `Showing ${r.rows.length} of ${r.total}`;
-    $('#ct').innerHTML = r.rows.length ? '<thead><tr><th>Contact</th><th>List</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>' + r.rows.map(c => `<tr><td>${userCell(c.name || '+' + c.wa_id, '+' + c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(c.source || '—')}</td>
+    $('#ct').innerHTML = r.rows.length ? '<thead><tr><th>Contact</th><th>List</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>' + r.rows.map(c => `<tr><td>${userCell(c.name || '+' + c.wa_id, '+' + c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(nice(c.source) || '—')}</td>
       <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : c.opted_out ? '<em class="chip closed">Opted out</em>' : `<em class="chip${c.chat_status === 'open' ? ' ok' : ''}">${esc(c.chat_status === 'open' ? 'With ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'New' : c.chat_status || 'No chat')}</em>`}</td>
       <td class="tdm"><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button> <button class="ghost" data-ig="${c.id}" data-v="${c.is_personal}">${c.is_personal ? 'Stop ignoring' : 'Ignore'}</button></td></tr>`).join('') + '</tbody>'
       : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search, or import a list.')}</td></tr></tbody>`;

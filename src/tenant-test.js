@@ -70,6 +70,13 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('other company keeps its own permissions and activity log', (await j('/api/permissions', {}, Bt)).data.manager.find(x => x.key === 'reports').on === true
     && bLog.length > 0 && bLog.every(r => r.user_name === 'Bea') && !bLog.some(r => r.action === 'Changed permissions'));
   await j('/api/permissions', { method: 'PUT', body: { manager: { reports: true } } }, A.token);
+  // Catalogs stay inside each company
+  const pa = (await j('/api/products', { method: 'POST', body: { name: 'A product', price: 10 } }, A.token)).data;
+  check('products are separate', pa.id && !(await j('/api/products', {}, Bt)).data.products.some(p => p.id === pa.id) && (await j('/api/products/' + pa.id, { method: 'PATCH', body: { name: 'stolen' } }, Bt)).status === 404
+    && (await j('/api/auto-replies', { method: 'POST', body: { name: 'B rule', keywords: ['p'], steps: [{ type: 'product', product_id: pa.id }] } }, Bt)).status === 400);
+  await j('/api/products/' + pa.id, { method: 'DELETE' }, Bt);
+  check('other company cannot delete a product', (await j('/api/products', {}, A.token)).data.products.some(p => p.id === pa.id));
+  await j('/api/products/' + pa.id, { method: 'DELETE' }, A.token);
   // Media Library and Quick Message stay inside each company
   const lf = await (await fetch(B + '/api/media-library?filename=a.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + A.token }, body: Buffer.from('x') })).json();
   const ar = (await j('/api/auto-replies', { method: 'POST', body: { name: 'A rule', keywords: ['hello'], steps: [{ type: 'text', text: 'Hi from A' }] } }, A.token)).data;
@@ -90,6 +97,12 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('paused company cannot sign in', (await j('/api/auth/login', { method: 'POST', body: { email: `bea${tag}@beta.co`, password: 'pw123456' } })).status === 403);
   await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'active' } }, A.token);
   check('resumed company works again', (await j('/api/conversations', {}, Bt)).status === 200);
+
+  // A company with no agents: a client who finished the bot must show under All, not only under Unassigned
+  await inbound(sharedPhone, 'more info please', pid); await sleep(300); await inbound(sharedPhone, 'Bilal', pid); await sleep(600);
+  const allB = (await j('/api/conversations?status=open', {}, Bt)).data, unB = (await j('/api/conversations?unassigned=true', {}, Bt)).data;
+  check('a waiting chat with no agent shows under All and Unread', unB.length === 1 && allB.length === 1 && allB[0].id === unB[0].id
+    && (await j('/api/conversations?status=open&view=unread', {}, Bt)).data.length === 1 && (await j('/api/conversations/counts', {}, Bt)).data.unread === 1);
 
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
 })();
