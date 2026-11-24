@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<title>Team inbox</title>
+<title>TeamInbox Pro</title>
 <style>
 :root{--ink:#111b21;--ink2:#3b4a54;--mute:#667781;--line:#e9edef;--line2:#d1d7db;--bg:#f0f2f5;--surface:#fff;--hover:#f5f6f6;--sel:#f0f2f5;--in:#fff;--out:#d9fdd3;--lav:#e8e6fb;--chat:#efeae2;--field:#f0f2f5;--inp:#fff;--pill:#f0f2f5;--pillon:#d9fdd3;--pillon-ink:#0a6e57;--icon:#54656f;--card:#fff;--tint:#e1f6ec;--tint-ink:#0a6e57;--tint-line:#cdebdd;--warnbg:#fff4cc;--warn:#8a5a00;--warn-line:#f0e3a5;--redbg:#fdecea;--red:#c0372b;--red-line:#f6cdc8;--notes:#fffbea;--notes-line:#f0e6b8;--rail:#f0f2f5;--railon:#d9dbdf;--menu:#fff;--toast:#111b21;--thead:#fafbfb;--quote:rgba(11,20,26,.06);--brand:#00a884;--brand-d:#008069;--pine2:#008069;--blue:#53bdeb;--ok:#25d366;--sh:0 1px .5px rgba(11,20,26,.13);--sh2:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16);--tx:#fff;--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23b9b1a2' stroke-width='1.2' opacity='.26'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:light}
 [data-theme="dark"]{--ink:#e9edef;--ink2:#c8d0d4;--mute:#8696a0;--line:#222d34;--line2:#33424b;--bg:#202c33;--surface:#111b21;--hover:#182229;--sel:#2a3942;--in:#202c33;--out:#005c4b;--lav:#2f2c55;--chat:#0b141a;--field:#202c33;--inp:#2a3942;--pill:#202c33;--pillon:#103529;--pillon-ink:#25d366;--icon:#aebac1;--card:#1d282f;--tint:#103529;--tint-ink:#7be3be;--tint-line:#1a4a3d;--warnbg:#3a3014;--warn:#f0c14d;--warn-line:#54471b;--redbg:#3a1d1a;--red:#ff8a80;--red-line:#5a2b27;--notes:#2d2a14;--notes-line:#4a4420;--rail:#202c33;--railon:#374248;--menu:#233138;--toast:#2a3942;--thead:#1a252b;--quote:rgba(255,255,255,.07);--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='.07'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:dark}
@@ -442,12 +442,17 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+// Every page has its own address, so refresh, back, forward and bookmarks work.
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', tg: 'tags', st: 'settings', co: 'companies' };
+const routeKey = p => Object.keys(ROUTES).find(k => '/' + ROUTES[k] === String(p).replace(/\/+$/, ''));
+function setUrl(k) { const p = '/' + ROUTES[k], n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
   ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, rp: showReports, ha: showHealth })[k]();
   syncNav();
 }
-function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
+function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
 // On pages the menu is open unless you fold it; in Live Chat it is folded unless you open it. Each choice is remembered.
 const navIsMin = pg => pg ? localStorage.getItem('ti_nav') === 'min' : localStorage.getItem('ti_navchat') !== 'full';
 function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
@@ -607,7 +612,7 @@ function showSignup() {
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
     setTimeout(() => toast('Welcome! Next step: open Settings and connect your WhatsApp number.'), 800); };
 }
-function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; showLogin(); }
+function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
 
 /* ---------- Shell + list ---------- */
 async function boot() {
@@ -644,7 +649,7 @@ async function boot() {
   $('#navtg').onclick = () => { const sh = $('.shell'), m = sh.classList.toggle('navmin'); localStorage.setItem(sh.classList.contains('onpage') ? 'ti_nav' : 'ti_navchat', m ? 'min' : 'full'); };
   $('#modebtn').onclick = () => { setPref({ mode: effTheme() === 'dark' ? 'light' : 'dark' }); applyTheme(); $('#modebtn').innerHTML = ico(effTheme() === 'dark' ? 'sun' : 'moon', 18); };
   if (mgr) api('/whatsapp/numbers').then(ns => { const n = arr(ns).find(x => x.is_default) || arr(ns)[0], p = $('#numpill'); if (!p) return; p.hidden = false; p.classList.toggle('off', !n); p.innerHTML = n ? `${ico('phone', 13)}<span>${esc(n.display_phone || n.label)}${arr(ns).length > 1 ? ' +' + (arr(ns).length - 1) : ''}</span>` : '<i></i><span>No WhatsApp number yet</span>'; if (!n) p.onclick = () => goNav('st'); });
-  if (mgr && innerWidth > 760) goNav('dash');
+  S.urlReady = false; const first = routeKey(location.pathname), go = first && items.some(n => n[0] === first) ? first : mgr && innerWidth > 760 ? 'dash' : 'inbox'; if (go === 'inbox') syncNav(); else goNav(go);
   $('#themebtn').onclick = () => { closeOverlays(); themeDialog(null); };
   document.removeEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
   $('#pwb').onclick = async () => { closeOverlays(); const cur = await ask('Change password', { note: 'First, type your current password.', type: 'password', ok: 'Next' }); if (cur === null) return; const nw = await ask('New password', { note: 'At least 8 characters.', type: 'password', min: 8, ok: 'Change password' }); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
@@ -695,9 +700,10 @@ function rowMenu(id, x, y) {
 }
 function renderList(quiet) {
   const el = $('#list'), cnt = S.counts || {}, unreadMsgs = S.convs.reduce((n, c) => n + (c.unread_count || 0), 0);
-  document.title = (cnt.unread ? `(${cnt.unread}) ` : '') + 'Team inbox';
+  document.title = (cnt.unread ? `(${cnt.unread}) ` : '') + (S.ptitle || 'TeamInbox Pro');
   document.querySelectorAll('.nb').forEach(b => { b.hidden = !cnt.unread; b.textContent = cnt.unread > 99 ? '99+' : cnt.unread; });
   const sub = $('#sub'); if (sub) sub.textContent = S.tab === 'archived' ? 'Archived chats' : `${S.convs.length} ${S.convs.length === 1 ? 'chat' : 'chats'}${unreadMsgs ? ' · ' + unreadMsgs + ' unread' : ''}`;
+  if (!el) return;
   const top = el.scrollTop;
   const head = S.tab === 'archived' ? `<button class="archrow" id="archback">${ico('back', 20)}<span>Archived chats</span></button>` : (cnt.archived ? `<button class="archrow" id="archopen">${ico('archive', 20)}<span>Archived</span><b>${cnt.archived}</b></button>` : '');
   el.innerHTML = head + (!S.convs.length ? `<div class="nochats">${ico('inbox', 36)}<b>${S.tab === 'archived' ? 'No archived chats' : S.tab === 'open' ? 'No open chats yet' : 'Nothing here'}</b>${S.tab === 'open' ? '<span>New clients appear here as soon as the bot hands them over.</span>' : ''}</div>` :
