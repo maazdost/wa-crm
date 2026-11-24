@@ -8,7 +8,7 @@ window.SITE = {
 
   // Your sales WhatsApp number in international format, digits only, no + or spaces (example: '923001234567').
   // The "Book a demo" form and every WhatsApp button open a chat with this number.
-  salesWhatsApp: '',
+  salesWhatsApp: '923006072482',
 
   // Your sales email. Used when no WhatsApp number is set, and shown in the footer.
   salesEmail: 'sales@teaminboxpro.com',
