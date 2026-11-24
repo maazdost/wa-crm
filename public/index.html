@@ -429,6 +429,32 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 [dir=rtl] .hrow .chip{margin-left:0;margin-right:44px}
 [dir=rtl] .tb .nb{left:auto;right:56%}
 }
+
+/* ---------- polish pass ---------- */
+select:not([multiple]){appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-inline-end:34px!important;text-overflow:ellipsis;cursor:pointer}
+[dir=rtl] select:not([multiple]){background-position:left 10px center}
+.pha .btn,.pha .ghost,.pha select{min-height:38px}.pha .ghost{font-size:13.5px;padding:8px 14px}
+.ck .tog{margin-inline-end:2px}
+td .ghost+.ghost{margin-inline-start:6px}
+@media (max-width:1100px){.ph .search{flex:1 1 220px;min-width:0}}
+@media (max-width:760px){
+  .b>p{padding-inline-end:16px}
+  table:not(.keep):not(.alt){display:block;min-width:0}
+  table:not(.keep):not(.alt) thead{display:none}
+  table:not(.keep):not(.alt) tbody{display:block}
+  table:not(.keep):not(.alt) tr{display:block;padding:10px 14px;border-bottom:1px solid var(--line)}
+  table:not(.keep):not(.alt) tr:last-child{border-bottom:0}
+  table:not(.keep):not(.alt) td{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:5px 0;border:0;text-align:end;white-space:normal!important;min-width:0;overflow-wrap:anywhere}
+  table:not(.keep):not(.alt) td[data-l]:not([data-l=""])::before{content:attr(data-l);flex:none;margin-inline-end:auto;padding-inline-end:10px;max-width:45%;font-size:11.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--mute);text-align:start}
+  table:not(.keep):not(.alt) td:first-child{justify-content:flex-start;text-align:start;padding-bottom:7px}
+  table:not(.keep):not(.alt) td:first-child::before{display:none!important}
+  table:not(.keep):not(.alt) td[data-l=""]{justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  table:not(.keep):not(.alt) td[colspan]{justify-content:center;text-align:center}
+  table:not(.keep):not(.alt) td select{width:auto;max-width:62%}
+  table:not(.keep):not(.alt) tbody tr:hover td{background:none}
+  td .ghost,td .ib{min-height:38px}
+}
+[dir=rtl] table:not(.keep):not(.alt) td[data-l]::before{letter-spacing:0}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -569,6 +595,12 @@ const phead = (title, sub = '', actions = '') => `<header class="ph"><button cla
 const kpi = (icon, value, label, tone = '') => `<div class="kpi${tone ? ' t-' + tone : ''}"><span>${ico(icon, 22)}</span><div><small>${label}</small><b>${value}</b></div></div>`;
 const emptyState = (icon, title, text = '', action = '') => `<div class="empty-s"><span class="emp-ic">${ico(icon, 28)}</span><b>${title}</b>${text ? `<span>${text}</span>` : ''}${action}</div>`;
 const userCell = (name, sub, size = 36) => `<div class="uc">${avatar(name || '?', size)}<div><b>${esc(name || '—')}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div></div>`;
+// Readable names for the short words the database stores.
+const NICE = { info: 'More info', team: 'Join the team', classes: 'Classes', unknown: 'Not answered', new: 'New', ad: 'From ads', organic: 'Organic', import: 'Imported', personal: 'Personal' };
+const nice = v => NICE[v] || (v ? String(v).charAt(0).toUpperCase() + String(v).slice(1) : v);
+// On a phone each table row becomes a card, so every cell carries its column title.
+function labelTables() { document.querySelectorAll('table').forEach(t => { const h = [...t.querySelectorAll('thead th')].map(x => x.textContent.trim()); if (!h.length) return; t.querySelectorAll('tbody tr').forEach(r => [...r.children].forEach((d, i) => { const l = h[i] || ''; if (d.dataset.l !== l) d.dataset.l = l; })); }); }
+new MutationObserver(() => { if (labelTables.q) return; labelTables.q = 1; requestAnimationFrame(() => { labelTables.q = 0; labelTables(); }); }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 // A pop-up form that lives in the page: a button with data-open="id" shows it.
 const modal = (id, title, body, wide) => `<div class="modal" id="${id}" hidden><div class="mcard${wide ? ' wide' : ''}"><div class="dlg-h"><b>${title}</b><button type="button" class="ib" data-close aria-label="Close">${ico('x', 20)}</button></div><div class="mb">${body}</div></div></div>`;
 document.addEventListener('click', e => {
@@ -821,7 +853,7 @@ function renderList(quiet) {
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
       <span class="r2"><span class="prev">${esc(snip(c.last_type, c.last_body))}</span><span class="rx">${c.pinned ? `<span class="pinic">${ico('pin', 15)}</span>` : ''}${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : c.marked_unread ? '<i class="ub dotb"></i>' : ''}<button class="rowx" data-x="${c.id}" aria-label="Chat options" tabindex="-1">${ico('chev', 18)}</button></span></span>
-      <span class="r3"><em class="tag">${esc(c.intent || 'new')}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
+      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
   el.scrollTop = top;
   el.querySelectorAll('.row').forEach(r => {
     r.onclick = e => { if (r.__lp) { r.__lp = false; return; } const x = e.target.closest('.rowx'); if (x) { e.stopPropagation(); const b = x.getBoundingClientRect(); return rowMenu(+x.dataset.x, b.left - 150, b.bottom + 4); } openConv(+r.dataset.id); };
@@ -866,7 +898,7 @@ function renderHead() {
     ['fav', 'star', c.favorite ? 'Remove from favourites' : 'Add to favourites'], ['pin', 'pin', c.pinned ? 'Unpin chat' : 'Pin chat'], ['unread', 'mail', 'Mark as unread'], ['archive', 'archive', c.archived ? 'Unarchive chat' : 'Archive chat'], '-',
     ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : (can('close') ? [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']] : [])), ...(can('not_client') ? [['nonclient', 'ban', 'Not a client', true]] : [])];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
-  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(c.intent || 'new')}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
+  <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(nice(c.intent || 'new'))}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
   ${c.calls_enabled && c.bot_step !== 'held' && can('calls') ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
   <button class="ib" id="notesbtn" aria-label="Notes" title="Internal notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <button class="ib" id="cpbtn" aria-label="Contact details" title="Contact details">${ico('panel')}</button>
@@ -979,7 +1011,7 @@ function fillPanel() {
   const c = S.conv, top = $('#cptop'); if (!c || !top) return;
   const nm = c.contact_name || '+' + c.wa_id, w = win(c), kv = (k, v) => v ? `<dt>${k}</dt><dd>${esc(v)}</dd>` : '';
   top.innerHTML = `${avatar(nm, 72)}<h2>${esc(nm)}</h2><span class="mute">+${esc(c.wa_id)}</span><em class="chip ${w.cls}">${w.open ? 'Reply window open · ' + w.txt : 'Reply window closed'}</em>`;
-  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', c.source === 'ad' ? 'An ad' : c.source === 'import' ? 'An imported list' : c.source === 'personal' ? 'Personal contact' : 'Organic') + kv('Asked for', c.intent) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
+  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', c.source === 'ad' ? 'An ad' : c.source === 'import' ? 'An imported list' : c.source === 'personal' ? 'Personal contact' : 'Organic') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
     + kv('First contact', c.contact_since ? new Date(c.contact_since).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' }) : '') + kv('Chat status', c.bot_step === 'held' ? 'On hold' : c.status === 'closed' ? 'Closed' : 'Open') + kv('Marketing', c.opted_out ? 'Opted out' : 'Allowed');
 }
 async function exportChat(list) {
@@ -1262,7 +1294,7 @@ async function showTeam() {
   <div class="tbl"><div class="tbl-h"><b>Members</b><div class="search">${ico('search', 16)}<input id="uq" placeholder="Search name or email"></div></div>
   <table><thead><tr><th>Member</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>New chats</th><th></th>' : ''}</tr></thead><tbody id="utb">
   ${us.map(u => `<tr><td>${userCell(u.name, u.email)}</td><td><em class="chip${u.role === 'admin' ? ' ok' : u.role === 'manager' ? ' warn' : ''}">${esc(cap(u.role))}</em></td><td>${admin ? `<select data-ut="${u.id}" style="min-width:130px">${dopt(u.team)}</select>` : esc(dname(u.team))}</td><td>${u.active_chats} <span class="mute">/ ${u.max_active_chats}</span></td>
-  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label class="ck"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}> In rotation</label>` : '<span class="mute">—</span>'}</td>
+  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label class="ck"><span class="tog"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}><i></i></span> In rotation</label>` : '<span class="mute">—</span>'}</td>
   <td class="tdm"><button class="rowbtn" data-um="${u.id}" aria-label="Actions for ${esc(u.name)}">${ico('more', 18)}</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
   ${admin ? modal('m-user', 'Add a team member', `<form class="add" id="af"><label class="fld"><span>Full name</span><input id="an" required></label><label class="fld"><span>Email</span><input id="ae" type="email" required></label>
     <label class="fld"><span>Password</span><input id="ap" type="password" minlength="8" placeholder="8 or more characters" autocomplete="new-password" required></label><label class="fld"><span>Department</span><select id="at">${dopt('general')}</select></label>
@@ -1713,7 +1745,7 @@ async function showReports() {
     <p class="mute" style="margin:12px 0 0">${s.outbound} messages sent, ${s.template_out} of them templates. ${s.failed} failed.</p></div></div>
   <div class="tbl"><div class="tbl-h"><b>Agent performance</b>${xbtn('agents')}</div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Closed</th></tr></thead><tbody>
     ${d.agents.map(a => `<tr><td>${userCell(a.name, a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.closed_now}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet.</td></tr>'}</tbody></table></div>
-  <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
+  <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table class="keep"><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
     ${days.slice().reverse().map(x => `<tr><td>${niceDay(x.day)}</td><td>${x.new_chats}</td><td>${x.inbound}</td><td>${x.agent_out}</td><td>${x.bot_out}</td><td>${x.failed ? `<em class="chip closed">${x.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div></div>
   ${d.broadcasts.length ? `<div class="tbl"><div class="tbl-h"><b>Bulk broadcasts</b>${xbtn('broadcasts')}</div><table><thead><tr><th>Broadcast</th><th>Date</th><th>Recipients</th><th>Delivered</th><th>Read</th><th>Failed</th></tr></thead><tbody>
     ${d.broadcasts.map(b => `<tr><td><b>${esc(b.name)}</b><br><small class="mute">${esc(b.template_name)}</small></td><td>${esc(b.at)}</td><td>${b.total}</td><td>${b.delivered} <small class="mute">${pctTxt(b.total ? Math.round(b.delivered / b.total * 100) : null)}</small></td><td>${b.read} <small class="mute">${pctTxt(b.total ? Math.round(b.read / b.total * 100) : null)}</small></td><td>${b.failed ? `<em class="chip closed">${b.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div>` : ''}
@@ -1837,7 +1869,7 @@ async function showContacts() {
   const draw = async () => {
     const r = await api('/contacts?' + new URLSearchParams({ q: $('#cq').value, list: $('#cl').value })); if (r.error || !$('#ct')) return;
     $('#cn').textContent = `Showing ${r.rows.length} of ${r.total}`;
-    $('#ct').innerHTML = r.rows.length ? '<thead><tr><th>Contact</th><th>List</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>' + r.rows.map(c => `<tr><td>${userCell(c.name || '+' + c.wa_id, '+' + c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(c.source || '—')}</td>
+    $('#ct').innerHTML = r.rows.length ? '<thead><tr><th>Contact</th><th>List</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>' + r.rows.map(c => `<tr><td>${userCell(c.name || '+' + c.wa_id, '+' + c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(nice(c.source) || '—')}</td>
       <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : c.opted_out ? '<em class="chip closed">Opted out</em>' : `<em class="chip${c.chat_status === 'open' ? ' ok' : ''}">${esc(c.chat_status === 'open' ? 'With ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'New' : c.chat_status || 'No chat')}</em>`}</td>
       <td class="tdm"><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button> <button class="ghost" data-ig="${c.id}" data-v="${c.is_personal}">${c.is_personal ? 'Stop ignoring' : 'Ignore'}</button></td></tr>`).join('') + '</tbody>'
       : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search, or import a list.')}</td></tr></tbody>`;
