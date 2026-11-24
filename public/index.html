@@ -201,6 +201,7 @@ function win(c) {
 const ICONS = {
   phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
   chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -233,10 +234,10 @@ const ico = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="
 const hueOf = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const avatar = (name, size = 44) => `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .4)}px;background:hsl(${hueOf(name)} 42% 40%)">${esc(((String(name).replace(/[^\p{L}\p{N}]/gu, '')[0]) || '#').toUpperCase())}</span>`;
 const EMPTY = `<b>Team Inbox</b><span>Pick a chat on the left to read it and reply.</span><span>Every client stays with one team member from start to finish.</span>`;
-const NAV = [['inbox', 'Inbox', 'inbox', 0], ['dash', 'Dashboard', 'chart', 1], ['bc', 'Broadcasts', 'megaphone', 1], ['ct', 'Contacts', 'users', 1], ['tp', 'Templates', 'file', 1], ['fu', 'Follow-ups', 'zap', 1], ['st', 'Settings', 'sliders', 1], ['tm', 'Team', 'user', 1]];
+const NAV = [['inbox', 'Inbox', 'inbox', 0], ['dash', 'Dashboard', 'chart', 1], ['bc', 'Broadcasts', 'megaphone', 1], ['ct', 'Contacts', 'users', 1], ['tp', 'Templates', 'file', 1], ['fu', 'Follow-ups', 'zap', 1], ['st', 'Settings', 'sliders', 1], ['tm', 'Team', 'user', 1], ['co', 'Companies', 'building', 1, 1]];
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: showSettings, tm: showTeam })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: showSettings, tm: showTeam, co: showCompanies })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), k = t && !t.hidden ? S.nav : 'inbox'; document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); }
@@ -329,7 +330,7 @@ function showReset(token) {
 }
 function showLogin(err) {
   $('#app').innerHTML = `<div class="login"><aside class="lbrand">
-    <div class="lb-top"><div class="logo">TI</div>Team Inbox</div>
+    <div class="lb-top"><div class="logo">TI</div>TeamInbox Pro</div>
     <div><h2>Every client conversation, with one owner.</h2><p>One shared WhatsApp inbox for your whole team. A bot says hello, the right team member takes over, and stays with the client until the end.</p>
       <ul class="lb-feat">
         <li><i>🤖</i><div><b>Smart first reply</b><span>The bot greets new clients, finds out what they need and collects their name.</span></div></li>
@@ -342,8 +343,10 @@ function showLogin(err) {
   <main class="lform"><div style="display:grid;gap:12px;width:min(380px,100%)"><form id="lf" style="width:100%"><h1>Welcome back</h1><p class="mute">Sign in with the account your manager created for you.</p>
   <input id="em" type="email" placeholder="Email" autocomplete="username" required><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
   <button class="btn">Sign in</button><div class="err">${esc(err || '')}</div></form>
-  <p class="lb-note"><a href="#" id="fg">Forgot your password?</a></p></div></main></div>`;
+  <p class="lb-note"><a href="#" id="fg">Forgot your password?</a></p><p class="lb-note" id="sul" hidden>New here? <a href="#" id="sug">Create your company account</a></p></div></main></div>`;
   $('#fg').onclick = e => { e.preventDefault(); showForgot(); };
+  $('#sug').onclick = e => { e.preventDefault(); showSignup(); };
+  signupOpen().then(on => { const p = $('#sul'); if (p) p.hidden = !on; });
   $('#lf').onsubmit = async e => {
     e.preventDefault();
     const r = await fetch(API + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:$('#em').value, password:$('#pw').value }) });
@@ -352,12 +355,29 @@ function showLogin(err) {
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token:d.token, user:d.user })); boot();
   };
 }
+// Sign-up for a new company (shown only when the server has sign-up switched on)
+let _signupOpen = null;
+const signupOpen = () => _signupOpen || (_signupOpen = fetch(API + '/api/auth/config').then(r => r.json()).then(d => !!d.signup).catch(() => false));
+function showSignup() {
+  showLogin(); const box = document.querySelector('.lform > div');
+  box.innerHTML = `<form id="sf" style="width:100%"><h1>Create your account</h1><p class="mute">Set up a shared WhatsApp inbox for your team. You will be the admin and can add your team members afterwards.</p>
+    <input id="sc" placeholder="Company name" autocomplete="organization" maxlength="80" required><input id="sn" placeholder="Your full name" autocomplete="name" maxlength="60" required>
+    <input id="se" type="email" placeholder="Work email" autocomplete="username" required><input id="sp" type="password" minlength="8" placeholder="Password (8+ characters)" autocomplete="new-password" required>
+    <button class="btn">Create account</button><div class="err" id="sm"></div></form><p class="lb-note">Already have an account? <a href="#" id="sb">Sign in</a></p>`;
+  $('#sb').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname); showLogin(); };
+  $('#sf').onsubmit = async e => { e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
+    const d = await postPublic('/api/auth/signup', { company: $('#sc').value, name: $('#sn').value, email: $('#se').value, password: $('#sp').value }); b.disabled = false;
+    if (d.error || !d.token) { $('#sm').textContent = d.error || 'Could not create the account'; return; }
+    history.replaceState(null, '', location.pathname);
+    S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
+    setTimeout(() => toast('Welcome! Next step: open Settings and connect your WhatsApp number.'), 800); };
+}
 function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; showLogin(); }
 
 /* ---------- Shell + list ---------- */
 async function boot() {
   const mgr = isMgr(), tabs = mgr ? [['open','Open'],['unassigned','Unassigned'],['held','Held'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
-  const items = NAV.filter(n => mgr || !n[3]), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
+  const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super)), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
   const badge = k => k === 'inbox' ? '<i class="nb" hidden></i>' : '';
   $('#app').innerHTML = `<div class="shell${mgr ? ' ismgr' : ''}">
     <nav class="rail">${items.map(n => `<button class="ri${n[0] === 'inbox' ? ' on' : ''}" data-nav="${n[0]}" title="${n[1]}" aria-label="${n[1]}">${ico(n[2], 22)}${badge(n[0])}</button>`).join('')}<span style="flex:1"></span><button class="ri" data-acc="a-rail" title="Account">${avatar(S.user.name, 34)}</button></nav>
@@ -367,7 +387,7 @@ async function boot() {
       <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All labels</option></select></div></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
-    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small></div><button id="themebtn">Theme</button><button id="pwb">Change password</button><button id="out" class="danger">Sign out</button></div>
+    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">Theme</button><button id="pwb">Change password</button><button id="out" class="danger">Sign out</button></div>
     ${mgr ? `<div class="sheet" id="sheet" hidden><div class="sheetbody">${more.map(n => `<button data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span></button>`).join('')}</div></div>` : ''}</div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
@@ -825,6 +845,23 @@ function connect() {
   document.head.appendChild(s);
 }
 
+/* ---------- Companies (super admin only) ---------- */
+async function showCompanies() {
+  document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
+  const cs = await api('/super/companies'); if (cs.error) return toast(cs.error);
+  const when = t => t ? new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  el.innerHTML = `<header class="ch"><button class="back" id="tb">${ico('back')}</button><b>Companies</b></header>
+  <div class="stats"><div><b>${cs.length}</b>companies</div><div><b>${cs.filter(c => c.status === 'active').length}</b>active</div><div><b>${cs.reduce((n, c) => n + c.numbers, 0)}</b>WhatsApp numbers</div><div><b>${cs.reduce((n, c) => n + c.users, 0)}</b>team members</div></div>
+  <div class="tbl"><table><tr><th>Company</th><th>Admin</th><th>Team</th><th>Numbers</th><th>Chats</th><th>Last activity</th><th>Joined</th><th></th></tr>
+  ${cs.map(c => `<tr><td>${esc(c.name)}<br><small class="mute">#${c.id}</small></td><td>${esc(c.admin_email || '—')}</td><td>${c.users}</td><td>${c.numbers}</td><td>${c.chats}</td><td>${when(c.last_activity)}</td><td>${when(c.created_at)}</td>
+  <td><span class="dot${c.status === 'active' ? ' on' : ''}"></span>${c.status === 'active' ? 'Active' : 'Paused'} ${c.id === S.user.company_id ? '' : `<button class="ghost" data-cs="${c.id}" data-to="${c.status === 'active' ? 'paused' : 'active'}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>`}</td></tr>`).join('')}</table></div>
+  <p class="mute" style="padding:0 16px">Pausing a company signs its team out and stops them from signing in. Their chats and messages are kept, and new WhatsApp messages are still saved.</p>`;
+  $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
+  el.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => {
+    if (b.dataset.to === 'paused' && !confirm('Pause this company? Its team will be signed out until you resume it.')) return;
+    const r = await api('/super/companies/' + b.dataset.cs, 'PATCH', { status: b.dataset.to }); if (r.error) return toast(r.error); showCompanies(); });
+}
+
 /* ---------- Team (managers/admins) ---------- */
 async function showTeam() {
   document.body.classList.add('chat-open'); S.active = null; $('#chat').hidden = true; const el = $('#team'); el.hidden = false;
@@ -912,6 +949,7 @@ async function showSettings() {
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
   const row = (left, attr) => `<div class="hb" style="grid-template-columns:1fr auto">${left}<button class="ghost" ${attr}>Delete</button></div>`;
   el.innerHTML = `<header class="ch"><button class="back" id="tb">${ico('back')}</button><b>Settings</b></header>
+  ${S.user.role === 'admin' ? `<div class="panel"><h3>Company</h3><p class="mute">The name your team sees in the app.</p><label class="fld"><span>Company name</span><input id="coname" maxlength="80" value="${esc(S.user.company || '')}"></label><button class="btn" id="cosave">Save name</button></div>` : ''}
   <div class="panel" id="wp"><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>
     ${S.user.role === 'admin' ? `<form id="wnf" style="display:grid;gap:8px;margin-top:14px;border-top:1px solid var(--line,#0001);padding-top:12px"><b>Add another number</b>
       <input id="wn1" placeholder="Name, e.g. Support" required><input id="wn2" placeholder="Phone number ID (from Meta, WhatsApp, API Setup)" required>
@@ -942,6 +980,8 @@ async function showSettings() {
     <form id="qf" style="display:grid;gap:8px;margin-top:10px"><input id="q1" placeholder="Shortcut, e.g. fees" required><input id="q2" placeholder="Title, e.g. Course fees" required><textarea id="q3" rows="3" placeholder="Message text" required></textarea><input id="q4" placeholder="Buttons (optional, up to 3, separated by commas, e.g. Yes, No)"><button class="btn">Add quick reply</button></form></div>
   <div class="panel"><h3>Labels</h3>${S.labels.map(l => row(`<span><i style="display:inline-block;width:12px;height:12px;border-radius:6px;background:${esc(l.color)};margin-right:8px"></i>${esc(l.name)}</span>`, `data-dl="${l.id}"`)).join('') || '<p class="mute">None yet.</p>'}
     <form id="lf2" style="display:flex;gap:8px;margin-top:10px"><input id="l1" placeholder="Label name, e.g. Hot lead" required><input type="color" id="l2" value="#0e5a4a" style="width:60px;padding:2px"><button class="btn">Add</button></form></div>`;
+  if ($('#cosave')) $('#cosave').onclick = async () => { const name = $('#coname').value.trim(); const r = await api('/company', 'PATCH', { name }); if (r.error) return toast(r.error);
+    S.user.company = name; localStorage.setItem('wa_auth', JSON.stringify({ token: S.token, user: S.user })); const ac = $('#accco'); if (ac) ac.textContent = name; toast('Company name saved'); };
   $('#tb').onclick = () => { document.body.classList.remove('chat-open'); el.hidden = true; $('#chat').hidden = false; };
   $('#bf').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/bot', 'PUT', { greet: $('#b1').value, btnInfo: $('#b2').value, btnTeam: $('#b3').value, btnClasses: $('#b4').value, askName: $('#b5').value, handoff: $('#b6').value }); toast(r.error || 'Bot messages saved'); };
   $('#af').onsubmit = async e => { e.preventDefault(); const r = await api('/settings/away', 'PUT', { enabled: $('#a0').checked, message: $('#a1').value, start: $('#a2').value, end: $('#a3').value, days: [...document.querySelectorAll('.ad:checked')].map(x => +x.value) }); toast(r.error || 'Away message saved'); };
@@ -1196,6 +1236,14 @@ async function askCallPermission(id) {
 /* ---------- Start ---------- */
 applyTheme();
 const resetTok = new URLSearchParams(location.search).get('reset');
+const signupLink = new URLSearchParams(location.search).has('signup');
 if (resetTok) showReset(resetTok);
-else try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; boot(); } else showLogin(); } catch { showLogin(); }
+else try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; refreshMe(); boot(); } else if (signupLink) showSignup(); else showLogin(); } catch { showLogin(); }
+// Older sign-ins do not know the company name or super-admin access yet: fetch them once and redraw if anything changed.
+async function refreshMe() {
+  const me = await api('/me'); if (me.error || !S.token) return;
+  const changed = me.company !== S.user.company || !!me.is_super !== !!S.user.is_super;
+  S.user = { ...S.user, company: me.company, company_id: me.company_id, is_super: !!me.is_super }; localStorage.setItem('wa_auth', JSON.stringify({ token: S.token, user: S.user }));
+  if (changed) boot();
+}
 </script></body></html>

@@ -195,11 +195,70 @@ CREATE TABLE IF NOT EXISTS departments (
   name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-INSERT INTO departments(key,name) VALUES ('general','General'),('sales','Sales'),('recruitment','Recruitment'),('classes','Classes') ON CONFLICT (key) DO NOTHING;
-INSERT INTO departments(key,name) SELECT DISTINCT team, initcap(team) FROM users WHERE team IS NOT NULL AND team <> '' ON CONFLICT (key) DO NOTHING;
+-- (the starting departments are added per company further down)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS in_rotation BOOLEAN NOT NULL DEFAULT TRUE;
 CREATE TABLE IF NOT EXISTS rr_state (team TEXT PRIMARY KEY, last_user_id INT, given INT NOT NULL DEFAULT 0);
 ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS buttons JSONB;
 
 -- Lets an admin end a person's sessions (after an email change, password reset or deactivation)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT NOT NULL DEFAULT 0;
+
+-- ============================================================================
+-- Several companies on one system (sign-up). Every company only sees its own data.
+-- Everything that existed before this update belongs to company 1, so the current client keeps working unchanged.
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS companies (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO companies(id, name) VALUES (1, 'Main company') ON CONFLICT (id) DO NOTHING;
+SELECT setval(pg_get_serial_sequence('companies','id'), GREATEST((SELECT MAX(id) FROM companies), 1));
+
+-- Stamp each table with its company. Existing rows get company 1; after that the default is removed,
+-- so new rows must always say which company they belong to.
+DO $$
+DECLARE t TEXT;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['users','contacts','conversations','templates','settings','quick_replies','labels',
+                           'broadcasts','drips','wa_numbers','departments','rr_state'] LOOP
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = t AND column_name = 'company_id') THEN
+      EXECUTE format('ALTER TABLE %I ADD COLUMN company_id INT NOT NULL DEFAULT 1 REFERENCES companies(id)', t);
+      EXECUTE format('ALTER TABLE %I ALTER COLUMN company_id DROP DEFAULT', t);
+    END IF;
+  END LOOP;
+END $$;
+
+-- Names that were unique for the whole system are now unique inside each company
+CREATE UNIQUE INDEX IF NOT EXISTS contacts_company_wa ON contacts(company_id, wa_id);
+ALTER TABLE contacts DROP CONSTRAINT IF EXISTS contacts_wa_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS templates_company_name ON templates(company_id, name);
+ALTER TABLE templates DROP CONSTRAINT IF EXISTS templates_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS quick_replies_company_shortcut ON quick_replies(company_id, shortcut);
+ALTER TABLE quick_replies DROP CONSTRAINT IF EXISTS quick_replies_shortcut_key;
+CREATE UNIQUE INDEX IF NOT EXISTS labels_company_name ON labels(company_id, name);
+ALTER TABLE labels DROP CONSTRAINT IF EXISTS labels_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS departments_company_key ON departments(company_id, key);
+ALTER TABLE departments DROP CONSTRAINT IF EXISTS departments_key_key;
+CREATE UNIQUE INDEX IF NOT EXISTS one_default_wa_number_per_company ON wa_numbers(company_id) WHERE is_default;
+DROP INDEX IF EXISTS one_default_wa_number;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'settings_company_key_pk') THEN
+    ALTER TABLE settings DROP CONSTRAINT IF EXISTS settings_pkey;
+    ALTER TABLE settings ADD CONSTRAINT settings_company_key_pk PRIMARY KEY (company_id, key);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rr_state_company_team_pk') THEN
+    ALTER TABLE rr_state DROP CONSTRAINT IF EXISTS rr_state_pkey;
+    ALTER TABLE rr_state ADD CONSTRAINT rr_state_company_team_pk PRIMARY KEY (company_id, team);
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_conv_company ON conversations(company_id, last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
+
+-- Starting departments for company 1 (only added if missing)
+INSERT INTO departments(company_id,key,name) VALUES (1,'general','General'),(1,'sales','Sales'),(1,'recruitment','Recruitment'),(1,'classes','Classes')
+  ON CONFLICT (company_id, key) DO NOTHING;
+INSERT INTO departments(company_id,key,name) SELECT DISTINCT company_id, team, initcap(team) FROM users WHERE team IS NOT NULL AND team <> ''
+  ON CONFLICT (company_id, key) DO NOTHING;

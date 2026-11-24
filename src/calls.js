@@ -3,6 +3,7 @@ const { query } = require('./db');
 const rt = require('./realtime');
 const push = require('./push');
 const numbers = require('./numbers');
+const tenant = require('./tenant');
 
 const early = new Map(); // outgoing call answers that arrive before we have stored the call
 const FINAL = ['completed', 'missed', 'rejected', 'failed', 'no_answer'];
@@ -12,7 +13,7 @@ const convOf = async (id) => (await query('SELECT * FROM conversations WHERE id=
 // Calling can be switched off per number in Settings. When off, call events are ignored completely
 // (never rejected), so another system on the same number, such as Wati, keeps working undisturbed.
 async function callsOn(numId) {
-  const r = numId ? (await query('SELECT calls_enabled FROM wa_numbers WHERE id=$1', [numId])).rows[0] : (await query('SELECT calls_enabled FROM wa_numbers WHERE is_default')).rows[0];
+  const r = numId ? await numbers.get(numId) : await numbers.getDefault();
   return !!(r && r.calls_enabled);
 }
 
@@ -21,17 +22,18 @@ async function incoming(ev, value, numId) {
   if (!(await callsOn(nid))) return;
   const waId = String(ev.from || '').replace(/\D/g, ''); if (!waId) return;
   const name = value.contacts && value.contacts[0] && value.contacts[0].profile && value.contacts[0].profile.name;
+  const cid = tenant.cid();
   const contact = (await query(
-    `INSERT INTO contacts(wa_id,profile_name,source) VALUES($1,$2,'organic') ON CONFLICT (wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`, [waId, name || null])).rows[0];
+    `INSERT INTO contacts(company_id,wa_id,profile_name,source) VALUES($3,$1,$2,'organic') ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`, [waId, name || null, cid])).rows[0];
   if (contact.is_personal) return;
   const conv = (await query(
-    `INSERT INTO conversations(contact_id, wa_number_id) VALUES($1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`, [contact.id, nid])).rows[0];
+    `INSERT INTO conversations(company_id, contact_id, wa_number_id) VALUES($3,$1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`, [contact.id, nid, cid])).rows[0];
   const sdp = ev.session && ev.session.sdp; if (!sdp) return;
   const c = (await query(`INSERT INTO calls(wa_call_id,conversation_id,wa_number_id,direction,status,sdp_offer) VALUES($1,$2,$3,'in','ringing',$4) ON CONFLICT (wa_call_id) DO NOTHING RETURNING *`, [ev.id, conv.id, nid, sdp])).rows[0];
   if (!c) return;
   const label = (await query('SELECT label FROM wa_numbers WHERE id=$1', [nid])).rows[0];
   rt.toConversation(conv, 'call:incoming', { id: c.id, conversationId: conv.id, assignedTo: conv.assigned_to || null, name: contact.profile_name || contact.name || '+' + waId, phone: '+' + waId, numberLabel: label && label.label });
-  const targets = conv.assigned_to ? [conv.assigned_to] : (await query(`SELECT id FROM users WHERE is_active AND role <> 'agent'`)).rows.map(r => r.id);
+  const targets = conv.assigned_to ? [conv.assigned_to] : (await query(`SELECT id FROM users WHERE is_active AND role <> 'agent' AND company_id=$1`, [cid])).rows.map(r => r.id);
   targets.forEach(id => push.notifyUser(id, 'Incoming WhatsApp call', contact.profile_name || contact.name || '+' + waId, { conversationId: conv.id }));
   setTimeout(async () => { // safety net if Meta's end-of-call event never arrives; only touches calls nobody picked up
     const r = (await query('SELECT status FROM calls WHERE id=$1', [c.id])).rows[0];

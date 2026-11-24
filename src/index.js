@@ -37,8 +37,8 @@ if (MIN > 0) setInterval(async () => {
         WHERE status='open' AND unread_count>0 AND escalated_at IS NULL
           AND last_customer_message_at < now() - ($1 || ' minutes')::interval
           AND (last_agent_reply_at IS NULL OR last_agent_reply_at < last_customer_message_at)
-        RETURNING id, assigned_to`, [String(MIN)]);
-    rows.forEach(r => rt.toConversation({}, 'conversation:escalated', { conversationId: r.id, assignedTo: r.assigned_to }));
+        RETURNING id, assigned_to, company_id`, [String(MIN)]);
+    rows.forEach(r => rt.toConversation({ company_id: r.company_id }, 'conversation:escalated', { conversationId: r.id, assignedTo: r.assigned_to }));
   } catch (e) { console.error('escalation', e.message); }
 }, 60000);
 

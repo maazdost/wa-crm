@@ -1,13 +1,14 @@
 const { query } = require('./db');
 const wa = require('./whatsapp');
 const { saveOutbound } = require('./messages');
+const tenant = require('./tenant');
 // New or unverified WhatsApp accounts may start conversations with only ~250 people per 24 hours.
 const DAILY = () => Number(process.env.BROADCAST_DAILY_LIMIT || 250);
 const first = (n) => (n || '').trim().split(/\s+/)[0] || 'there';
 
 // Who a segment matches. Filters combine with AND, values inside one filter with OR. Opted-out contacts never match.
 async function audience(seg = {}) {
-  const w = ['NOT ct.opted_out', 'NOT ct.is_personal'], p = [];
+  const w = ['ct.company_id=$1', 'NOT ct.opted_out', 'NOT ct.is_personal'], p = [tenant.cid()];
   const add = (sql, v) => { p.push(v); w.push(sql.replace('?', () => '$' + p.length)); };
   if (seg.lists?.length) add('ct.list_name = ANY(?)', seg.lists.map(String));
   if (seg.sources?.length) add("COALESCE(ct.source,'organic') = ANY(?)", seg.sources.map(String));
@@ -18,14 +19,15 @@ async function audience(seg = {}) {
 const paramsFor = (varMap, contact) => (varMap || []).map(m => m.type === 'name' ? first(contact.name) : String(m.value || ''));
 
 async function ensureConversation(contactId, numId) {
-  await query(`INSERT INTO conversations(contact_id,status,bot_step,wa_number_id) VALUES($1,'bot','new',$2) ON CONFLICT (contact_id) DO NOTHING`, [contactId, numId || null]);
+  await query(`INSERT INTO conversations(company_id,contact_id,status,bot_step,wa_number_id) VALUES($3,$1,'bot','new',$2) ON CONFLICT (contact_id) DO NOTHING`, [contactId, numId || null, tenant.cid()]);
   return (await query('SELECT * FROM conversations WHERE contact_id=$1', [contactId])).rows[0];
 }
 
 async function runBatch(b) {
-  const used = (await query(`SELECT COUNT(*)::int AS n FROM broadcast_recipients WHERE sent_at > now() - interval '24 hours'`)).rows[0].n;
+  // The daily limit counts this company's broadcasts only
+  const used = (await query(`SELECT COUNT(*)::int AS n FROM broadcast_recipients r JOIN broadcasts b2 ON b2.id=r.broadcast_id WHERE b2.company_id=$1 AND r.sent_at > now() - interval '24 hours'`, [b.company_id])).rows[0].n;
   const room = DAILY() - used; if (room <= 0) return;
-  const tpl = (await query('SELECT * FROM templates WHERE name=$1', [b.template_name])).rows[0];
+  const tpl = (await query('SELECT * FROM templates WHERE name=$1 AND company_id=$2', [b.template_name, b.company_id])).rows[0];
   const rows = (await query(`SELECT * FROM broadcast_recipients WHERE broadcast_id=$1 AND status='queued' ORDER BY id LIMIT $2`, [b.id, Math.min(room, 20)])).rows;
   if (!rows.length) {
     const left = (await query(`SELECT COUNT(*)::int AS n FROM broadcast_recipients WHERE broadcast_id=$1 AND status='queued'`, [b.id])).rows[0].n;
@@ -53,7 +55,7 @@ async function tick() {
   if (running) return; running = true;
   try {
     await query(`UPDATE broadcasts SET status='sending', started_at=now() WHERE status='scheduled' AND scheduled_at <= now()`);
-    for (const b of (await query(`SELECT * FROM broadcasts WHERE status='sending' ORDER BY id`)).rows) await runBatch(b);
+    for (const b of (await query(`SELECT * FROM broadcasts WHERE status='sending' ORDER BY id`)).rows) await tenant.run(b.company_id, () => runBatch(b));
   } catch (e) { console.error('broadcast worker', e.message); } finally { running = false; }
 }
 const start = () => setInterval(tick, 3000);

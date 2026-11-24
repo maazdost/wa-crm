@@ -1,5 +1,6 @@
 const { pool } = require('./db');
 const settings = require('./settings');
+const tenant = require('./tenant');
 
 /**
  * Sticky assignment of a conversation to an agent, inside a transaction guarded by an advisory lock
@@ -11,29 +12,29 @@ const settings = require('./settings');
  * Managers can always assign a chat by hand, which ignores all of this.
  */
 async function assignConversation(conversationId, team) {
-  const cfg = await settings.get('assign');
+  const cfg = await settings.get('assign'), cid = tenant.cid();
   const batch = Math.min(20, Math.max(1, Number(cfg.batch) || 1));
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('SELECT pg_advisory_xact_lock(7001)');
+    await client.query('SELECT pg_advisory_xact_lock(7001, $1)', [cid]);
     const candidates = async (teamFilter) => (await client.query(
       `SELECT u.id, u.is_online, u.max_active_chats,
               (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active
          FROM users u
-        WHERE u.role='agent' AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1)
-        ORDER BY u.id`, [teamFilter])).rows;
+        WHERE u.company_id=$2 AND u.role='agent' AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1)
+        ORDER BY u.id`, [teamFilter, cid])).rows;
     const pickLeast = (rows) => rows.slice().sort((a, b) =>
       (a.active >= a.max_active_chats) - (b.active >= b.max_active_chats) || (b.is_online - a.is_online) || (a.active - b.active) || (a.id - b.id))[0];
     const pickTurn = async (rows, key) => {
       const free = rows.filter(a => a.active < a.max_active_chats), live = free.filter(a => a.is_online), list = live.length ? live : free;
       if (!list.length) return null;
-      const st = (await client.query('SELECT last_user_id, given FROM rr_state WHERE team=$1 FOR UPDATE', [key])).rows[0];
+      const st = (await client.query('SELECT last_user_id, given FROM rr_state WHERE company_id=$2 AND team=$1 FOR UPDATE', [key, cid])).rows[0];
       let chosen, given;
       const cur = st && list.find(a => a.id === st.last_user_id);
       if (cur && st.given < batch) { chosen = cur; given = st.given + 1; }
       else { chosen = (st && list.find(a => a.id > st.last_user_id)) || list[0]; given = 1; }
-      await client.query(`INSERT INTO rr_state(team,last_user_id,given) VALUES($1,$2,$3) ON CONFLICT (team) DO UPDATE SET last_user_id=EXCLUDED.last_user_id, given=EXCLUDED.given`, [key, chosen.id, given]);
+      await client.query(`INSERT INTO rr_state(company_id,team,last_user_id,given) VALUES($4,$1,$2,$3) ON CONFLICT (company_id,team) DO UPDATE SET last_user_id=EXCLUDED.last_user_id, given=EXCLUDED.given`, [key, chosen.id, given, cid]);
       return chosen;
     };
     const pick = async (teamFilter) => {
@@ -45,7 +46,7 @@ async function assignConversation(conversationId, team) {
     if (!agent) { await client.query('ROLLBACK'); return null; }
     await client.query('UPDATE users SET last_assigned_at=now() WHERE id=$1', [agent.id]);
     const { rows } = await client.query(
-      `UPDATE conversations SET assigned_to=$1, status='open', assigned_at=now() WHERE id=$2 RETURNING *`, [agent.id, conversationId]);
+      `UPDATE conversations SET assigned_to=$1, status='open', assigned_at=now() WHERE id=$2 AND company_id=$3 RETURNING *`, [agent.id, conversationId, cid]);
     await client.query('COMMIT');
     return rows[0];
   } catch (e) {

@@ -79,8 +79,9 @@ function client(numId) {
   });
 
   async function graph(path) { const n = await N(); return graphWith(n.token, path); }
-  // The WhatsApp Business Account ID: server setting first, then this number's own, then the one saved from Settings.
-  const wabaId = async () => process.env.WA_WABA_ID || (await N()).waba_id || (await require('./settings').get('wa')).waba_id || '';
+  // The WhatsApp Business Account ID: server setting first (company 1 only), then this number's own, then the one saved from Settings.
+  // (WA_WABA_ID on the server only applies to company 1, the original setup.)
+  const wabaId = async () => (require('./tenant').cid() === 1 && process.env.WA_WABA_ID) || (await N()).waba_id || (await require('./settings').get('wa')).waba_id || '';
 
   async function uploadMedia(buffer, mime, filename) {
     if (DRY) return { id: 'dryM_' + crypto.randomUUID() };
