@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 // Each page of the app has its own address (/en/manage/reports); all of them open the same app file.
 // The short form (/reports) still works and the app corrects the address.
-const PAGES = ['dashboard', 'live-chat', 'contacts', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'follow-ups', 'bot', 'reports', 'health-audit', 'agents', 'permissions', 'notifications', 'activity-log', 'tags', 'settings', 'companies'];
+const PAGES = ['dashboard', 'live-chat', 'contacts', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'catalogs', 'ad-manager', 'follow-ups', 'bot', 'reports', 'health-audit', 'agents', 'permissions', 'notifications', 'activity-log', 'tags', 'settings', 'companies'];
 app.get(new RegExp(`^/(?:[a-z]{2}/[a-z-]+/)?(?:${PAGES.join('|')})/?$`), (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 app.use('/webhook', require('./routes/webhook'));
 app.use('/api', require('./access').gate); // permissions and the activity log, in front of every route
@@ -31,6 +31,7 @@ app.use('/api', require('./routes/marketing'));
 app.use('/api', require('./routes/calls'));
 app.use('/api', require('./routes/embedded'));
 app.use('/api', require('./routes/library'));
+app.use('/api', require('./routes/catalog'));
 app.use('/api', require('./routes/reports'));
 app.use('/api', require('./routes/manage'));
 

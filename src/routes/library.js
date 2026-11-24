@@ -73,7 +73,7 @@ router.post('/conversations/:id/library/:fileId', required(), wrap(async (req, r
 }));
 
 // ---- Quick Message ----
-const TYPES = ['text', 'image', 'video', 'audio', 'file'];
+const TYPES = ['text', 'image', 'video', 'audio', 'file', 'product'];
 // Checks a rule sent from the page and returns it in the shape that is stored. WhatsApp's own limits are applied here.
 const clean = async (b) => {
   const str = (x, n) => String(x == null ? '' : x).trim().slice(0, n);
@@ -86,10 +86,16 @@ const clean = async (b) => {
   if (!raw.length) return { error: 'Add at least one message to send' };
   const ids = [...new Set(raw.map(s => Number(s.media_id)).filter(Boolean))];
   const files = ids.length ? (await query('SELECT id, mime FROM media_library WHERE company_id=$1 AND id = ANY($2::int[])', [C(), ids])).rows : [];
+  const pids = [...new Set(raw.map(s => Number(s.product_id)).filter(Boolean))];
+  const products = pids.length ? (await query('SELECT id FROM products WHERE company_id=$1 AND id = ANY($2::int[])', [C(), pids])).rows : [];
   const steps = [];
   for (const [i, s] of raw.entries()) {
     const n = `Message ${i + 1}`, type = TYPES.includes(s.type) ? s.type : 'text', text = str(s.text, 1000);
     const step = { type, text, delay: Math.min(60, Math.max(0, Math.round(Number(s.delay) || 0))) };
+    if (type === 'product') { // the product's own photo, price and details are the message
+      if (!products.some(x => x.id === Number(s.product_id))) return { error: `${n}: choose a product from your catalog` };
+      steps.push({ type, product_id: Number(s.product_id), text: '', delay: step.delay }); continue;
+    }
     if (type !== 'text') {
       const f = files.find(x => x.id === Number(s.media_id));
       if (!f) return { error: `${n}: choose a file from the Media Library` };

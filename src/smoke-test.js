@@ -84,6 +84,24 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('button tap starts the next quick message and keeps the agent', adAfter.messages.some(m => m.body === 'Thank you for connecting with us.') && adAfter.conversation.assigned_to === a2.user.id);
   check('wrong rules are refused', (await j('/api/auto-replies', { method: 'POST', body: { name: 'Bad', keywords: ['x'], steps: [{ type: 'text', text: 'a', buttons: [{ type: 'url', title: 'A', url: 'https://a.co' }, { type: 'reply', title: 'B' }] }] } }, admin)).status === 400);
   await j('/api/auto-replies/' + ad.data.id, { method: 'DELETE' }, admin); await j('/api/auto-replies/' + yes.id, { method: 'DELETE' }, admin); await j('/api/labels/' + tag.id, { method: 'DELETE' }, admin);
+  // Catalogs: products, sending them in a chat and from a quick message
+  const prod = (await j('/api/products', { method: 'POST', body: { name: 'Gold Course', price: 15000, currency: 'PKR', description: 'Three months of classes.', link: 'https://example.com/gold', category: 'Courses', media_id: file.id } }, admin)).data;
+  const plain = (await j('/api/products', { method: 'POST', body: { name: 'Free Webinar', in_stock: false } }, admin)).data;
+  check('manager adds products and agents can see them', prod.id && prod.price === 15000 && plain.in_stock === false && (await j('/api/products', {}, a1.token)).data.products.length === 2);
+  check('wrong products are refused and agents cannot change the catalog', (await j('/api/products', { method: 'POST', body: { name: '' } }, admin)).status === 400 && (await j('/api/products', { method: 'POST', body: { name: 'X', price: 'abc' } }, admin)).status === 400
+    && (await j('/api/products', { method: 'POST', body: { name: 'X', link: 'not a link' } }, admin)).status === 400 && (await j('/api/products', { method: 'POST', body: { name: 'X' } }, a1.token)).status === 403 && (await j('/api/products/' + prod.id, { method: 'DELETE' }, a1.token)).status === 403);
+  const ps = await j(`/api/conversations/${own.id}/products`, { method: 'POST', body: { ids: [prod.id, plain.id] } }, a1.token);
+  check('agent sends products in own chat', ps.status === 200 && ps.data.messages.length === 2 && ps.data.messages[0].media_id && /^\*Gold Course\*\nPKR 15,000\n\nThree months of classes\.\n\nhttps:\/\/example\.com\/gold$/.test(ps.data.messages[0].body)
+    && ps.data.messages[1].body === '*Free Webinar*\nOut of stock' && !ps.data.messages[1].media_id && (await j(`/api/conversations/${own.id}/products`, { method: 'POST', body: { ids: [prod.id] } }, a2.token)).status === 403);
+  const prule = (await j('/api/auto-replies', { method: 'POST', body: { name: 'Catalog', keywords: ['show me the course'], match_type: 'exact', steps: [{ type: 'product', product_id: prod.id }, { type: 'text', text: 'Shall I book you in?' }] } }, admin)).data;
+  await inbound(own.wa_id, { text: { body: 'Show me the course' } }); await sleep(600);
+  const pm2 = (await j(`/api/conversations/${own.id}/messages`, {}, a1.token)).data.messages, pi = pm2.findIndex(m => m.sender_type === 'bot' && /^\*Gold Course\*/.test(m.body) && m.media_id);
+  check('quick message sends a product, then the next message', prule.id && pi > 0 && pm2.slice(pi).some(m => m.body === 'Shall I book you in?')
+    && (await j('/api/auto-replies', { method: 'POST', body: { name: 'Bad', keywords: ['y'], steps: [{ type: 'product', product_id: 999999 }] } }, admin)).status === 400
+    && (await j('/api/products', {}, admin)).data.products.find(p => p.id === prod.id).sent_count === 2 && (await j('/api/products', {}, admin)).data.products.find(p => p.id === prod.id).used_in === 1);
+  const sw = await j('/api/products/' + prod.id, { method: 'PATCH', body: { in_stock: false } }, admin);
+  await j('/api/auto-replies/' + prule.id, { method: 'DELETE' }, admin); await j('/api/products/' + plain.id, { method: 'DELETE' }, admin); await j('/api/products/' + prod.id, { method: 'DELETE' }, admin);
+  check('product stock switch and delete work', sw.data.in_stock === false && sw.data.name === 'Gold Course' && (await j('/api/products', {}, admin)).data.products.length === 0);
   await j('/api/media-library/' + file.id, { method: 'DELETE' }, admin);
 
   // Window closed -> text rejected, template allowed

@@ -13,6 +13,7 @@ const PERMS = {
     contacts: { label: 'Contacts', hint: 'See the contact list, edit and import contacts', on: true, rules: [['ANY', /^\/contacts(?!\/lists)(\/|$)/]] },
     automation: { label: 'Quick Message, Quick Replies and Follow-ups', hint: 'Create and change automatic messages', on: true, rules: [['ANY', /^\/(auto-replies|drips)(\/|$)/], ['POST|DELETE', /^\/quick-replies(\/|$)/]] },
     library: { label: 'Media Library', hint: 'Upload, rename and delete saved files', on: true, rules: [['POST|PATCH|DELETE', /^\/media-library(\/|$)/]] },
+    catalog: { label: 'Catalogs', hint: 'Add, change and delete products', on: true, rules: [['POST|PATCH|DELETE', /^\/products(\/|$)/]] },
     tags: { label: 'Tags', hint: 'Create and delete tags', on: true, rules: [['POST|DELETE', /^\/labels(\/|$)/]] },
     settings: { label: 'Settings, Bot and Away', hint: 'Change the welcome bot, away message and assignment rules', on: true, rules: [['PUT', /^\/settings\//]] },
     reports: { label: 'Reports and Health Audit', hint: 'Open reports and export them', on: true, rules: [['ANY', /^\/(reports|health-audit)(\/|$)/]] },
@@ -23,7 +24,7 @@ const PERMS = {
     close: { label: 'Close and reopen chats', hint: 'Mark a chat as closed or open it again', on: true, rules: [['POST', /^\/conversations\/\d+\/status$/]] },
     template: { label: 'Send templates', hint: 'Send an approved template after the 24 hour window', on: true, rules: [['POST', /^\/conversations\/\d+\/template$/]] },
     // Voice notes stay allowed: they are recorded in the chat, not picked from files.
-    media: { label: 'Send photos and files', hint: 'Send files from the device or the Media Library. Voice notes stay allowed.', on: true, rules: [['POST', /^\/conversations\/\d+\/(media|library\/\d+)$/, (r) => r.query.filename === 'voice-note' && /^audio\//.test(String(r.query.mime || ''))]] },
+    media: { label: 'Send photos, files and products', hint: 'Send files from the device or the Media Library, and products from the catalog. Voice notes stay allowed.', on: true, rules: [['POST', /^\/conversations\/\d+\/(media|library\/\d+|products)$/, (r) => r.query.filename === 'voice-note' && /^audio\//.test(String(r.query.mime || ''))]] },
     labels: { label: 'Tag chats', hint: 'Add and remove tags on a chat', on: true, rules: [['POST', /^\/conversations\/\d+\/labels$/]] },
     not_client: { label: 'Mark as not a client', hint: 'Remove a personal chat from the client list', on: true, rules: [['POST', /^\/conversations\/\d+\/not-client$/]] },
     calls: { label: 'WhatsApp calls', hint: 'Start a call and ask for call permission', on: true, rules: [['POST', /^\/conversations\/\d+\/(call|call-permission)$/]] }
@@ -99,6 +100,9 @@ const EVENTS = [
   ['POST', /^\/auto-replies$/, 'Quick Message', 'Created a quick message', (r) => r.body.name],
   ['PATCH', /^\/auto-replies\/(\d+)$/, 'Quick Message', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on a quick message' : 'Switched off a quick message') : 'Changed a quick message', byId('auto_replies')],
   ['DELETE', /^\/auto-replies\/(\d+)$/, 'Quick Message', 'Deleted a quick message', byId('auto_replies')],
+  ['POST', /^\/products$/, 'Catalogs', 'Added a product', (r) => r.body.name],
+  ['PATCH', /^\/products\/(\d+)$/, 'Catalogs', (r) => Object.keys(r.body || {}).join() === 'in_stock' ? (r.body.in_stock ? 'Marked a product in stock' : 'Marked a product out of stock') : 'Changed a product', byId('products')],
+  ['DELETE', /^\/products\/(\d+)$/, 'Catalogs', 'Deleted a product', byId('products')],
   ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => r.body.status === 'paused' ? 'Paused a company' : 'Changed a company']
 ];
 async function log({ cid, userId, userName, role, area, action, detail, ip }) {
