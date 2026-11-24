@@ -23,5 +23,11 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_CONFIG_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
       - key: WA_DRY_RUN
         value: "false"
