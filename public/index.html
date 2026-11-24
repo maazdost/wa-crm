@@ -385,6 +385,50 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .alt td{padding:3px 0;border:0}
 .alw{font-size:12px}
 }
+/* Right to left languages (Urdu). The layout mirrors by itself; these rules fix what is tied to one side. */
+[dir=rtl] body{font-family:"Segoe UI","Noto Sans Arabic","Noto Naskh Arabic",Tahoma,system-ui,sans-serif}
+[dir=rtl] .archrow,[dir=rtl] .row,[dir=rtl] .menu button,[dir=rtl] .qr button,[dir=rtl] .sw,[dir=rtl] th,[dir=rtl] td,[dir=rtl] .ni,[dir=rtl] .prof div,[dir=rtl] .pick button{text-align:right}
+[dir=rtl] .hb b,[dir=rtl] .tdm{text-align:left}
+[dir=rtl] .side,[dir=rtl] .nav{border-right:0;border-left:1px solid var(--line)}
+[dir=rtl] .cpanel{border-left:0;border-right:1px solid var(--line)}
+[dir=rtl] .inp>.ic,[dir=rtl] .search .ic{left:auto;right:14px}
+[dir=rtl] .eye{right:auto;left:6px}
+[dir=rtl] .search input{padding:9px 46px 9px 12px}
+[dir=rtl] .tabs button i{margin-left:0;margin-right:4px}
+[dir=rtl] .row{padding:0 14px 0 0}
+[dir=rtl] .rb{padding:11px 0 10px 14px}
+[dir=rtl] .back{margin-left:0;margin-right:-6px}
+[dir=rtl] .ph .back{margin-right:0}
+[dir=rtl] .back svg,[dir=rtl] .ni .chev{transform:scaleX(-1)}
+[dir=rtl] .menu{right:auto;left:0}
+[dir=rtl] .menu.clipm{left:auto;right:0}
+[dir=rtl] .quote,[dir=rtl] .rq{border-left:0;border-right:4px solid var(--brand)}
+[dir=rtl] .dlg-h{padding:12px 20px 12px 12px}
+[dir=rtl] .dot{margin-right:0;margin-left:6px}
+[dir=rtl] .topbar{padding:0 10px 0 18px}
+[dir=rtl] .wsn{margin-right:0;margin-left:auto}
+[dir=rtl] .prof{padding:3px 3px 3px 12px}
+[dir=rtl] .cp-h{padding:0 16px 0 8px}
+[dir=rtl] .stwrap>.panel,[dir=rtl] .stwrap>form.panel{margin-left:auto;margin-right:0}
+[dir=rtl] .callpill time{margin-left:0;margin-right:6px}
+[dir=rtl] .tog i:after{left:auto;right:3px}
+[dir=rtl] .tog input:checked+i:after{transform:translateX(-16px)}
+[dir=rtl] .mmeta{padding:10px 12px 10px 6px}
+[dir=rtl] .qmic{margin-right:0;margin-left:4px}
+[dir=rtl] .qadd>span{margin-right:0;margin-left:2px}
+[dir=rtl] .qins span{margin-right:0;margin-left:auto}
+[dir=rtl] .kw.big{padding:4px 10px 4px 6px}
+[dir=rtl] .pmnote .ghost{margin-left:0;margin-right:6px}
+[dir=rtl] .ib .ub,[dir=rtl] .navmin .ni .nb,[dir=rtl] .shell .ni .nb{right:auto;left:6px}
+[dir=rtl] .kpi small,[dir=rtl] th{letter-spacing:0;text-transform:none}
+[dir=rtl] textarea,[dir=rtl] input{unicode-bidi:plaintext}
+[dir=rtl] .b>*:not(.meta):not(.bx),[dir=rtl] .row .rb .r1 b,[dir=rtl] .ch .who>*,[dir=rtl] .cp-top>*,[dir=rtl] .uc b,[dir=rtl] .uc small{unicode-bidi:plaintext}
+[dir=rtl] time,[dir=rtl] .b .meta,[dir=rtl] .alw{direction:ltr;unicode-bidi:isolate}
+@media (max-width:760px){
+[dir=rtl] .cpanel{right:auto;left:0}
+[dir=rtl] .hrow .chip{margin-left:0;margin-right:44px}
+[dir=rtl] .tb .nb{left:auto;right:56%}
+}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -394,6 +438,39 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const S = { token:null, user:null, convs:[], active:null, conv:null, msgs:[], notes:[], tab:'open', agent:'', templates:[], agents:[], winOpen:null, waNumbers:[] };
 const arr = x => Array.isArray(x) ? x : [];
 const isMgr = () => S.user && S.user.role !== 'agent';
+/* ---------- Languages ---------- */
+// English is written in the page. Other languages live in /lang/<code>.json as "English text": "translation".
+// A key that starts with ~ is a pattern for texts with numbers or names in them, for example "~^(\\d+) chats$": "$1 چیٹس".
+// Text typed by people (messages, names, notes) is never translated: see NOTR.
+const LANGS = { en: ['English', 'ltr'], ur: ['اردو', 'rtl'] };
+const LANG = (() => { const u = location.pathname.split('/')[1]; let s = null; try { if (LANGS[u]) localStorage.setItem('ti_lang', u); s = localStorage.getItem('ti_lang'); } catch {} return LANGS[u] ? u : LANGS[s] ? s : 'en'; })();
+const I18N = { map: null, rules: [], miss: new Set() };
+const NOTR = '[data-notr],.b,.bubble,.uc b,.row .nm,.row .pv,textarea,code,pre,script,style';
+function trOne(s, deep = 0) {
+  const k = s.trim().replace(/\s+/g, ' '); if (!k || !/[A-Za-z]/.test(k)) return null;
+  let v = I18N.map[k];
+  if (v == null) for (const [re, out] of I18N.rules) { const m = k.match(re); if (m) { v = out.replace(/\$(\d)/g, (_, i) => { const part = m[i] ?? ''; return (deep < 2 && trOne(part, deep + 1)) || part; }); break; } }
+  if (v == null) { if (!deep && !/[\u0600-\u06FF]/.test(k)) I18N.miss.add(k); return null; }
+  return s.replace(s.trim(), v);
+}
+function trNode(n) {
+  if (!I18N.map) return;
+  if (n.nodeType === 3) { const p = n.parentElement; if (!p || p.closest(NOTR)) return; if (p.tagName === 'OPTION' && !p.hasAttribute('value')) p.setAttribute('value', p.value); // a list choice keeps its English value for the code
+    const v = trOne(n.nodeValue); if (v != null && v !== n.nodeValue) n.nodeValue = v; return; }
+  if (n.nodeType !== 1 || n.closest(NOTR)) return;
+  const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); const list = []; while (w.nextNode()) list.push(w.currentNode); list.forEach(trNode);
+  [n, ...n.querySelectorAll('[placeholder],[title],[aria-label]')].forEach(e => { if (e.closest(NOTR) && !e.matches('textarea')) return; for (const a of ['placeholder', 'title', 'aria-label']) { const cur = e.getAttribute && e.getAttribute(a); if (cur) { const v = trOne(cur); if (v != null && v !== cur) e.setAttribute(a, v); } } });
+}
+const langReady = LANG === 'en' ? Promise.resolve() : fetch(`/lang/${LANG}.json`).then(r => r.json()).then(d => {
+  I18N.map = {}; for (const k in d) if (k[0] === '~') I18N.rules.push([new RegExp(k.slice(1)), d[k]]); else I18N.map[k] = d[k];
+  document.documentElement.lang = LANG; document.documentElement.dir = LANGS[LANG][1];
+  trNode(document.body); if (document.querySelector('.shell')) syncNav(); // also puts the page name in the tab title
+  new MutationObserver(ms => ms.forEach(m => { if (m.type === 'characterData') trNode(m.target); else if (m.type === 'attributes') trNode(m.target); else m.addedNodes.forEach(trNode); }))
+    .observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['placeholder', 'title', 'aria-label'] });
+}).catch(() => {});
+const tr = s => (I18N.map && trOne(String(s))) || s; // for the tab title and other text outside the page
+function setLang(code) { try { localStorage.setItem('ti_lang', code); } catch {} const parts = location.pathname.split('/'); if (LANGS[parts[1]]) { parts[1] = code; location.href = parts.join('/'); } else location.reload(); }
+
 
 async function api(path, method = 'GET', body) {
   const r = await fetch(API + '/api' + path, { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + S.token }, body: body ? JSON.stringify(body) : undefined });
@@ -458,7 +535,7 @@ const ICONS = {
   panel: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
   userplus: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   hourglass: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
-  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
   check: '<polyline points="20 6 9 17 4 12"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
@@ -473,11 +550,10 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const LANG = 'en';
 const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase()}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
-function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? n[1] + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
@@ -669,7 +745,7 @@ async function boot() {
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${k === 'inbox' ? 'Chats' : n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
-    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button><hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
+    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
     ${mgr ? `<div class="sheet" id="sheet" hidden><div class="sheetbody">${more.map(n => `<button data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span></button>`).join('')}</div></div>` : ''}</div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
@@ -684,6 +760,7 @@ async function boot() {
   S.urlReady = false; const first = routeKey(location.pathname), go = first && items.some(n => n[0] === first) ? first : mgr && innerWidth > 760 ? 'dash' : 'inbox'; if (go === 'inbox') syncNav(); else goNav(go);
   $('#themebtn').onclick = () => { closeOverlays(); themeDialog(null); };
   $('#npb').onclick = () => { closeOverlays(); goNav('np'); }; loadNotif();
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
   document.removeEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
   $('#pwb').onclick = async () => { closeOverlays(); const cur = await ask('Change password', { note: 'First, type your current password.', type: 'password', ok: 'Next' }); if (cur === null) return; const nw = await ask('New password', { note: 'At least 8 characters.', type: 'password', min: 8, ok: 'Change password' }); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
   $('#q').oninput = debounce(loadList, 300);
