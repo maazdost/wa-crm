@@ -370,6 +370,7 @@ router.post('/conversations/:id/status', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   if (!['open', 'closed'].includes(req.body.status)) return res.status(400).json({ error: 'bad status' });
   await query('UPDATE conversations SET status=$2 WHERE id=$1', [c.id, req.body.status]);
+  if (req.body.status === 'closed') await require('../flows').agentTookOver(c.id); // a closed chat is no longer in a chatbot
   res.json({ ok: true });
 }));
 

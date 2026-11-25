@@ -156,6 +156,71 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const push = require('./push'), at = (h) => new Date(`2026-01-10T${h}:00+05:00`);
   check('notification preferences are saved per person', np.data.message === false && np.data.assigned === true && np.data.quiet.on && (await j('/api/me/notifications', {}, a2.token)).data.message === true
     && (await push.allowed(a1.user.id, 'message')) === false && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('23:30')) && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('06:59')) && !push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('12:00')) && !push.quietNow({ on: false, from: '23:00', to: '07:00' }, at('23:30')));
+  // Chatbots: a flow with a message, buttons that branch, open questions, an action and the hand over
+  const ftag = (await j('/api/labels', { method: 'POST', body: { name: 'Course lead' + Date.now(), color: '#128c7e' } }, admin)).data;
+  const fsteps = [{ id: 's1', type: 'message', kind: 'text', text: 'Welcome {{first_name}}!', next: '' },
+    { id: 's2', type: 'buttons', text: 'What do you need?', buttons: [{ title: 'Prices', next: 's3' }, { title: 'Talk to us', next: 's6' }] },
+    { id: 's3', type: 'question', text: 'Which city are you in?', save: 'other', label: 'City', next: '' },
+    { id: 's4', type: 'question', text: 'And your name?', save: 'name', next: '' },
+    { id: 's5', type: 'action', tag_id: ftag.id, team: 'classes', next: '' },
+    { id: 's6', type: 'handover', text: 'Thanks {{name}}, our team will write to you.' }];
+  const fl = (await j('/api/flows', { method: 'POST', body: { name: 'Course bot', trigger: 'keyword', match_type: 'exact', keywords: ['start course'], steps: fsteps } }, admin)).data;
+  const convOf = async (ph) => (await pool.query('SELECT c.*, ct.name AS cname FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE ct.wa_id=$1', [ph])).rows[0];
+  const botSaid = async (ph) => (await pool.query(`SELECT m.body FROM messages m JOIN conversations c ON c.id=m.conversation_id JOIN contacts ct ON ct.id=c.contact_id WHERE ct.wa_id=$1 AND m.sender_type='bot' ORDER BY m.id`, [ph])).rows.map(r => r.body);
+  const fp = '9230020001' + Date.now().toString().slice(-4);
+  check('a new chatbot is saved switched off', fl.id && fl.active === false && (await j('/api/flows', {}, a1.token)).status === 403);
+  await j('/api/flows/' + fl.id, { method: 'PATCH', body: { active: true } }, admin);
+  await inbound(fp, { text: { body: 'Start course' } }); await sleep(500);
+  let fs = await botSaid(fp), fc = await convOf(fp);
+  check('a keyword starts the chatbot, which sends up to its first question', fs.length === 2 && fs[0] === 'Welcome WA!' && fs[1].startsWith('What do you need?') && fc.flow_id === fl.id && fc.flow_step === 's2' && fc.status === 'bot');
+  await inbound(fp, { text: { body: 'hmm what' } }); await sleep(400);
+  fs = await botSaid(fp);
+  check('another answer than the buttons asks once more', fs.length === 3 && fs[2].includes('Please tap one of the buttons above.') && (await convOf(fp)).flow_step === 's2');
+  await inbound(fp, { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: `fl${fl.id}:s2:0`, title: 'Prices' } } }); await sleep(400);
+  check('a button leads to its own step', (await botSaid(fp))[3] === 'Which city are you in?' && (await convOf(fp)).flow_step === 's3');
+  await inbound(fp, { text: { body: 'Lahore' } }); await sleep(400);
+  await inbound(fp, { text: { body: 'Bilal Ahmed' } }); await sleep(600);
+  fs = await botSaid(fp); fc = await convOf(fp);
+  const ftags = (await pool.query('SELECT label_id FROM conversation_labels WHERE conversation_id=$1', [fc.id])).rows.map(r => r.label_id);
+  check('answers are kept, the name is saved and the chat is handed to the team', fs[4] === 'And your name?' && fs[5] === 'Thanks Bilal Ahmed, our team will write to you.' && fc.cname === 'Bilal Ahmed'
+    && fc.flow_id === null && fc.status === 'open' && fc.assigned_to === a3.user.id && fc.team === 'classes' && ftags.includes(ftag.id));
+  const fget = (await j('/api/flows', {}, admin)).data, frun = fget.runs.find(r => r.conversation_id === fc.id);
+  check('the chatbot counts who started and who reached the end', fget.flows.find(f => f.id === fl.id).started_count === 1 && fget.flows.find(f => f.id === fl.id).finished_count === 1
+    && frun && frun.result === 'done' && frun.answers.City === 'Lahore' && frun.answers.Name === 'Bilal Ahmed' && frun.answers['What do you need?'] === 'Prices' && frun.client === 'Bilal Ahmed');
+  await inbound(fp, { text: { body: 'thank you' } }); await sleep(300);
+  check('the chatbot is silent after the hand over', (await botSaid(fp)).length === 6);
+  // an agent who writes in the chat stops the chatbot
+  await inbound(own.wa_id, { text: { body: 'start course' } }); await sleep(500);
+  const mid = await convOf(own.wa_id);
+  await j(`/api/conversations/${own.id}/messages`, { method: 'POST', body: { text: 'I will help you myself' } }, a1.token);
+  const ownBot = (await botSaid(own.wa_id)).length;
+  await inbound(own.wa_id, { text: { body: 'Prices' } }); await sleep(400);
+  check('an agent who writes stops the chatbot', mid.flow_id === fl.id && mid.assigned_to === a1.user.id && (await convOf(own.wa_id)).flow_id === null && (await botSaid(own.wa_id)).length === ownBot);
+  // the welcome chatbot takes the place of the built-in welcome bot only while it is switched on
+  const wfile = await (await fetch(B + '/api/media-library?filename=brochure.png&mime=image/png', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', Authorization: 'Bearer ' + admin },
+    body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64') })).json();
+  const wf = (await j('/api/flows', { method: 'POST', body: { name: 'Welcome', trigger: 'welcome', steps: [{ id: 'a', type: 'buttons', text: 'Hello! Are you a new client?', buttons: [{ title: 'Yes', next: 'b' }, { title: 'No', next: 'end' }] }, { id: 'b', type: 'message', kind: 'image', media_id: wfile.id, text: 'Our brochure', next: '' }] } }, admin)).data;
+  const wp1 = '9230020002' + Date.now().toString().slice(-4), wp2 = '9230020003' + Date.now().toString().slice(-4);
+  await inbound(wp1, { text: { body: 'hi' } }); await sleep(400);
+  const greet = (await j('/api/settings', {}, admin)).data.bot.greet;
+  check('a switched-off welcome chatbot changes nothing', (await botSaid(wp1))[0].startsWith(greet));
+  await j('/api/flows/' + wf.id, { method: 'PATCH', body: { active: true } }, admin);
+  await inbound(wp2, { text: { body: 'hi' } }); await sleep(400);
+  await inbound(wp2, { text: { body: 'yes' } }); await sleep(600);
+  const ws = await botSaid(wp2), wc = await convOf(wp2);
+  check('a switched-on welcome chatbot greets new clients and sends its file', ws[0].startsWith('Hello! Are you a new client?') && ws[1] === 'Our brochure' && wc.status === 'open' && wc.bot_step === 'done' && wc.flow_id === null);
+  const wf2 = (await j('/api/flows', { method: 'POST', body: { name: 'Welcome 2', trigger: 'welcome', steps: [{ id: 'a', type: 'message', kind: 'text', text: 'Hi', next: '' }] } }, admin)).data;
+  await j('/api/flows/' + wf2.id, { method: 'PATCH', body: { active: true } }, admin);
+  check('only one welcome chatbot is on at a time', (await j('/api/flows', {}, admin)).data.flows.filter(f => f.trigger === 'welcome' && f.active).map(f => f.id).join() === String(wf2.id));
+  const bad = (steps, extra = {}) => j('/api/flows', { method: 'POST', body: { name: 'Bad', trigger: 'keyword', keywords: ['zz'], steps, ...extra } }, admin).then(r => r.status);
+  check('wrong chatbots are refused', await bad([{ id: 'a', type: 'message', kind: 'text', text: 'x', next: 'nope' }]) === 400 && await bad([{ id: 'a', type: 'buttons', text: 'x', buttons: [] }]) === 400
+    && await bad([{ id: 'a', type: 'message', kind: 'text', text: 'x' }, { id: 'a', type: 'message', kind: 'text', text: 'y' }]) === 400 && await bad([{ id: 'a', type: 'message', kind: 'text', text: 'x' }], { keywords: [] }) === 400
+    && await bad([{ id: 'a', type: 'action' }]) === 400 && await bad([{ id: 'a', type: 'message', kind: 'product', product_id: 999999 }]) === 400);
+  for (const f of [fl, wf, wf2]) await j('/api/flows/' + f.id, { method: 'DELETE' }, admin);
+  const wp3 = '9230020004' + Date.now().toString().slice(-4);
+  await inbound(wp3, { text: { body: 'hi' } }); await sleep(400);
+  check('after deleting the chatbots the built-in welcome bot answers again', (await botSaid(wp3))[0].startsWith(greet) && (await j('/api/flows', {}, admin)).data.flows.length === 0);
+  await j('/api/labels/' + ftag.id, { method: 'DELETE' }, admin); await j('/api/media-library/' + wfile.id, { method: 'DELETE' }, admin);
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

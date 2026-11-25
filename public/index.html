@@ -307,6 +307,24 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .kwadd{display:flex;gap:8px}.kwadd input{flex:1;min-width:0}.kwl{display:flex;flex-wrap:wrap;gap:6px}.kw.big{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;margin:0;font-size:12.5px;max-width:100%;overflow-wrap:anywhere}.kw.big button{border:0;background:none;color:inherit;display:grid;place-items:center;padding:2px;border-radius:50%;opacity:.7}.kw.big button:hover{opacity:1}
 .qopt{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink2);cursor:pointer}
 .qtwo{display:grid;grid-template-columns:1fr 1fr;gap:12px}.qtwo .fld{margin:0}
+.flty{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--tint-ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flgo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mute);font-weight:600}.flgo select{flex:1;min-width:0}
+.qbtn.flbtn input{flex:1 1 34%}.qbtn.flbtn select{flex:1 1 44%;min-width:0}.flbtn>.mute{font-size:12px;white-space:nowrap}
+.flthree{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.flthree .fld{margin:0}
+.flcard{min-width:0;grid-template-columns:minmax(0,1fr)}.flcard header .rowbtn{flex:none}.flbar{display:flex;align-items:center;gap:8px;margin-top:-2px}.flpct{flex:1;min-width:40px;height:6px;background:var(--pill);border-radius:99px;overflow:hidden;align-self:center}.flpct i{display:block;height:100%;background:#25d366;border-radius:99px}.flpn{font-size:12px;color:var(--ink2)}
+#m-fl .mcard{width:min(720px,100%);min-width:0}#flf,#flsteps,.flstep,.flstep>*{min-width:0}
+#m-fltry .mcard{width:min(400px,100%)}#m-fltry .mb{padding:12px}
+.flph{border-radius:26px;overflow:hidden;border:8px solid #111b21;background:var(--chat);display:flex;flex-direction:column;height:min(580px,72vh)}
+.flph-h{background:#075e54;color:#fff;display:flex;align-items:center;gap:10px;padding:10px 12px}.flph-h>div{flex:1;min-width:0;display:grid}.flph-h b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.flph-h small{opacity:.85;font-size:11.5px}.flph-h .ib{color:#fff}
+.flav{width:34px;height:34px;border-radius:50%;background:#ffffff2e;display:grid;place-items:center;flex:none}
+.flph-c{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.fb{max-width:84%;border-radius:8px;padding:7px 9px;font-size:13.5px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:var(--sh);color:var(--ink);unicode-bidi:plaintext}.fb.in{align-self:flex-start;background:var(--in)}.fb.out{align-self:flex-end;background:var(--out)}
+.flbs{display:grid;margin:8px -9px -7px}.flbs button{border:0;border-top:1px solid var(--line);background:none;color:#027eb5;font-weight:600;padding:9px;font-size:13.5px;white-space:normal}.flbs button:not([data-pb]){opacity:.55;cursor:default}
+.fsys{align-self:center;text-align:center;max-width:90%}.fsys span{display:inline-block;background:var(--card);color:var(--mute);font-size:11.5px;border-radius:7px;padding:4px 10px;box-shadow:var(--sh)}
+.flmed{display:flex;gap:8px;align-items:center;background:var(--field);border-radius:6px;padding:8px;margin-bottom:6px;white-space:normal}.flmed>div{display:grid;min-width:0}.flmed small{color:var(--mute);font-size:11.5px}.flmed .pth{width:40px;height:40px}
+.flph-i{display:flex;gap:6px;padding:8px;background:var(--surface)}.flph-i input{flex:1;min-width:0;border-radius:999px}
+[data-theme="dark"] .flph{border-color:#000}[data-theme="dark"] .flph-h{background:#202c33}[data-theme="dark"] .flbs button{color:#53bdeb}
+@media (max-width:760px){.flty{white-space:normal}.flthree{grid-template-columns:1fr}.flgo{flex-wrap:wrap}.flgo select{flex:1 1 100%}.qbtn.flbtn input,.qbtn.flbtn select{flex:1 1 100%}.fladd .ghost{flex:1 1 calc(50% - 8px);justify-content:center}.flph{height:calc(100vh - 150px);border-width:0;border-radius:12px}}
 #m-qm .mcard{width:min(680px,100%);min-width:0}#m-qm .mb,#qmf,.qsec,.qsec>*,.qstep,.qstep>*{min-width:0}.modal{grid-template-columns:minmax(0,auto)}
 @media (max-width:760px){.qtwo{grid-template-columns:1fr}.qstep-h label{font-size:12px;white-space:nowrap}.qtype button{flex:none}.qsec{padding:10px}.qbtn{flex-wrap:wrap}.qbtn select{flex:1 1 100%}.ph .search{display:none}}
 /* Reports and Health Audit */
@@ -582,6 +600,7 @@ const ICONS = {
   mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
   chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   grid: '<rect width="7" height="9" x="3" y="3" rx="1.5"/><rect width="7" height="5" x="14" y="3" rx="1.5"/><rect width="7" height="9" x="14" y="12" rx="1.5"/><rect width="7" height="5" x="3" y="16" rx="1.5"/>',
+  flow: '<circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 7.5v9"/><path d="M18 10.5c0 4-4 4.5-9.5 7"/>',
   bot: '<rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/>',
   clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
@@ -608,18 +627,18 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
-  ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
+  ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -2027,6 +2046,180 @@ async function showQuickMsg() {
   sc.querySelectorAll('[data-qe]').forEach(b => b.onclick = () => open(by(b.dataset.qe)));
   sc.querySelectorAll('[data-qd]').forEach(b => b.onclick = async () => { const r = by(b.dataset.qd); if (!(await sure('Delete this quick message?', `"${r.name}" will stop answering clients.`, { ok: 'Delete', danger: true }))) return; await api('/auto-replies/' + r.id, 'DELETE'); toast('Quick message deleted'); showQuickMsg(); });
 }
+/* ---------- Chatbots ---------- */
+const FL_TYPES = { message: ['chat', 'Send a message'], buttons: ['select', 'Question with buttons'], question: ['note', 'Open question'], action: ['tag', 'Tag, department or agent'], handover: ['userplus', 'Hand over to the team'] };
+const FL_KINDS = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], file: ['file', 'File'], product: ['bag', 'Product'] };
+const flId = () => Math.random().toString(36).slice(2, 8);
+const flFill = (t, name) => String(t || '').replace(/\{\{\s*(name|first_name|whatsapp_name)\s*\}\}/gi, (_, k) => k.toLowerCase() === 'first_name' ? name.split(/\s+/)[0] : name);
+async function showFlows() {
+  const sc = screen('Chatbots', 'Build a chatbot that greets new clients or answers a keyword: it sends messages, asks questions with buttons, saves the answers, then hands the chat to the right person.',
+    `<button class="btn" id="fln">${ico('plus', 16)}New chatbot</button>`);
+  const [d, us, ds] = await Promise.all([api('/flows'), api('/users'), api('/departments'), loadLib(), loadProducts()]); if (d.error) return toast(d.error); if (S.nav !== 'cb') return;
+  const list = arr(d.flows), agents = arr(us).filter(u => u.is_active && u.role === 'agent'), depts = arr(ds), wel = list.find(f => f.trigger === 'welcome' && f.active);
+  const started = list.reduce((n, f) => n + f.started_count, 0), ended = list.reduce((n, f) => n + f.finished_count, 0);
+  const firstText = f => { const s = arr(f.steps).find(x => x.text) || arr(f.steps)[0] || {}, p = s.kind === 'product' && S.products.find(x => x.id == s.product_id); return s.text || (p && p.name) || ''; };
+  const card = f => { const kw = arr(f.keywords), n = arr(f.steps).length, pct = f.started_count ? Math.round(f.finished_count * 100 / f.started_count) : 0;
+    return `<div class="qcard qmcard flcard${f.active ? '' : ' off'}" data-fid="${f.id}"><header><span class="qmic">${ico(f.trigger === 'welcome' ? 'bot' : 'flow', 18)}</span><b data-notr title="${esc(f.name)}">${esc(f.name)}</b>
+      <label class="tog" title="Switch on or off"><input type="checkbox" data-ft="${f.id}"${f.active ? ' checked' : ''} aria-label="Switched on"><i></i></label>
+      <button class="rowbtn" data-fy="${f.id}" title="Try it" aria-label="Try it">${ico('play', 16)}</button><button class="rowbtn" data-fe="${f.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-fd="${f.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></header>
+      <div class="qmtr">${f.trigger === 'welcome' ? `<em class="chip ok">Welcome chatbot</em><small>For every new client</small>` : `<small>${f.match_type === 'exact' ? 'Client sends exactly' : 'Client message contains'}</small><span class="kw" data-notr title="${esc(kw[0] || '')}">${esc(kw[0] || '')}</span>${kw.length > 1 ? `<span class="kw more">+${kw.length - 1}</span>` : ''}`}</div>
+      <p data-notr>${esc(firstText(f))}</p>
+      <footer><span>${ico('flow', 14)}${n} step${n === 1 ? '' : 's'}</span><span>${ico('users', 14)}Started ${f.started_count}</span><span>${ico('check', 14)}Reached the end ${f.finished_count}</span></footer>${f.started_count ? `<div class="flbar" title="Reached the end"><span class="flpct"><i style="width:${pct}%"></i></span><b class="flpn">${pct}%</b></div>` : ''}</div>`; };
+  const RES = { done: ['ok', 'Reached the end'], no_answer: ['warn', 'Handed over, no answer'], agent: ['', 'Agent took over'] };
+  const resChip = r => !r.finished_at ? '<em class="chip warn">In progress</em>' : RES[r.result] ? `<em class="chip ${RES[r.result][0]}">${RES[r.result][1]}</em>` : '<em class="chip closed">Stopped</em>';
+  const runs = arr(d.runs);
+  sc.innerHTML = `<div class="panel soc-c"><span class="qmic">${ico('bot', 22)}</span><div>${wel
+      ? `<h3>New clients get your welcome chatbot<em class="chip ok">On</em></h3><p class="mute"><b data-notr>${esc(wel.name)}</b> greets every new client. The welcome bot on the Bot &amp; Away page is not used while it is on.</p>`
+      : `<h3>New clients get the welcome bot from Bot &amp; Away</h3><p class="mute">Build a welcome chatbot and switch it on to greet new clients with your own steps instead. Keyword chatbots work either way.</p>`}</div>
+      <button class="ghost" id="flbot">${ico('sliders', 16)}Bot &amp; Away</button></div>
+  <div class="stats">${kpi('flow', list.length, 'Chatbots')}${kpi('zap', list.filter(f => f.active).length, 'Switched on', 'blue')}${kpi('users', started, 'Clients started', 'amber')}${kpi('check', ended, 'Reached the end', 'violet')}</div>
+  ${list.length ? `<div class="cards">${list.map(card).join('')}</div>`
+    : `<div class="tbl">${emptyState('flow', 'No chatbots yet', 'Start with a welcome chatbot: greet the client, ask what they need with buttons, ask their name, then hand the chat to the right department.', `<button class="btn" id="fln2">${ico('plus', 16)}New chatbot</button>`)}</div>`}
+  <div class="tbl"><div class="tbl-h"><b>Recent clients</b></div>${runs.length ? `<table class="slg"><thead><tr><th>When</th><th>Client</th><th>Chatbot</th><th>Answers</th><th>Result</th></tr></thead><tbody>${runs.map(r => `<tr><td class="alw">${new Date(r.started_at).toLocaleDateString([], { day: 'numeric', month: 'short' })}, ${fmtT(r.started_at)}</td>
+      <td data-notr>${esc(r.client || '—')}</td><td data-notr>${esc(r.flow_name)}</td><td><div class="slc" data-notr>${Object.entries(r.answers || {}).map(([k, v]) => `<small>${esc(k)}</small> ${esc(v)}`).join('<br>') || '—'}</div></td><td>${resChip(r)}</td></tr>`).join('')}</tbody></table>`
+    : emptyState('clock', 'Nothing here yet', 'Each client who starts a chatbot shows here with their answers.')}</div>
+  ${modal('m-fl', 'Chatbot', `<form id="flf"><label class="fld"><span>Name (only your team sees it)</span><input id="fl1" maxlength="80" placeholder="e.g. Welcome and course enquiry"></label>
+    <div class="qsec"><div class="qsec-h"><b>When it starts</b></div>
+      <select id="fl2" aria-label="When it starts"><option value="welcome">For every new client (welcome chatbot)</option><option value="keyword">When a client sends a keyword</option></select>
+      <small class="mute" id="flwn">While it is switched on, it greets new clients instead of the welcome bot on Bot &amp; Away. Only one welcome chatbot can be on.</small>
+      <div id="flkb" class="sofl"><select id="fl3" aria-label="Words"><option value="contains">The client's message contains this word or phrase</option><option value="exact">The client sends exactly this message</option></select>
+        <div class="kwadd"><input id="flk" maxlength="300" placeholder="Type a keyword, for example course, then press Enter"><button type="button" class="ghost" id="flka">${ico('plus', 15)}Add</button></div><div id="flkw" class="kwl"></div></div></div>
+    <div class="qsec"><div class="qsec-h"><b>Steps</b><small id="flc"></small></div>
+      <div id="flsteps"></div>
+      <div class="qadd fladd"><span>Add a step</span>${Object.entries(FL_TYPES).map(([k, v]) => `<button type="button" class="ghost" data-fa="${k}">${ico(v[0], 15)}${v[1]}</button>`).join('')}</div></div>
+    <div class="qsec"><div class="qsec-h"><b>If the client types something else</b></div>
+      <small class="mute">At a question with buttons, the bot asks once more with this text. The second time, it hands the chat to your team.</small>
+      <input id="fl9" maxlength="300" placeholder="${esc(d.retry_text || '')}"></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button type="button" class="ghost" id="fltr">${ico('play', 15)}Try it</button><button class="btn">Save</button></div></form>`, 1)}
+  ${modal('m-fltry', 'Try it', `<div class="flph"><div class="flph-h"><span class="flav">${ico('bot', 18)}</span><div><b data-notr id="flpn"></b><small>Nothing is sent to anyone</small></div><button type="button" class="ib" id="flpr" title="Start again" aria-label="Start again">${ico('refresh', 18)}</button></div>
+    <div class="flph-c" id="flpc"></div><form class="flph-i" id="flpf"><input id="flpi" maxlength="300" placeholder="Type a message" autocomplete="off"><button class="ib" aria-label="Send">${ico('send', 18)}</button></form></div>`)}`;
+  labelTables();
+  $('#flbot').onclick = () => goNav('bot');
+
+  /* ----- the builder: R is the chatbot being edited ----- */
+  let R = null;
+  const sum = (s, k) => { const p = s.kind === 'product' && S.products.find(x => x.id == s.product_id), f = s.media_id && S.lib.find(x => x.id == s.media_id);
+    const t = s.type === 'action' ? [s.tag_id && (S.labels.find(l => l.id == s.tag_id) || {}).name, s.team && (depts.find(x => x.key === s.team) || {}).name, s.assign_to && (agents.find(u => u.id == s.assign_to) || {}).name].filter(Boolean).join(', ') : (s.text || (p && p.name) || (f && f.name) || '');
+    return `#${k + 1} · ${(t || '…').replace(/\s+/g, ' ').slice(0, 42)}`; };
+  const goSel = (attr, val, i) => `<select ${attr} aria-label="Then go to"><option value=""${!val ? ' selected' : ''}>${i < R.steps.length - 1 ? 'The next step' : 'The end: hand over to the team'}</option>${R.steps.map((s, k) => k === i ? '' : `<option value="${s.id}"${val === s.id ? ' selected' : ''} data-notr>${esc(sum(s, k))}</option>`).join('')}<option value="end"${val === 'end' ? ' selected' : ''}>The end: hand over to the team</option></select>`;
+  const go = (st, i) => `<label class="flgo"><span>Then go to</span>${goSel('data-f="next"', st.next || '', i)}</label>`;
+  const ins = `<i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button>`;
+  const opt = (rows, val, none) => `<option value="">${none}</option>` + rows.map(([v, t]) => `<option value="${esc(v)}"${String(v) === String(val || '') ? ' selected' : ''} data-notr>${esc(t)}</option>`).join('');
+  const stepHtml = (st, i) => { const t = FL_TYPES[st.type]; let body = '';
+    if (st.type === 'message') { const k = st.kind || 'text', f = S.lib.find(x => x.id == st.media_id), pp = S.products.find(x => x.id == st.product_id);
+      body = `<div class="qtype">${Object.entries(FL_KINDS).map(([kk, v]) => `<button type="button" data-ki="${kk}" class="${k === kk ? 'on' : ''}">${ico(v[0], 14)}${v[1]}</button>`).join('')}</div>
+        ${k === 'text' ? '' : k === 'product' ? `<div class="qfile"><span class="pth">${pp ? prodThumb(pp, 20) : ico('bag', 20)}</span><select data-f="product_id"><option value="">${S.products.length ? 'Choose a product' : 'Add products on the Catalogs page first'}</option>${S.products.map(x => `<option value="${x.id}"${x.id == st.product_id ? ' selected' : ''} data-notr>${esc(x.name)}${money(x) ? ' (' + esc(money(x)) + ')' : ''}</option>`).join('')}</select></div>`
+          : `<div class="qfile"><span class="pth">${f ? libThumb(f, 20) : ico(FL_KINDS[k][0], 20)}</span><select data-f="media_id"><option value="">Choose from the Media Library</option>${S.lib.filter(x => k === 'file' || x.kind === k).map(x => `<option value="${x.id}"${x.id == st.media_id ? ' selected' : ''} data-notr>${esc(x.name)} (${fmtSize(x.size)})</option>`).join('')}</select></div>`}
+        ${k === 'product' ? '<small class="mute">The photo, price, details and link of the product are sent as one message.</small>' : `<div class="qins"><span>${k === 'text' ? 'Text' : 'Caption'}</span>${ins}</div><textarea data-f="text" rows="3" maxlength="1000" placeholder="${k === 'text' ? 'Type the message' : 'Caption (optional)'}">${esc(st.text || '')}</textarea>`}${go(st, i)}`;
+    } else if (st.type === 'buttons') { const bt = arr(st.buttons);
+      body = `<div class="qins"><span>Question</span>${ins}</div><textarea data-f="text" rows="2" maxlength="1000" placeholder="e.g. What would you like to know?">${esc(st.text || '')}</textarea>
+        <div class="qbh"><span>Buttons, and where each one leads</span><small>${bt.length} / 3</small></div>
+        ${bt.map((b, j) => `<div class="qbtn flbtn" data-j="${j}"><input data-bf="title" maxlength="20" placeholder="Button name" value="${esc(b.title || '')}"><span class="mute">goes to</span>${goSel('data-bf="next"', b.next || '', i)}<button type="button" class="rowbtn danger" data-brm aria-label="Remove button">${ico('trash', 15)}</button></div>`).join('')}
+        ${bt.length < 3 ? `<button type="button" class="ghost qbadd" data-badd>${ico('plus', 14)}Add button</button>` : ''}`;
+    } else if (st.type === 'question') {
+      body = `<div class="qins"><span>Question</span>${ins}</div><textarea data-f="text" rows="2" maxlength="1000" placeholder="e.g. Which city are you in?">${esc(st.text || '')}</textarea>
+        <div class="qtwo"><label class="fld"><span>Save the answer as</span><select data-f="save"><option value="name"${st.save === 'name' ? ' selected' : ''}>The client's name</option><option value="other"${st.save === 'name' ? '' : ' selected'}>Something else</option></select></label>
+        <label class="fld"${st.save === 'name' ? ' hidden' : ''}><span>What is the answer</span><input data-f="label" maxlength="30" placeholder="e.g. City or Budget" value="${esc(st.save === 'name' ? '' : st.label || '')}"></label></div>${go(st, i)}`;
+    } else if (st.type === 'action') {
+      body = `<div class="flthree"><label class="fld"><span>Add tag</span><select data-f="tag_id">${opt(S.labels.map(l => [l.id, l.name]), st.tag_id, 'None')}</select></label>
+        <label class="fld"><span>Set department</span><select data-f="team">${opt(depts.map(x => [x.key, x.name]), st.team, 'No change')}</select></label>
+        <label class="fld"><span>Assign agent</span><select data-f="assign_to">${opt(agents.map(u => [u.id, u.name]), st.assign_to, 'Automatic, at the hand over')}</select></label></div>${go(st, i)}`;
+    } else body = `<div class="qins"><span>Goodbye message (optional)</span>${ins}</div><textarea data-f="text" rows="2" maxlength="1000" placeholder="e.g. Thank you {{name}}! Our team will message you shortly.">${esc(st.text || '')}</textarea>
+        <small class="mute">The chatbot ends here and the chat goes to your team: the agent you chose, else your usual assignment.</small>`;
+    return `<div class="qstep flstep" data-i="${i}"><div class="qstep-h"><b>#${i + 1}</b><span class="flty">${ico(t[0], 14)}${t[1]}</span><span></span>
+      <button type="button" class="rowbtn" data-up title="Move up" aria-label="Move up"${i ? '' : ' disabled'}>${ico('up', 16)}</button><button type="button" class="rowbtn" data-dn title="Move down" aria-label="Move down"${i < R.steps.length - 1 ? '' : ' disabled'}>${ico('chev', 16)}</button><button type="button" class="rowbtn danger" data-rm title="Remove" aria-label="Remove this step">${ico('trash', 16)}</button></div>${body}</div>`; };
+  const draw = () => { $('#flsteps').innerHTML = R.steps.map(stepHtml).join('') || '<p class="mute" style="margin:0 0 10px">No steps yet. Add the first one below.</p>'; $('#flc').textContent = R.steps.length + ' of 30'; libThumbs($('#flsteps')); };
+  const drawKw = () => { $('#flkw').innerHTML = R.keywords.map((k, i) => `<span class="kw big" data-notr>${esc(k)}<button type="button" data-kx="${i}" aria-label="Remove">${ico('x', 13)}</button></span>`).join('') || '<small class="mute">Nothing added yet.</small>'; };
+  const addKw = () => { const v = $('#flk').value.replace(/\s+/g, ' ').trim(); if (!v) return; if (R.keywords.length >= 30) return toast('A chatbot can have up to 30 keywords'); if (!R.keywords.some(k => k.toLowerCase() === v.toLowerCase())) R.keywords.push(v); $('#flk').value = ''; drawKw(); };
+  const trig = () => { const w = $('#fl2').value === 'welcome'; $('#flkb').hidden = w; $('#flwn').hidden = !w; };
+  const starter = () => { const a = flId(), b = flId(), c = flId(), e = flId();
+    return [{ id: a, type: 'message', kind: 'text', text: 'Assalam o Alaikum! Welcome to our business.', next: '' },
+      { id: b, type: 'buttons', text: 'How can we help you today?', buttons: [{ title: 'Prices', next: '' }, { title: 'Talk to the team', next: e }] },
+      { id: c, type: 'question', text: 'May I know your name please?', save: 'name', next: '' },
+      { id: e, type: 'handover', text: 'Thank you {{name}}! One of our team will message you shortly.' }]; };
+  const open = f => {
+    R = f ? { id: f.id, name: f.name, trigger: f.trigger, match_type: f.match_type, keywords: [...arr(f.keywords)], steps: JSON.parse(JSON.stringify(arr(f.steps))), retry_text: f.retry_text || '' }
+      : { id: null, name: '', trigger: wel ? 'keyword' : 'welcome', match_type: 'contains', keywords: [], steps: starter(), retry_text: '' };
+    $('#fl1').value = R.name; $('#fl2').value = R.trigger; $('#fl3').value = R.match_type; $('#fl9').value = R.retry_text; $('#flk').value = '';
+    $('#m-fl .dlg-h b').textContent = f ? 'Edit chatbot' : 'New chatbot'; trig(); draw(); drawKw(); $('#m-fl').hidden = false; $('#m-fl .mb').scrollTop = 0; if (innerWidth > 760 && !f) $('#fl1').focus();
+  };
+  const by = id => list.find(f => f.id == id);
+  $('#fln').onclick = () => open(null); if ($('#fln2')) $('#fln2').onclick = () => open(null);
+  $('#fl2').onchange = trig;
+  $('#flka').onclick = addKw; $('#flk').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKw(); } };
+  $('#flkw').onclick = e => { const x = e.target.closest('[data-kx]'); if (x) { R.keywords.splice(+x.dataset.kx, 1); drawKw(); } };
+  $('#flf').querySelector('.fladd').onclick = e => { const b = e.target.closest('[data-fa]'); if (!b) return; if (R.steps.length >= 30) return toast('A chatbot can have up to 30 steps');
+    const ty = b.dataset.fa, st = { id: flId(), type: ty };
+    if (ty === 'message') Object.assign(st, { kind: 'text', text: '', next: '' }); else if (ty === 'buttons') Object.assign(st, { text: '', buttons: [{ title: '', next: '' }, { title: '', next: '' }] });
+    else if (ty === 'question') Object.assign(st, { text: '', save: 'other', label: '', next: '' }); else if (ty === 'action') Object.assign(st, { next: '' }); else st.text = '';
+    R.steps.push(st); draw(); const last = $('#flsteps').lastElementChild; if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+  const S_ = e => { const el = e.target.closest('.flstep'); return el ? R.steps[+el.dataset.i] : null; };
+  $('#flsteps').oninput = e => { const st = S_(e), t = e.target; if (!st) return;
+    if (t.dataset.f === 'text' || t.dataset.f === 'label') st[t.dataset.f] = t.value;
+    else if (t.dataset.bf === 'title') st.buttons[+t.closest('.flbtn').dataset.j].title = t.value; };
+  $('#flsteps').onchange = e => { const st = S_(e), t = e.target; if (!st) return;
+    if (['media_id', 'product_id', 'tag_id', 'assign_to'].includes(t.dataset.f)) { st[t.dataset.f] = Number(t.value) || null; draw(); }
+    else if (t.dataset.f === 'team') st.team = t.value || null;
+    else if (t.dataset.f === 'next') st.next = t.value;
+    else if (t.dataset.f === 'save') { st.save = t.value; draw(); }
+    else if (t.dataset.bf === 'next') st.buttons[+t.closest('.flbtn').dataset.j].next = t.value; };
+  $('#flsteps').onclick = e => { const st = S_(e); if (!st) return; const i = R.steps.indexOf(st), c = s => e.target.closest(s);
+    if (c('[data-ki]')) { const k = c('[data-ki]').dataset.ki; if (k === st.kind) return; st.kind = k; const f = S.lib.find(x => x.id == st.media_id); if (k === 'text' || k === 'product' || (f && k !== 'file' && f.kind !== k)) st.media_id = null; if (k !== 'product') delete st.product_id; else st.text = ''; return draw(); }
+    if (c('[data-up]') && i > 0) { R.steps.splice(i - 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
+    if (c('[data-dn]') && i < R.steps.length - 1) { R.steps.splice(i + 1, 0, R.steps.splice(i, 1)[0]); return draw(); }
+    if (c('[data-rm]')) { R.steps.splice(i, 1); R.steps.forEach(s => { if (s.next === st.id) s.next = ''; arr(s.buttons).forEach(b => { if (b.next === st.id) b.next = ''; }); }); return draw(); }
+    if (c('[data-badd]')) { st.buttons.push({ title: '', next: '' }); draw(); const ins_ = $('#flsteps').children[i].querySelectorAll('[data-bf="title"]'); if (ins_.length) ins_[ins_.length - 1].focus(); return; }
+    if (c('[data-brm]')) { st.buttons.splice(+c('.flbtn').dataset.j, 1); return draw(); }
+    if (c('[data-ins]')) { const ta = c('.flstep').querySelector('textarea'), a = ta.selectionStart, v = c('[data-ins]').dataset.ins; ta.setRangeText(v, a, ta.selectionEnd, 'end'); st.text = ta.value; ta.focus(); } };
+  const body = () => ({ name: $('#fl1').value, trigger: $('#fl2').value, match_type: $('#fl3').value, keywords: R.keywords, steps: R.steps, retry_text: $('#fl9').value });
+  $('#flf').onsubmit = async e => { e.preventDefault(); addKw();
+    const r = await api('/flows' + (R.id ? '/' + R.id : ''), R.id ? 'PATCH' : 'POST', body());
+    if (r.error) return toast(r.error); toast(R.id ? 'Chatbot updated' : 'Chatbot saved. Switch it on when you are ready.'); showFlows(); };
+  $('#fltr').onclick = () => { addKw(); tryFlow({ name: $('#fl1').value || 'New chatbot', ...body() }); };
+
+  /* ----- Try it: walks through the steps in a pretend phone. Nothing is sent. ----- */
+  let P = null;
+  const add = (cls, html) => { const el = document.createElement('div'); el.className = cls; el.innerHTML = html; $('#flpc').appendChild(el); $('#flpc').scrollTop = 1e6; return el; };
+  const nameNow = () => P.name || 'Ayesha Khan';
+  const media = st => { const k = st.kind; if (k === 'product') { const p = S.products.find(x => x.id == st.product_id); return p ? `<div class="flmed"><span class="pth">${prodThumb(p, 30)}</span><div><b data-notr>${esc(p.name)}</b><small data-notr>${esc(money(p))}</small></div></div>` : ''; }
+    const f = S.lib.find(x => x.id == st.media_id); return f ? `<div class="flmed"><span class="pth">${libThumb(f, 30)}</span><div><b data-notr>${esc(f.name)}</b><small>${FL_KINDS[k][1]}</small></div></div>` : `<div class="flmed"><span class="pth">${ico(FL_KINDS[k][0], 30)}</span><div><small>No file chosen yet</small></div></div>`; };
+  const botSay = (st, extra = '') => { const txt = flFill(extra ? extra + '\n\n' + (st.text || '') : st.text, nameNow());
+    const el = add('fb in', `${st.type === 'message' && st.kind !== 'text' ? media(st) : ''}${txt ? `<div data-notr>${esc(txt)}</div>` : ''}${st.type === 'buttons' ? `<div class="flbs">${arr(st.buttons).map((b, j) => `<button type="button" data-pb="${j}" data-notr>${esc(b.title || '…')}</button>`).join('')}</div>` : ''}`); libThumbs(el); };
+  const sys = t => add('fsys', `<span>${t}</span>`);
+  const done = t => { P.wait = null; P.over = true; sys(t); };
+  const nextI = (i, n) => n === 'end' ? -1 : n ? P.steps.findIndex(s => s.id === n) : i + 1;
+  const runFrom = i => { let hops = 0;
+    while (i >= 0 && i < P.steps.length && hops++ < 40) { const st = P.steps[i];
+      if (st.type === 'action') { const bits = [st.tag_id && 'Tag: ' + esc((S.labels.find(l => l.id == st.tag_id) || {}).name || ''), st.team && 'Department: ' + esc((depts.find(x => x.key === st.team) || {}).name || ''), st.assign_to && 'Agent: ' + esc((agents.find(u => u.id == st.assign_to) || {}).name || '')].filter(Boolean); sys(bits.join(' · ') || 'Nothing chosen in this step'); }
+      else if (st.type === 'handover') { if (st.text) botSay(st); return done('The chat goes to your team. The chatbot has ended.'); }
+      else botSay(st);
+      if (st.type === 'buttons' || st.type === 'question') { P.wait = st; P.at = i; P.tries = 0; return; }
+      i = nextI(i, st.next); }
+    done('The end. The chat goes to your team.'); };
+  const answer = (txt, j) => {
+    add('fb out', `<div data-notr>${esc(txt)}</div>`); $('#flpc').querySelectorAll('[data-pb]').forEach(b => b.removeAttribute('data-pb'));
+    const st = P.wait; if (!st) return sys('The chatbot has ended. Tap Start again to try once more.');
+    if (st.type === 'question') { if (st.save === 'name') P.name = txt.slice(0, 60); return runFrom(nextI(P.at, st.next)); }
+    const bt = arr(st.buttons); let b = j != null ? j : bt.findIndex(x => (x.title || '').trim().toLowerCase() === txt.trim().toLowerCase());
+    if (b < 0 && /^[1-3]$/.test(txt.trim()) && +txt.trim() <= bt.length) b = +txt.trim() - 1;
+    if (b >= 0) return runFrom(nextI(P.at, bt[b].next));
+    if (P.tries++ < 1) return botSay(st, P.retry || d.retry_text);
+    done('No button was chosen twice, so the chat goes to your team.'); };
+  function tryFlow(f) {
+    if (!arr(f.steps).length) return toast('Add a step first');
+    P = { steps: JSON.parse(JSON.stringify(arr(f.steps))), name: '', wait: null, over: false, retry: f.retry_text, first: f.trigger === 'welcome' ? 'Hi' : (arr(f.keywords)[0] || 'Hi') };
+    $('#flpn').textContent = f.name; $('#flpc').innerHTML = ''; $('#m-fltry').hidden = false;
+    add('fb out', `<div data-notr>${esc(P.first)}</div>`); runFrom(0); if (innerWidth > 760) $('#flpi').focus();
+    $('#flpr').onclick = () => tryFlow(f);
+  }
+  $('#flpc').onclick = e => { const b = e.target.closest('[data-pb]'); if (b) answer(b.textContent, +b.dataset.pb); };
+  $('#flpf').onsubmit = e => { e.preventDefault(); const v = $('#flpi').value.trim(); if (!v) return; $('#flpi').value = ''; answer(v); };
+
+  sc.querySelectorAll('[data-ft]').forEach(c => c.onchange = async () => { const r = await api('/flows/' + c.dataset.ft, 'PATCH', { active: c.checked }); if (r.error) { c.checked = !c.checked; return toast(r.error); } toast(c.checked ? 'Switched on' : 'Switched off'); showFlows(); });
+  sc.querySelectorAll('[data-fe]').forEach(b => b.onclick = () => open(by(b.dataset.fe)));
+  sc.querySelectorAll('[data-fy]').forEach(b => b.onclick = () => { R = null; tryFlow(by(b.dataset.fy)); });
+  sc.querySelectorAll('[data-fd]').forEach(b => b.onclick = async () => { const f = by(b.dataset.fd); if (!(await sure('Delete this chatbot?', `"${f.name}" will stop answering clients. Its list of clients is deleted too.`, { ok: 'Delete', danger: true }))) return; await api('/flows/' + f.id, 'DELETE'); toast('Chatbot deleted'); showFlows(); });
+}
 /* ---------- Reports ---------- */
 const csvCell = v => { v = v == null ? '' : String(v); if (/^[=+\-@\t]/.test(v)) v = "'" + v; return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 function downloadCsv(name, rows) { saveDoc(URL.createObjectURL(new Blob(['﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })), name); toast('Saved ' + name); }
@@ -2110,7 +2303,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', cb: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
@@ -2164,7 +2357,7 @@ async function showActivity() {
     <select id="alu" aria-label="Person"><option value="">Everyone</option></select><select id="ala" aria-label="Area"><option value="">All areas</option></select></div><div id="alb"><p class="mute" style="padding:16px">Loading…</p></div></div>`;
   const qs = extra => { const p = new URLSearchParams(extra || {}); if (F.preset !== 'all') { const [a, b] = rpRange(F.preset); p.set('from', a); p.set('to', b); } for (const k of ['q', 'user_id', 'area']) if (F[k]) p.set(k, F[k]); return p.toString(); };
   let rows = [], more = false;
-  const AREA = { 'Social Media': 'thumb', Account: 'user', Agents: 'users', Chats: 'chat', Permissions: 'lock', Settings: 'sliders', Templates: 'file', Broadcasts: 'megaphone', Tags: 'tag', 'Quick Message': 'reply', 'Quick Replies': 'zap', 'Media Library': 'image', 'Follow-ups': 'clock', Contacts: 'users', 'WhatsApp numbers': 'phone', Company: 'building', Companies: 'building' };
+  const AREA = { Chatbots: 'flow', 'Social Media': 'thumb', Account: 'user', Agents: 'users', Chats: 'chat', Permissions: 'lock', Settings: 'sliders', Templates: 'file', Broadcasts: 'megaphone', Tags: 'tag', 'Quick Message': 'reply', 'Quick Replies': 'zap', 'Media Library': 'image', 'Follow-ups': 'clock', Contacts: 'users', 'WhatsApp numbers': 'phone', Company: 'building', Companies: 'building' };
   const draw = () => {
     $('#alb').innerHTML = rows.length ? `<table class="alt"><thead><tr><th>When</th><th>Who</th><th>What happened</th><th>Area</th></tr></thead><tbody>${rows.map(r => `<tr><td class="alw">${esc(r.at)}</td><td>${userCell(r.user_name, r.role, 32)}</td><td><b>${esc(r.action)}</b>${r.detail ? `<br><small class="mute">${esc(r.detail)}</small>` : ''}</td><td><em class="chip alc">${ico(AREA[r.area] || 'info', 13)}${esc(r.area)}</em></td></tr>`).join('')}</tbody></table>
       ${more ? '<div class="almore"><button class="ghost" id="alm">Show older</button></div>' : ''}` : emptyState('clock', 'Nothing here yet', F.q || F.user_id || F.area || F.preset !== 'all' ? 'Nothing matches these filters. Try other dates or clear the search.' : 'Actions will appear here as your team works.');

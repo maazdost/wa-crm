@@ -9,6 +9,7 @@ const mediaStore = require('../media');
 const push = require('../push');
 const { maybeAway } = require('../away');
 const autoreply = require('../autoreply');
+const flows = require('../flows');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
@@ -80,6 +81,21 @@ async function handleMessage(m, profileName, numId) {
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
     return;
   }
+  // Chatbot: the client is answering a question of a flow, so the flow goes on from there.
+  const tellTeam = (out) => {
+    conv = out.conversation;
+    w.markRead(m.id);
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    if (!out.finished) return;
+    const who = contact.name || contact.profile_name || '+' + waId;
+    if (conv.assigned_to) {
+      if (out.newlyAssigned) { push.notifyUser(conv.assigned_to, 'New client assigned', `${who}: ${out.flow.name}`, { conversationId: conv.id }, 'assigned'); rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: conv.id, name: who }); }
+      else push.notifyUser(conv.assigned_to, who, msg.body || '', { conversationId: conv.id }, 'message');
+      rt.toConversation(conv, 'conversation:updated', { conversationId: conv.id });
+    } else rt.toConversation({}, 'conversation:unassigned', { conversationId: conv.id });
+  };
+  const going = await flows.reply(conv, contact, msg, waId);
+  if (going) return tellTeam(going);
   // Quick Message: the message matches one of the company's keywords (for example the ready-made first message of an ad).
   // Its saved messages are sent instead of the welcome bot, and the chat gets its tag and agent.
   const rule = await autoreply.find(conv, contact, msg).catch(e => { console.error('quick message', e.message); return null; });
@@ -96,6 +112,9 @@ async function handleMessage(m, profileName, numId) {
     } else rt.toConversation({}, 'conversation:unassigned', { conversationId: conv.id });
     return;
   }
+  // Chatbot started by a keyword
+  const kflow = await flows.findKeyword(conv, msg).catch(e => { console.error('chatbot', e.message); return null; });
+  if (kflow) return tellTeam(await flows.start(kflow, conv, contact, waId));
   // Optional gate: only start the bot for ad clicks, imported contacts, or messages with the chosen words
   const gate = await settings.get('gate');
   if (gate.mode === 'keywords' && (conv.bot_step === 'held' || (conv.status === 'bot' && conv.bot_step === 'new'))) {
@@ -115,6 +134,12 @@ async function handleMessage(m, profileName, numId) {
     else conv = (await assignConversation(conv.id, conv.team)) || conv;
   }
 
+  // A switched-on welcome chatbot takes the place of the built-in welcome bot. Without one, nothing changes.
+  if (conv.status === 'bot' && ['new', 'flow'].includes(conv.bot_step)) {
+    const wflow = await flows.welcome();
+    if (wflow) return tellTeam(await flows.start(wflow, conv, contact, waId));
+    if (conv.bot_step === 'flow') conv = (await query(`UPDATE conversations SET bot_step='new' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];
+  }
   if (await bot.handle(conv, contact, msg)) {
     w.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });

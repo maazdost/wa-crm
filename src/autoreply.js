@@ -41,7 +41,7 @@ async function sendStep(rule, conv, waId, contact, step, file) {
   const link = btns.find(b => b.type === 'url' && b.url);
   const note = link ? `\n\n🔗 ${link.title}: ${link.url}` : btns.length ? `\n\n🔘 ${btns.map(b => b.title).join('  ·  ')}` : '';
   const withButtons = (body, head) => link ? w.sendLinkButton(waId, body, link.title, link.url, head)
-    : w.sendButtons(waId, body, btns.map((b, i) => ({ id: `qm${rule.id}_${i}`, title: b.title })), head);
+    : w.sendButtons(waId, body, btns.map((b, i) => ({ id: rule.btnId ? rule.btnId(i) : `qm${rule.id}_${i}`, title: b.title })), head);
   if (file) {
     const kind = step.type === 'file' ? 'document' : mediaStore.kindOf(file.mime);
     if (kind === 'audio') { // voice files cannot carry text or buttons: the text follows as its own message
@@ -113,4 +113,4 @@ async function run(rule, conv, contact, waId) {
   })();
   return { conversation: next, newlyAssigned: !!next.assigned_to && next.assigned_to !== conv.assigned_to };
 }
-module.exports = { find, run, matches, fill, sendLibraryFile };
+module.exports = { find, run, matches, fill, sendLibraryFile, sendStep };
