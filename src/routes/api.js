@@ -38,7 +38,8 @@ router.post('/auth/login', wrap(async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
   attempts.delete(key);
-  if (u.company_status !== 'active' && !tenant.isSuper(u.email)) return res.status(403).json({ error: 'This company account is paused. Contact support.' });
+  if (u.company_status !== 'active' && !tenant.isSuper(u.email)) return res.status(403).json({ error: u.company_status === 'pending' ? 'Your account is waiting for approval. We will email you when it is ready.'
+    : u.company_status === 'rejected' ? 'Your sign-up was not accepted. Contact us if you think this is a mistake.' : 'This company account is paused. Contact support.' });
   res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: u.company_name, company_id: u.company_id, is_super: tenant.isSuper(u.email), perms: await require('../access').effective(u.company_id, u.role) } });
 }));
 
@@ -88,6 +89,9 @@ router.post('/auth/reset', wrap(async (req, res) => {
 
 // ---- Sign-up: a new company creates its own account (only when SIGNUP_ENABLED=true on the server) ----
 const signupOn = () => process.env.SIGNUP_ENABLED === 'true';
+// Emails are a courtesy: a mail problem never stops the action itself.
+const send = (to, subject, text) => mail.send({ to, subject, text, html: `<p>${String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>` }).catch(e => console.error('[mail]', e.message));
+const toSupers = (subject, text) => (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(x => x.trim()).filter(Boolean).forEach(to => send(to, subject, text));
 router.get('/auth/config', (req, res) => res.json({ signup: signupOn() }));
 router.post('/auth/signup', wrap(async (req, res) => {
   if (!signupOn()) return res.status(403).json({ error: 'Sign-up is not open yet. Contact us to get an account.' });
@@ -100,11 +104,12 @@ router.post('/auth/signup', wrap(async (req, res) => {
   if (password.length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if ((await query('SELECT 1 FROM users WHERE email=$1', [email])).rows[0]) return res.status(409).json({ error: 'An account with this email already exists. Sign in instead.' });
   let made;
-  try { made = await require('../companies').create({ company, name, email, password }); }
+  try { made = await require('../companies').create({ company, name, email, password, status: 'pending' }); }
   catch (e) { if (e.code === '23505') return res.status(409).json({ error: 'An account with this email already exists. Sign in instead.' }); throw e; }
-  const u = made.user;
-  console.log(`[signup] new company #${made.company.id} "${company}"`);
-  res.json({ token: sign(u), user: { id: u.id, name: u.name, role: u.role, team: u.team, company: made.company.name, company_id: made.company.id, is_super: tenant.isSuper(u.email) } });
+  console.log(`[signup] new company #${made.company.id} "${company}" is waiting for approval`);
+  toSupers('A new company is waiting for approval', `${company} (${name}, ${email}) signed up for TeamInbox Pro. Open Super Admin, Overview to accept or reject it.`);
+  // A new company cannot sign in until TeamInbox Pro accepts it on the Super Admin page.
+  res.json({ pending: true, company_id: made.company.id });
 }));
 
 // ---- Super admin (emails listed in SUPER_ADMIN_EMAILS): see every company, pause or resume one ----
@@ -129,12 +134,78 @@ router.patch('/super/companies/:id', required('super'), wrap(async (req, res) =>
       [id, p, te, String(b.plan_note || '').trim().slice(0, 300), JSON.stringify(p === 'custom' ? plan.cleanLimits(b.limits) : {})])).rows[0];
     return r ? res.json({ ok: true }) : res.status(404).json({ error: 'Company not found' });
   }
-  if (!['active', 'paused'].includes(status)) return res.status(400).json({ error: 'Unknown status' });
-  if (id === req.user.cid && status === 'paused') return res.status(409).json({ error: 'You cannot pause your own company' });
-  const r = (await query('UPDATE companies SET status=$2 WHERE id=$1 RETURNING id', [id, status])).rows[0];
-  if (!r) return res.status(404).json({ error: 'Company not found' });
+  if ('name' in req.body) {
+    const name = String(req.body.name || '').trim().slice(0, 80); if (!name) return res.status(400).json({ error: 'Enter the company name' });
+    const r = (await query('UPDATE companies SET name=$2 WHERE id=$1 RETURNING id', [id, name])).rows[0];
+    return r ? res.json({ ok: true }) : res.status(404).json({ error: 'Company not found' });
+  }
+  if (!['active', 'paused', 'rejected'].includes(status)) return res.status(400).json({ error: 'Unknown status' });
+  if (id === req.user.cid && status !== 'active') return res.status(409).json({ error: 'You cannot pause your own company' });
+  const before = (await query('SELECT status, name FROM companies WHERE id=$1', [id])).rows[0];
+  if (!before) return res.status(404).json({ error: 'Company not found' });
+  if (status === 'rejected' && before.status !== 'pending') return res.status(409).json({ error: 'Only a company that is waiting for approval can be rejected. Pause it instead.' });
+  const reason = status === 'active' ? '' : String(req.body.reason || '').trim().slice(0, 300);
+  await query('UPDATE companies SET status=$2, status_reason=$3, decided_at=now() WHERE id=$1', [id, status, reason]);
   require('../auth').forgetAll(); // signed-in people of a paused company are stopped within seconds
+  if (before.status === 'pending' && status !== 'paused') { // tell the person who signed up
+    const adm = (await query(`SELECT email, name FROM users WHERE company_id=$1 AND role='admin' ORDER BY id LIMIT 1`, [id])).rows[0];
+    if (adm) send(adm.email, status === 'active' ? 'Your TeamInbox Pro account is ready' : 'About your TeamInbox Pro sign-up',
+      status === 'active' ? `Hello ${adm.name}, your account for ${before.name} is ready. You can sign in now with the email and password you chose.`
+        : `Hello ${adm.name}, we could not accept the sign-up for ${before.name}.${reason ? ' Reason: ' + reason : ''} Reply to this email if you think this is a mistake.`);
+  }
   res.json({ ok: true });
+}));
+// Everything about one company on one screen: its team, numbers, plan, usage and latest requests
+router.get('/super/companies/:id', required('super'), wrap(async (req, res) => {
+  const id = Number(req.params.id) || 0, co = (await require('../companies').list()).find(c => c.id === id);
+  if (!co) return res.status(404).json({ error: 'Company not found' });
+  const [team, nums, reqs] = await Promise.all([
+    query(`SELECT id, name, email, role, is_active, created_at FROM users WHERE company_id=$1 ORDER BY (role='admin') DESC, id`, [id]),
+    query('SELECT label, display_phone, is_default FROM wa_numbers WHERE company_id=$1 ORDER BY id', [id]),
+    query('SELECT id, kind, message, status, reply, user_name, created_at FROM company_requests WHERE company_id=$1 ORDER BY id DESC LIMIT 5', [id])]);
+  res.json({ ...co, team: team.rows, wa_numbers: nums.rows, requests: reqs.rows, current: await plan.current(id), usage: await plan.usage(id) });
+}));
+// Change the sign-in of a company's first admin: a new email, a new password, or both
+router.post('/super/companies/:id/admin', required('super'), wrap(async (req, res) => {
+  const id = Number(req.params.id) || 0, adm = (await query(`SELECT id FROM users WHERE company_id=$1 AND role='admin' ORDER BY id LIMIT 1`, [id])).rows[0];
+  if (!adm) return res.status(404).json({ error: 'This company has no admin' });
+  const email = String(req.body.email || '').trim().toLowerCase(), password = String(req.body.password || '');
+  if (!email && !password) return res.status(400).json({ error: 'Type a new email or a new password' });
+  if (email) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address' });
+    if ((await query('SELECT 1 FROM users WHERE email=$1 AND id<>$2', [email, adm.id])).rows[0]) return res.status(409).json({ error: 'That email is already used by someone else' });
+    await query('UPDATE users SET email=$2 WHERE id=$1', [adm.id, email]);
+  }
+  if (password) {
+    if (password.length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
+    await query('UPDATE users SET password_hash=$2 WHERE id=$1', [adm.id, await bcrypt.hash(password, 10)]);
+  }
+  await query('UPDATE users SET session_version = session_version + 1 WHERE id=$1', [adm.id]); require('../auth').forget(adm.id);
+  res.json({ ok: true });
+}));
+
+// ---- Requests: a company admin asks TeamInbox Pro for a change, the super admin approves or declines ----
+const REQ_KINDS = ['members', 'numbers', 'plan', 'other'];
+router.get('/requests', required('admin'), wrap(async (req, res) => res.json((await query(
+  'SELECT id, kind, message, status, reply, user_name, created_at, decided_at FROM company_requests WHERE company_id=$1 ORDER BY id DESC LIMIT 20', [C()])).rows)));
+router.post('/requests', required('admin'), wrap(async (req, res) => {
+  const kind = REQ_KINDS.includes(req.body.kind) ? req.body.kind : 'other', message = String(req.body.message || '').trim().slice(0, 1000);
+  if (!message) return res.status(400).json({ error: 'Tell us what you need' });
+  if ((await query(`SELECT COUNT(*)::int AS n FROM company_requests WHERE company_id=$1 AND status='open'`, [C()])).rows[0].n >= 5)
+    return res.status(400).json({ error: 'You already have 5 open requests. Please wait for an answer.' });
+  const r = (await query('INSERT INTO company_requests(company_id, user_id, user_name, kind, message) VALUES($1,$2,$3,$4,$5) RETURNING id, kind, message, status, created_at', [C(), req.user.id, req.user.name || '', kind, message])).rows[0];
+  const co = (await query('SELECT name FROM companies WHERE id=$1', [C()])).rows[0];
+  toSupers('A company sent a request', `${co ? co.name : 'A company'} asks: ${message}. Open Super Admin, Requests to answer.`);
+  res.json(r);
+}));
+router.get('/super/requests', required('super'), wrap(async (req, res) => res.json((await query(
+  `SELECT q.id, q.company_id, co.name AS company, q.user_name, q.kind, q.message, q.status, q.reply, q.created_at, q.decided_at
+     FROM company_requests q JOIN companies co ON co.id=q.company_id ORDER BY (q.status='open') DESC, q.id DESC LIMIT 200`)).rows)));
+router.patch('/super/requests/:id', required('super'), wrap(async (req, res) => {
+  const status = req.body.status; if (!['approved', 'declined', 'open'].includes(status)) return res.status(400).json({ error: 'Unknown status' });
+  const r = (await query(`UPDATE company_requests SET status=$2, reply=$3, decided_at=CASE WHEN $2='open' THEN NULL ELSE now() END WHERE id=$1 RETURNING id`,
+    [Number(req.params.id) || 0, status, String(req.body.reply || '').trim().slice(0, 500)])).rows[0];
+  r ? res.json({ ok: true }) : res.status(404).json({ error: 'Request not found' });
 }));
 // Company name, changed by its admin
 router.patch('/company', required('admin'), wrap(async (req, res) => {

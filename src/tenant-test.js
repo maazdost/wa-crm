@@ -18,8 +18,15 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
 
   // A new company signs up
   const su = await j('/api/auth/signup', { method: 'POST', body: { company: 'Beta ' + tag, name: 'Bea', email: `bea${tag}@beta.co`, password: 'pw123456' } });
-  check('sign-up creates company and admin', su.status === 200 && !!su.data.token && su.data.user.role === 'admin');
-  const Bt = su.data.token;
+  const bId = su.data.company_id, bLogin = () => j('/api/auth/login', { method: 'POST', body: { email: `bea${tag}@beta.co`, password: 'pw123456' } });
+  const wait1 = await bLogin();
+  check('sign-up creates a company that waits for approval and cannot sign in yet', su.status === 200 && su.data.pending === true && !su.data.token && wait1.status === 403 && /waiting for approval/.test(wait1.data.error)
+    && (await j('/api/super/companies', {}, A.token)).data.find(c => c.id === bId).status === 'pending');
+  check('a waiting company cannot be accepted by itself or by a wrong status', (await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'active' } })).status === 401 && (await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'pending' } }, A.token)).status === 400);
+  await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'active' } }, A.token);
+  const bIn = await bLogin();
+  check('after the super admin accepts it, the company admin signs in', bIn.status === 200 && !!bIn.data.token && bIn.data.user.role === 'admin');
+  const Bt = bIn.data.token;
   check('sign-up refuses a used email', (await j('/api/auth/signup', { method: 'POST', body: { company: 'X', name: 'X', email: `bea${tag}@beta.co`, password: 'pw123456' } })).status === 409);
   check('new company starts empty', (await j('/api/conversations', {}, Bt)).data.length === 0 && (await j('/api/users', {}, Bt)).data.length === 1);
   check('new company has its own departments', (await j('/api/departments', {}, Bt)).data.map(d => d.key).sort().join() === 'general,sales,support');
@@ -96,7 +103,6 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   // Super admin
   check('normal admin cannot list companies', (await j('/api/super/companies', {}, Bt)).status === 403);
   const cos = (await j('/api/super/companies', {}, A.token)).data;
-  const bId = su.data.user.company_id;
   check('super admin lists companies', Array.isArray(cos) && cos.some(c => c.id === bId));
   await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'paused' } }, A.token);
   await sleep(200);
@@ -110,6 +116,37 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const allB = (await j('/api/conversations?status=open', {}, Bt)).data, unB = (await j('/api/conversations?unassigned=true', {}, Bt)).data;
   check('a waiting chat with no agent shows under All and Unread', unB.length === 1 && allB.length === 1 && allB[0].id === unB[0].id
     && (await j('/api/conversations?status=open&view=unread', {}, Bt)).data.length === 1 && (await j('/api/conversations/counts', {}, Bt)).data.unread === 1);
+
+  // Super admin: reject a sign-up, look inside a company, change its name and its admin's sign-in
+  const su2 = await j('/api/auth/signup', { method: 'POST', body: { company: 'Gamma ' + tag, name: 'Gul', email: `gul${tag}@gamma.co`, password: 'pw123456' } });
+  const gId = su2.data.company_id, gLogin = (email = `gul${tag}@gamma.co`, password = 'pw123456') => j('/api/auth/login', { method: 'POST', body: { email, password } });
+  await j('/api/super/companies/' + gId, { method: 'PATCH', body: { status: 'rejected', reason: 'Not a business' } }, A.token);
+  const rej = await gLogin();
+  check('a rejected sign-up cannot sign in and the reason is kept', rej.status === 403 && /not accepted/.test(rej.data.error) && (await j('/api/super/companies', {}, A.token)).data.find(c => c.id === gId).status_reason === 'Not a business');
+  check('an active company cannot be rejected, only paused', (await j('/api/super/companies/' + bId, { method: 'PATCH', body: { status: 'rejected' } }, A.token)).status === 409);
+  await j('/api/super/companies/' + gId, { method: 'PATCH', body: { status: 'active' } }, A.token);
+  const Gt = (await gLogin()).data.token;
+  check('a rejected company can still be accepted later', !!Gt);
+  const det = await j('/api/super/companies/' + gId, {}, A.token);
+  check('super admin sees the details of a company', det.status === 200 && det.data.team.length === 1 && det.data.team[0].role === 'admin' && det.data.current.plan === 'free' && det.data.usage.members === 1 && Array.isArray(det.data.wa_numbers));
+  check('a normal admin cannot open company details or change another company', (await j('/api/super/companies/' + gId, {}, Bt)).status === 403 && (await j('/api/super/companies/' + gId, { method: 'PATCH', body: { name: 'Hacked' } }, Bt)).status === 403
+    && (await j('/api/super/companies/' + gId + '/admin', { method: 'POST', body: { password: 'hacked1234' } }, Bt)).status === 403 && (await j('/api/super/requests', {}, Bt)).status === 403);
+  await j('/api/super/companies/' + gId, { method: 'PATCH', body: { name: 'Gamma Renamed ' + tag } }, A.token);
+  check('super admin renames a company', (await j('/api/me', {}, Gt)).data.company === 'Gamma Renamed ' + tag);
+  check('admin sign-in change needs a valid, unused email and a long password', (await j('/api/super/companies/' + gId + '/admin', { method: 'POST', body: { email: `bea${tag}@beta.co` } }, A.token)).status === 409
+    && (await j('/api/super/companies/' + gId + '/admin', { method: 'POST', body: { password: 'short' } }, A.token)).status === 400 && (await j('/api/super/companies/' + gId + '/admin', { method: 'POST', body: {} }, A.token)).status === 400);
+  await j('/api/super/companies/' + gId + '/admin', { method: 'POST', body: { email: `gul2${tag}@gamma.co`, password: 'newpass123' } }, A.token);
+  check('super admin changes the email and password of a company admin', (await j('/api/users', {}, Gt)).status === 401 && (await gLogin()).status === 401 && (await gLogin(`gul2${tag}@gamma.co`, 'newpass123')).status === 200);
+  // Requests
+  const Gt2 = (await gLogin(`gul2${tag}@gamma.co`, 'newpass123')).data.token;
+  const rq = await j('/api/requests', { method: 'POST', body: { kind: 'members', message: 'Please allow 10 team members' } }, Gt2);
+  check('a company admin sends a request and only that company sees it', rq.status === 200 && rq.data.status === 'open' && (await j('/api/requests', {}, Gt2)).data.length === 1 && (await j('/api/requests', {}, Bt)).data.length === 0
+    && (await j('/api/requests', { method: 'POST', body: { kind: 'plan', message: ' ' } }, Gt2)).status === 400);
+  const all = (await j('/api/super/requests', {}, A.token)).data;
+  check('the super admin sees the request with the company name', all.some(q => q.id === rq.data.id && q.company === 'Gamma Renamed ' + tag && q.kind === 'members') && (await j('/api/super/companies', {}, A.token)).data.find(c => c.id === gId).open_requests === 1);
+  await j('/api/super/requests/' + rq.data.id, { method: 'PATCH', body: { status: 'approved', reply: 'Done, you now have 10.' } }, A.token);
+  const mine = (await j('/api/requests', {}, Gt2)).data[0];
+  check('the answer reaches the company', mine.status === 'approved' && mine.reply === 'Done, you now have 10.' && (await j('/api/super/requests/' + rq.data.id, { method: 'PATCH', body: { status: 'maybe' } }, A.token)).status === 400);
 
   // Plans and limits
   const setPlan = (body) => j('/api/super/companies/' + bId, { method: 'PATCH', body }, A.token);

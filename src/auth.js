@@ -24,7 +24,7 @@ function required(...roles) {
       const token = (req.headers.authorization || '').replace('Bearer ', '');
       tok = jwt.verify(token, process.env.JWT_SECRET); cur = await current(tok.id);
     } catch { return res.status(401).json({ error: 'unauthorized' }); }
-    if (!valid(tok, cur)) return res.status(401).json({ error: cur && cur.company_status === 'paused' ? 'This company account is paused. Contact support.' : 'unauthorized' });
+    if (!valid(tok, cur)) return res.status(401).json({ error: cur && cur.company_status === 'paused' ? 'This company account is paused. Contact support.' : cur && cur.company_status === 'pending' ? 'Your account is waiting for approval. We will email you when it is ready.' : 'unauthorized' });
     req.user = { ...tok, role: cur.role, cid: cur.company_id, email: cur.email, is_super: tenant.isSuper(cur.email) };
     if (roles.includes('super') ? !req.user.is_super : (roles.length && !roles.includes(req.user.role))) return res.status(403).json({ error: 'forbidden' });
     tenant.run(cur.company_id, () => next()); // everything after this runs inside the person's company

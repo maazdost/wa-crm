@@ -107,7 +107,10 @@ const EVENTS = [
   ['POST', /^\/social\/(facebook|instagram)\/rules$/, 'Social Media', (r) => `Created ${/instagram/.test(r.path) ? 'an Instagram' : 'a Facebook'} rule`, (r) => r.body.name],
   ['PATCH', /^\/social\/rules\/(\d+)$/, 'Social Media', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on a social rule' : 'Switched off a social rule') : 'Changed a social rule', byId('social_rules')],
   ['DELETE', /^\/social\/rules\/(\d+)$/, 'Social Media', 'Deleted a social rule', byId('social_rules')],
-  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => 'plan' in (r.body || {}) ? 'Changed the plan of a company' : r.body.status === 'paused' ? 'Paused a company' : 'Changed a company', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => 'plan' in (r.body || {}) ? 'Changed the plan of a company' : 'name' in (r.body || {}) ? 'Renamed a company' : r.body.status === 'paused' ? 'Paused a company' : r.body.status === 'rejected' ? 'Rejected a company' : r.body.status === 'active' ? 'Accepted or resumed a company' : 'Changed a company', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['POST', /^\/super\/companies\/(\d+)\/admin$/, 'Companies', 'Changed the sign-in of a company admin', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['PATCH', /^\/super\/requests\/(\d+)$/, 'Companies', (r) => r.body.status === 'approved' ? 'Approved a request' : r.body.status === 'declined' ? 'Declined a request' : 'Reopened a request', look(async (id) => ((await query('SELECT co.name AS n FROM company_requests q JOIN companies co ON co.id=q.company_id WHERE q.id=$1', [id])).rows[0] || {}).n)],
+  ['POST', /^\/requests$/, 'Company', 'Sent a request to TeamInbox Pro', (r) => String(r.body.message || '').slice(0, 80)],
   ['PUT', /^\/super\/plans\/(\w+)$/, 'Companies', 'Changed the limits of a plan', look(async (key) => ((await query('SELECT name AS n FROM plans WHERE key=$1', [key])).rows[0] || {}).n)]
 ];
 async function log({ cid, userId, userName, role, area, action, detail, ip }) {

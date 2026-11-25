@@ -409,3 +409,26 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'custo
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS trial_ends DATE;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_note TEXT NOT NULL DEFAULT '';
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS limits JSONB NOT NULL DEFAULT '{}';
+
+-- ============================================================================
+-- Super admin dashboard: new sign-ups wait for approval (status pending, then active or rejected),
+-- and a company admin can send a request (more team members, another number, a plan change).
+-- Safe to run again and again: nothing is deleted. Existing companies keep their status.
+-- ============================================================================
+ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_status_check;
+ALTER TABLE companies ADD CONSTRAINT companies_status_check CHECK (status IN ('active','paused','pending','rejected'));
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS status_reason TEXT NOT NULL DEFAULT '';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS decided_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS company_requests (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  user_name TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL DEFAULT 'other',
+  message TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','approved','declined')),
+  reply TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  decided_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_company_requests ON company_requests(status, id DESC);

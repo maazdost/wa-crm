@@ -420,6 +420,8 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .soc-c{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.soc-c>div{flex:1;min-width:220px}.soc-c h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 4px}.soc-c p{margin:0}.soc-c .qmic{margin:0;width:44px;height:44px;border-radius:12px}
 .soc-t{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.soc-t select{width:auto;flex:none}.soc-t input{flex:1;min-width:180px}
 .soc-r{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--field);display:grid;gap:10px}.soc-r small{color:var(--mute);display:block;margin-bottom:3px}.soc-b{background:var(--tint);color:var(--tint-ink);border-radius:10px;padding:8px 12px;white-space:pre-wrap;overflow-wrap:anywhere;width:fit-content;max-width:100%}
+@media (min-width:1200px){.stats.sa6{grid-template-columns:repeat(6,minmax(0,1fr))}.sa6 .kpi{padding:16px 14px;gap:10px}}
+.sdone{display:grid;gap:12px;justify-items:start}.sdone h1{margin:0}.coh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}.cor{margin:0 0 8px}.cof{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:12px 0 4px}.cof small{display:block;color:var(--mute);font-size:12px}.cof b{font-size:17px}.cof b small{display:inline;font-size:13px;font-weight:500}.coa{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}#m-co .mcard{width:min(720px,100%)}.cob .btn{padding:7px 12px}
 .plg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}.plt{table-layout:fixed;width:100%}.plt th{white-space:normal;vertical-align:bottom}.plt th:first-child{width:92px}.plt input{width:100%;min-width:0}.cot td small{white-space:nowrap}.cot th{white-space:normal}.cob{white-space:nowrap}.cot td,.cot th{padding-left:12px;padding-right:12px}.hotn{color:#d9534f;font-weight:700}.plh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .plu{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px;margin-top:14px}.plu small{color:var(--mute)}.plu>div>small{display:block;font-size:12px}.plu b{font-size:20px}.plu b small{font-size:13px;font-weight:500}#m-cplan .mcard{width:min(600px,100%)}#m-plans .mcard{width:min(820px,100%)}
 @media (max-width:760px){.plg{grid-template-columns:1fr}.plt{table-layout:auto}.plt input{width:120px}.cob{white-space:normal}}
@@ -607,16 +609,17 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
   ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
-  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'], ['co', 'Companies', 'building', 1, 1, 'Manage']];
+  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
+  ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -780,6 +783,7 @@ function showSignup() {
   $('#sb').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname); showLogin(); };
   $('#sf').onsubmit = async e => { e.preventDefault(); const b = e.target.querySelector('button'); b.disabled = true;
     const d = await postPublic('/api/auth/signup', { company: $('#sc').value, name: $('#sn').value, email: $('#se').value, password: $('#sp').value }); b.disabled = false;
+    if (d.pending) { history.replaceState(null, '', location.pathname); box.innerHTML = `<div class="sdone"><span class="emp-ic">${ico('check', 28)}</span><h1>Thank you. Your account is waiting for approval.</h1><p class="mute">We check every new company before it starts. We will email you as soon as your account is ready, usually within one working day. After that you sign in with the email and password you just chose.</p><button class="btn" id="sdb">Back to sign in</button></div>${LFOOT}`; $('#sdb').onclick = () => showLogin(); return; }
     if (d.error || !d.token) { $('#sm').textContent = d.error || 'Could not create the account'; return; }
     history.replaceState(null, '', location.pathname);
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
@@ -852,7 +856,7 @@ async function loadList() {
   else if (t === 'archived') p.set('view', 'archived');
   else p.set('status', t);
   if (S.agent && !['unassigned', 'held'].includes(t)) p.set('assigned_to', S.agent);
-  const q = $('#q').value.trim(); if (q) p.set('q', q);
+  const q = ($('#q') || { value: '' }).value.trim(); if (q) p.set('q', q); // the box is gone when a signed-out person is sent back to sign in
   if (S.label) p.set('label', S.label);
   const d = await api('/conversations?' + p); if (d.error) return;
   S.convs = d; renderList(); loadCounts();
@@ -1314,7 +1318,8 @@ async function showCompanies() {
   <div class="stats">${kpi('building', cs.length, 'Companies')}${kpi('check', cs.filter(c => c.status === 'active').length, 'Active', 'blue')}${kpi('phone', cs.reduce((n, c) => n + c.numbers, 0), 'WhatsApp numbers', 'violet')}${kpi('users', cs.reduce((n, c) => n + c.users, 0), 'Team members', 'amber')}</div>
   <div class="tbl"><table class="cot"><thead><tr><th>Company</th><th>Admin</th><th>Plan</th><th>Team</th><th>Numbers</th><th>Broadcasts this month</th><th>Last activity</th><th>Status</th><th></th></tr></thead><tbody>
   ${cs.map(c => { const l = limOf(c); return `<tr><td>${userCell(c.name, 'ID ' + c.id)}</td><td>${esc(c.admin_email || '—')}</td><td>${planCell(c)}</td><td>${use(c.members, l.members)}</td><td>${use(c.numbers, l.numbers)}</td><td>${use(c.broadcast, l.broadcast)}</td><td>${when(c.last_activity)}</td>
-  <td><em class="chip ${c.status === 'active' ? 'ok' : 'warn'}">${c.status === 'active' ? 'Active' : 'Paused'}</em></td><td class="tdm cob"><button class="ghost" data-cp="${c.id}">Plan</button> ${c.id === S.user.company_id ? '' : `<button class="ghost" data-cs="${c.id}" data-to="${c.status === 'active' ? 'paused' : 'active'}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>`}</td></tr>`; }).join('')}</tbody></table></div>
+  <td>${coChip(c)}</td><td class="tdm cob"><button class="ghost" data-cm="${c.id}">Manage</button> <button class="ghost" data-cp="${c.id}">Plan</button> ${coButtons(c)}</td></tr>`; }).join('')}</tbody></table></div>
+  ${modal('m-co', 'Company', '<div id="cod"></div>', 1)}
   ${modal('m-cplan', 'Plan', `<form id="cpf"><p class="mute" id="cpn" data-notr style="margin:0 0 10px"></p>
     <label class="fld"><span>Plan</span><select id="cp1">${plans.map(x => `<option value="${x.key}">${esc(x.name)}</option>`).join('')}<option value="custom">Custom</option></select></label>
     <label class="fld" id="cp2b"><span>Trial ends on (leave empty when there is no trial)</span><input type="date" id="cp2"></label>
@@ -1326,15 +1331,37 @@ async function showCompanies() {
     ${plans.map(x => `<tr data-pk="${x.key}"><td><b>${esc(x.name)}</b></td>${PLAN_LIMITS.map(([k, l]) => `<td><input type="number" min="0" step="1" data-lk="${k}" value="${x[k] == null ? '' : x[k]}" placeholder="${tr('No limit')}" aria-label="${l}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>
     <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save limits</button></div></form>`, 1)}`;
   $('#tb').onclick = showInbox;
-  el.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => {
-    if (b.dataset.to === 'paused' && !await sure('Pause this company?', 'Its team will be signed out until you resume it.', { ok: 'Pause company', danger: 1 })) return;
-    const r = await api('/super/companies/' + b.dataset.cs, 'PATCH', { status: b.dataset.to }); if (r.error) return toast(r.error); showCompanies(); });
+  coWire(el, showCompanies);
+  const openPlan = id => { cur = cs.find(c => c.id == id); $('#cpn').textContent = cur.name; $('#cp1').value = cur.plan; $('#cp2').value = cur.trial_ends || ''; $('#cp4').value = cur.plan_note || ''; fill(); $('#m-co').hidden = true; $('#m-cplan').hidden = false; };
+  // "Manage": everything about one company, with the changes TeamInbox Pro can make for it
+  const manage = async id => { const d = await api('/super/companies/' + id); if (d.error) return toast(d.error); if (S.nav !== 'co') return;
+    const day = t => new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }), L = d.current.limits, U = d.usage;
+    const fact = (l, v) => `<div><small>${l}</small><b>${v}</b></div>`, lim = (n, l) => l == null ? n : `${n} <small class="mute">/ ${l}</small>`;
+    $('#m-co .dlg-h b').textContent = d.name; $('#m-co .dlg-h b').dataset.notr = '1';
+    $('#cod').innerHTML = `<div class="coh">${coChip(d)}<em class="chip ${d.plan === 'custom' ? '' : 'ok'}">${esc(pname(d.plan))}</em>${d.trial_over ? '<em class="chip closed">Trial ended, now on Free</em>' : ''}<small class="mute">ID ${d.id} · ${tr('Joined')} ${day(d.created_at)}</small></div>
+      ${d.status_reason ? `<p class="mute cor"><b>${d.status === 'rejected' ? 'Reason for rejecting' : 'Reason'}:</b> <span data-notr>${esc(d.status_reason)}</span></p>` : ''}${d.plan_note ? `<p class="mute cor"><b>Your note:</b> <span data-notr>${esc(d.plan_note)}</span></p>` : ''}
+      <div class="cof">${fact('Team members', lim(U.members, L.members))}${fact('WhatsApp numbers', lim(U.numbers, L.numbers))}${fact('Broadcast messages this month', lim(U.broadcast, L.broadcast))}${fact('Media Library space (MB)', lim(U.storage_mb, L.storage_mb))}${fact('Chats', d.chats)}${fact('Last activity', d.last_activity ? day(d.last_activity) : '—')}</div>
+      <div class="qsec"><div class="qsec-h"><b>Team</b></div>${d.team.map(u => `<div class="lrow"><div>${userCell(u.name, u.email, 32)}</div><em class="chip ${u.is_active ? '' : 'closed'}">${u.is_active ? nice(u.role) : 'Switched off'}</em></div>`).join('')}</div>
+      <div class="qsec"><div class="qsec-h"><b>WhatsApp numbers</b></div>${d.wa_numbers.length ? d.wa_numbers.map(n => `<div class="lrow"><div><b data-notr>${esc(n.label)}</b> <small class="mute" data-notr>${esc(n.display_phone || '')}</small></div>${n.is_default ? '<em class="chip ok">Default</em>' : ''}</div>`).join('') : '<small class="mute">No number connected yet.</small>'}</div>
+      ${d.requests.length ? `<div class="qsec"><div class="qsec-h"><b>Latest requests</b></div>${d.requests.map(q => `<div class="lrow"><div><b>${REQ_KINDS[q.kind] || REQ_KINDS.other}</b><br><small class="mute" data-notr>${esc(q.message)}</small></div>${reqChip(q)}</div>`).join('')}</div>` : ''}
+      <div class="coa"><button class="ghost" id="co-n">${ico('edit', 15)}Rename</button><button class="ghost" id="co-e">${ico('mail', 15)}Change admin email</button><button class="ghost" id="co-p">${ico('lock', 15)}Set a new admin password</button><button class="ghost" id="co-pl">${ico('sliders', 15)}Plan</button>${coButtons(d)}</div>`;
+    $('#m-co').hidden = false; $('#m-co .mb').scrollTop = 0; labelTables();
+    const adm = d.team.find(u => u.role === 'admin') || {};
+    const send = async (path, method, body, ok) => { const r = await api(path, method, body); if (r.error) { toast(r.error); return; } toast(ok); await showCompanies(); if ($('[data-cm="' + id + '"]')) $('[data-cm="' + id + '"]').click(); };
+    $('#co-n').onclick = async () => { const v = await ask('Rename this company', { value: d.name, note: 'The new name shows to its whole team.' }); if (v && v.trim() && v.trim() !== d.name) send('/super/companies/' + id, 'PATCH', { name: v.trim() }, 'Company renamed'); };
+    $('#co-e').onclick = async () => { const v = await ask('Change admin email', { value: adm.email || '', type: 'email', note: `New sign-in email for ${adm.name || 'the admin'}. They are signed out and sign in with the new email.` }); if (v && v.trim().toLowerCase() !== adm.email) send('/super/companies/' + id + '/admin', 'POST', { email: v.trim() }, 'Admin email changed'); };
+    $('#co-p').onclick = async () => { const v = await ask('Set a new admin password', { type: 'password', min: 8, placeholder: '8 or more characters', note: `For ${adm.name || 'the admin'}. They are signed out everywhere. Tell them the new password yourself. It is not emailed.` }); if (v) send('/super/companies/' + id + '/admin', 'POST', { password: v }, 'Admin password changed'); };
+    $('#co-pl').onclick = () => openPlan(id);
+    coWire($('#cod'), async () => { await showCompanies(); if ($('[data-cm="' + id + '"]')) $('[data-cm="' + id + '"]').click(); });
+  };
+  el.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => manage(b.dataset.cm));
+  if (S.openCo) { const id = S.openCo; S.openCo = null; manage(id); }
   let cur = null;
   const fill = () => { const k = $('#cp1').value, custom = k === 'custom', src = custom ? (cur.plan === 'custom' ? cur.limits || {} : {}) : plans.find(x => x.key === k) || {};
     $('#cp2b').hidden = custom || k === 'free';
     $('#cpf').querySelectorAll('[data-lk]').forEach(i => { i.disabled = !custom; i.value = src[i.dataset.lk] == null ? '' : src[i.dataset.lk]; });
     $('#cp3n').textContent = tr(custom ? 'Leave a box empty for no limit.' : 'These limits belong to the plan. Change them with the Plan limits button.'); };
-  el.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { cur = cs.find(c => c.id == b.dataset.cp); $('#cpn').textContent = cur.name; $('#cp1').value = cur.plan; $('#cp2').value = cur.trial_ends || ''; $('#cp4').value = cur.plan_note || ''; fill(); $('#m-cplan').hidden = false; });
+  el.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => openPlan(b.dataset.cp));
   $('#cp1').onchange = fill;
   const read = box => Object.fromEntries([...box.querySelectorAll('[data-lk]')].map(i => [i.dataset.lk, i.value.trim()]));
   $('#cpf').onsubmit = async e => { e.preventDefault(); const r = await api('/super/companies/' + cur.id, 'PATCH', { plan: $('#cp1').value, trial_ends: $('#cp2b').hidden ? '' : $('#cp2').value, plan_note: $('#cp4').value, limits: read($('#cpf')) });
@@ -1343,16 +1370,69 @@ async function showCompanies() {
   $('#plf').onsubmit = async e => { e.preventDefault(); for (const row of $('#plf').querySelectorAll('[data-pk]')) { const r = await api('/super/plans/' + row.dataset.pk, 'PUT', read(row)); if (r.error) return toast(r.error); } toast('Plan limits saved'); showCompanies(); };
 }
 
+/* ---------- Super admin (TeamInbox Pro staff only) ---------- */
+const REQ_KINDS = { members: 'More team members', numbers: 'Another WhatsApp number', plan: 'Change my plan', other: 'Something else' };
+const reqChip = q => `<em class="chip ${q.status === 'approved' ? 'ok' : q.status === 'declined' ? 'closed' : 'warn'}">${q.status === 'approved' ? 'Approved' : q.status === 'declined' ? 'Declined' : 'Waiting'}</em>`;
+const coChip = c => `<em class="chip ${c.status === 'active' ? 'ok' : c.status === 'rejected' ? 'closed' : 'warn'}">${{ active: 'Active', paused: 'Paused', pending: 'Waiting for approval', rejected: 'Rejected' }[c.status] || esc(c.status)}</em>`;
+// The status buttons that fit a company: accept or reject a sign-up, pause, resume.
+const coButtons = c => c.id === S.user.company_id ? '' : c.status === 'pending' ? `<button class="btn" data-cs="${c.id}" data-to="active" data-was="pending">${ico('check', 15)}Accept</button> <button class="ghost" data-cs="${c.id}" data-to="rejected">Reject</button>`
+  : c.status === 'rejected' ? `<button class="ghost" data-cs="${c.id}" data-to="active" data-was="pending">Accept after all</button>` : `<button class="ghost" data-cs="${c.id}" data-to="${c.status === 'active' ? 'paused' : 'active'}">${c.status === 'active' ? 'Pause' : 'Resume'}</button>`;
+function coWire(box, after) {
+  box.querySelectorAll('[data-cs]').forEach(b => b.onclick = async () => { const to = b.dataset.to; let reason = '';
+    if (to === 'paused' && !await sure('Pause this company?', 'Its team will be signed out until you resume it.', { ok: 'Pause company', danger: 1 })) return;
+    if (to === 'rejected') { reason = await ask('Reject this sign-up?', { note: 'The company cannot sign in. The person gets an email with your reason.', placeholder: 'Reason, for example: we could not verify the business', ok: 'Reject', danger: 1 }); if (!reason) return; }
+    const r = await api('/super/companies/' + b.dataset.cs, 'PATCH', { status: to, reason }); if (r.error) return toast(r.error);
+    toast(to === 'rejected' ? 'Sign-up rejected' : to === 'paused' ? 'Company paused' : b.dataset.was ? 'Company accepted. They can sign in now.' : 'Company resumed'); after(); });
+}
+async function showSuper() {
+  const sc = screen('Super Admin', 'TeamInbox Pro staff only. Accept new companies, watch trials and answer what companies ask for. No company owner can see these pages.');
+  const [cs, rq, pl] = await Promise.all([api('/super/companies'), api('/super/requests'), api('/super/plans')]); if (cs.error) return toast(cs.error); if (S.nav !== 'sa') return;
+  const day = t => new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }), plans = arr(pl), pname = k => k === 'custom' ? 'Custom' : (plans.find(x => x.key === k) || { name: k }).name;
+  const pend = cs.filter(c => c.status === 'pending'), open = arr(rq).filter(q => q.status === 'open'), now = new Date(), in7 = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const trial = cs.filter(c => c.trial_ends && !c.trial_over && (c.plan === 'starter' || c.plan === 'pro')), soon = trial.filter(c => c.trial_ends <= in7).sort((a, b) => a.trial_ends < b.trial_ends ? -1 : 1);
+  const fresh = cs.filter(c => { const d = new Date(c.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).length;
+  sc.innerHTML = `<div class="stats sa6">${kpi('building', cs.length, 'Companies')}${kpi('hourglass', pend.length, 'Waiting for approval', 'amber')}${kpi('userplus', fresh, 'New this month', 'blue')}${kpi('clock', trial.length, 'On trial', 'violet')}${kpi('ban', cs.filter(c => c.status === 'paused').length, 'Paused', 'red')}${kpi('inbox', open.length, 'Open requests', 'amber')}</div>
+  <div class="tbl"><div class="tbl-h"><b>Waiting for approval</b></div>${pend.length ? `<table><thead><tr><th>Company</th><th>Signed up by</th><th>Signed up on</th><th></th></tr></thead><tbody>
+    ${pend.map(c => `<tr><td>${userCell(c.name, 'ID ' + c.id)}</td><td><b data-notr>${esc(c.admin_name || '—')}</b><br><small class="mute" data-notr>${esc(c.admin_email || '')}</small></td><td>${day(c.created_at)}</td><td class="tdm cob">${coButtons(c)}</td></tr>`).join('')}</tbody></table>`
+    : emptyState('check', 'No one is waiting', 'When a new company signs up it shows here for you to accept or reject.')}</div>
+  <div class="two"><div class="panel"><h3>Trials ending in the next 7 days</h3>${soon.length ? soon.map(c => `<div class="lrow"><div><b data-notr>${esc(c.name)}</b> <em class="chip ok">${esc(pname(c.plan))}</em></div><small class="mute">${day(c.trial_ends + 'T00:00:00')}</small><button class="ghost" data-go="${c.id}">Manage</button></div>`).join('') : '<p class="mute" style="margin:0">No trial ends this week.</p>'}</div>
+  <div class="panel"><h3>Open requests</h3>${open.length ? open.slice(0, 5).map(q => `<div class="lrow"><div><b data-notr>${esc(q.company)}</b> <small class="mute">${REQ_KINDS[q.kind] || REQ_KINDS.other}</small><br><small class="mute" data-notr>${esc(q.message)}</small></div></div>`).join('') + `<p style="margin:12px 0 0"><button class="ghost" id="sarq">${ico('inbox', 15)}Answer requests</button></p>` : '<p class="mute" style="margin:0">No open requests.</p>'}</div></div>
+  <div class="panel"><h3>All companies</h3><p class="mute">Change a plan, rename a company, fix an admin's sign-in, pause or resume.</p><button class="ghost" id="saco">${ico('building', 15)}Open Companies</button></div>`;
+  labelTables(); coWire(sc, showSuper);
+  sc.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { S.openCo = b.dataset.go; goNav('co'); });
+  $('#saco').onclick = () => goNav('co'); if ($('#sarq')) $('#sarq').onclick = () => goNav('rq');
+}
+async function showRequests() {
+  const sc = screen('Requests', 'What company admins ask TeamInbox Pro for. Approve or decline with a short answer. They see it in their Settings. Approving does not change anything by itself, so make the change on the Companies page.');
+  const rq = await api('/super/requests'); if (rq.error) return toast(rq.error); if (S.nav !== 'rq') return;
+  const list = arr(rq), day = t => new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short' }) + ', ' + fmtT(t);
+  sc.innerHTML = `<div class="stats">${kpi('inbox', list.filter(q => q.status === 'open').length, 'Waiting for you', 'amber')}${kpi('check', list.filter(q => q.status === 'approved').length, 'Approved', 'blue')}${kpi('ban', list.filter(q => q.status === 'declined').length, 'Declined', 'red')}</div>
+  <div class="tbl">${list.length ? `<table class="slg"><thead><tr><th>Company</th><th>What they need</th><th>Sent</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.map(q => `<tr><td>${userCell(q.company, q.user_name)}</td><td><div class="slc"><b>${REQ_KINDS[q.kind] || REQ_KINDS.other}</b><br><span data-notr>${esc(q.message)}</span>${q.reply ? `<br><small>${tr('Your answer')}: <span data-notr>${esc(q.reply)}</span></small>` : ''}</div></td><td class="alw">${day(q.created_at)}</td><td>${reqChip(q)}</td>
+    <td class="tdm cob"><button class="ghost" data-rc="${q.company_id}">Manage</button> ${q.status === 'open' ? `<button class="btn" data-ra="${q.id}" data-to="approved">Approve</button> <button class="ghost" data-ra="${q.id}" data-to="declined">Decline</button>` : `<button class="ghost" data-ra="${q.id}" data-to="open">Reopen</button>`}</td></tr>`).join('')}</tbody></table>`
+    : emptyState('inbox', 'No requests yet', 'When a company admin presses "Request a change" in Settings, it shows here.')}</div>`;
+  labelTables();
+  sc.querySelectorAll('[data-rc]').forEach(b => b.onclick = () => { S.openCo = b.dataset.rc; goNav('co'); });
+  sc.querySelectorAll('[data-ra]').forEach(b => b.onclick = async () => { const to = b.dataset.to; let reply = '';
+    if (to !== 'open') { reply = await ask(to === 'approved' ? 'Approve this request' : 'Decline this request', { note: 'Write a short answer. The company admin sees it in Settings.', placeholder: to === 'approved' ? 'e.g. Done, you can now add 10 team members' : 'e.g. This needs the Pro plan', ok: to === 'approved' ? 'Approve' : 'Decline' }); if (!reply) return; }
+    const r = await api('/super/requests/' + b.dataset.ra, 'PATCH', { status: to, reply }); if (r.error) return toast(r.error); toast(to === 'approved' ? 'Request approved' : to === 'declined' ? 'Request declined' : 'Request reopened'); showRequests(); });
+}
+
 // The four things a plan limits, in the order they are shown.
 const PLAN_LIMITS = [['members', 'Team members'], ['numbers', 'WhatsApp numbers'], ['broadcast', 'Broadcast messages a month'], ['storage_mb', 'Media Library space (MB)']];
 // "Plan and usage" card on the Settings page: the company's plan and a bar for each limit.
 async function drawPlanCard() {
-  const box = $('#planp'); if (!box) return; const p = await api('/plan'); if (p.error || !$('#planp')) return;
+  const box = $('#planp'); if (!box) return; const [p, rq] = await Promise.all([api('/plan'), api('/requests')]); if (p.error || !$('#planp')) return; const mine = arr(rq).slice(0, 5);
   const day = d => new Date(d + 'T00:00:00').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
   const row = ([k, l]) => { const lim = p.limits[k], used = k === 'storage_mb' ? p.usage.storage_mb : p.usage[k], pct = lim == null ? 0 : lim === 0 ? 100 : Math.min(100, Math.round(used / lim * 100));
     return `<div><small>${k === 'broadcast' ? 'Broadcast messages this month' : l}</small><b>${used} <small>${lim == null ? tr('No limit') : tr('of') + ' ' + lim}</small></b>${lim == null ? '' : `<div class="ubar"><i style="width:${pct}%"${pct > 85 ? ' class="hot"' : ''}></i></div>`}</div>`; };
   box.innerHTML = `<h3 class="plh">Plan and usage<em class="chip ok">${esc(p.name)}</em>${p.trial_over ? '<em class="chip closed">Trial ended</em>' : p.trial_ends ? `<em class="chip warn">Trial until ${day(p.trial_ends)}</em>` : ''}</h3>
-    <p class="mute">${p.trial_over ? `Your ${esc(p.plan_name)} trial has ended, so the Free plan applies now. Your chats keep working. Contact us to continue on ${esc(p.plan_name)}.` : 'What your plan includes and how much of it you use. Contact us to change your plan.'}</p><div class="plu">${PLAN_LIMITS.map(row).join('')}</div>`;
+    <p class="mute">${p.trial_over ? `Your ${esc(p.plan_name)} trial has ended, so the Free plan applies now. Your chats keep working. Contact us to continue on ${esc(p.plan_name)}.` : 'What your plan includes and how much of it you use. Need more? Send us a request.'}</p><div class="plu">${PLAN_LIMITS.map(row).join('')}</div>
+    <p style="margin:16px 0 0"><button class="ghost" data-open="m-req">${ico('send', 15)}Request a change</button></p>
+    ${mine.length ? `<div class="qsec"><div class="qsec-h"><b>Your requests</b></div>${mine.map(q => `<div class="lrow"><div><b>${REQ_KINDS[q.kind] || REQ_KINDS.other}</b><br><small class="mute" data-notr>${esc(q.message)}</small>${q.reply ? `<br><small>${tr('Answer')}: <span data-notr>${esc(q.reply)}</span></small>` : ''}</div>${reqChip(q)}</div>`).join('')}</div>` : ''}
+    ${modal('m-req', 'Request a change', `<form id="rqf"><p class="mute" style="margin:0 0 10px">Tell us what you need. We answer here in Settings, usually within one working day.</p><label class="fld"><span>What do you need?</span><select id="rq1">${Object.entries(REQ_KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
+      <label class="fld"><span>Details</span><textarea id="rq2" rows="3" maxlength="1000" required placeholder="e.g. We hired two more agents and need 7 team members in total"></textarea></label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Send request</button></div></form>`)}`;
+  $('#rqf').onsubmit = async e => { e.preventDefault(); const r = await api('/requests', 'POST', { kind: $('#rq1').value, message: $('#rq2').value }); if (r.error) return toast(r.error); toast('Request sent. We will answer here in Settings.'); drawPlanCard(); };
 }
 
 /* ---------- Team (managers/admins) ---------- */
