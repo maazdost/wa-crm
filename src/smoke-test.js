@@ -398,6 +398,24 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { in_rotation: false, is_active: false } }, admin);
     await pool.query('UPDATE users SET in_rotation=true WHERE id = ANY($1::int[])', [before]);
   }
+  // A follow-up can be for one department only
+  {
+    const tn = 'fu_dept_' + Date.now().toString().slice(-6);
+    await j('/api/templates', { method: 'POST', body: { name: tn, body: 'Hello {{1}}, any questions?', examples: ['Ali'] } }, admin);
+    const step = [{ delay_hours: 24, template: tn, var_map: [{ type: 'name' }] }];
+    const fc = await j('/api/drips', { method: 'POST', body: { name: 'Classes only', team: 'classes', steps: step } }, admin);
+    const fs2 = await j('/api/drips', { method: 'POST', body: { name: 'Sales only', team: 'sales', steps: step } }, admin);
+    const fbad = await j('/api/drips', { method: 'POST', body: { name: 'Bad', team: 'no-such-dept', steps: step } }, admin);
+    const ph = '9230060001' + Date.now().toString().slice(-4);
+    await inbound(ph, { text: { body: 'hi' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'I want to join classes' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'Dept Client' } }); await sleep(400);
+    const got = (await pool.query('SELECT e.drip_id FROM drip_enrollments e JOIN contacts ct ON ct.id=e.contact_id WHERE ct.wa_id=$1', [ph])).rows.map(r => r.drip_id);
+    const listed = (await j('/api/drips', {}, admin)).data.find(d => d.id === fc.data.id);
+    check('a follow-up for one department only gets clients of that department', fc.status === 200 && fbad.status === 400 && listed.team === 'classes'
+      && got.includes(fc.data.id) && !got.includes(fs2.data.id));
+    for (const d of [fc.data, fs2.data]) await j('/api/drips/' + d.id, { method: 'DELETE' }, admin);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

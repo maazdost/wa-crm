@@ -440,6 +440,8 @@ router.get('/drips', mgr, wrap(async (req, res) => res.json((await query(
 router.post('/drips', mgr, wrap(async (req, res) => {
   const { name, stop_on_reply = true, steps = [] } = req.body;
   if (!String(name || '').trim()) return res.status(400).json({ error: 'Give the follow-up a name' });
+  const team = String(req.body.team || '').trim() || null; // only clients of this department, or everyone
+  if (team && !(await query('SELECT 1 FROM departments WHERE key=$1 AND company_id=$2', [team, C()])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
   if (!Array.isArray(steps) || !steps.length || steps.length > 5) return res.status(400).json({ error: 'Add between 1 and 5 steps' });
   const clean = [];
   for (const s of steps) {
@@ -450,7 +452,7 @@ router.post('/drips', mgr, wrap(async (req, res) => {
     if (vm.length < t.var_count || vm.some(x => x.type === 'text' && !String(x.value || '').trim())) return res.status(400).json({ error: `Fill in all ${t.var_count} variables for "${t.name}"` });
     clean.push({ delay_hours: Math.min(Math.max(Number(s.delay_hours) || 0, 0), 720), template: t.name, var_map: vm });
   }
-  res.json((await query('INSERT INTO drips(company_id,name,stop_on_reply,steps) VALUES($4,$1,$2,$3) RETURNING *', [String(name).trim().slice(0, 80), !!stop_on_reply, JSON.stringify(clean), C()])).rows[0]);
+  res.json((await query('INSERT INTO drips(company_id,name,stop_on_reply,steps,team) VALUES($4,$1,$2,$3,$5) RETURNING *', [String(name).trim().slice(0, 80), !!stop_on_reply, JSON.stringify(clean), C(), team])).rows[0]);
 }));
 router.patch('/drips/:id', mgr, wrap(async (req, res) => { await query('UPDATE drips SET active=$2 WHERE id=$1 AND company_id=$3', [req.params.id, !!req.body.active, C()]); res.json({ ok: true }); }));
 router.delete('/drips/:id', mgr, wrap(async (req, res) => { await query('DELETE FROM drips WHERE id=$1 AND company_id=$2', [req.params.id, C()]); res.json({ ok: true }); }));

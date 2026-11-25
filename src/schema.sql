@@ -207,6 +207,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT NOT NULL DEFAULT 
 -- Starts empty for everyone, so nothing changes until an admin ticks more departments on the Agents page.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_teams JSONB NOT NULL DEFAULT '[]';
 
+-- A follow-up can be for one department only (NULL = every client, as before)
+ALTER TABLE drips ADD COLUMN IF NOT EXISTS team TEXT;
+
 -- ============================================================================
 -- Several companies on one system (sign-up). Every company only sees its own data.
 -- Everything that existed before this update belongs to company 1, so the current client keeps working unchanged.
