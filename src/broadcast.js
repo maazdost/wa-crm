@@ -9,11 +9,11 @@ const first = (n) => (n || '').trim().split(/\s+/)[0] || 'there';
 // Who a segment matches. Filters combine with AND, values inside one filter with OR. Opted-out contacts never match.
 async function audience(seg = {}) {
   const w = ['ct.company_id=$1', 'NOT ct.opted_out', 'NOT ct.is_personal'], p = [tenant.cid()];
-  const add = (sql, v) => { p.push(v); w.push(sql.replace('?', () => '$' + p.length)); };
+  const add = (sql, v) => { p.push(v); w.push(sql.replace(/\?/g, () => '$' + p.length)); };
   if (seg.lists?.length) add('ct.list_name = ANY(?)', seg.lists.map(String));
   if (seg.sources?.length) add("COALESCE(ct.source,'organic') = ANY(?)", seg.sources.map(String));
   if (seg.intents?.length) add('c.intent = ANY(?)', seg.intents.map(String));
-  if (seg.labels?.length) add('EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id = ANY(?))', seg.labels.map(Number));
+  if (seg.labels?.length) add('(EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id = ANY(?)) OR EXISTS (SELECT 1 FROM contact_labels xl WHERE xl.contact_id=ct.id AND xl.label_id = ANY(?)))', seg.labels.map(Number));
   return (await query(`SELECT ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id WHERE ${w.join(' AND ')} ORDER BY ct.id`, p)).rows;
 }
 const paramsFor = (varMap, contact) => (varMap || []).map(m => m.type === 'name' ? first(contact.name) : String(m.value || ''));

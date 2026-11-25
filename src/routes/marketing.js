@@ -145,24 +145,106 @@ router.post('/templates/sync', mgr, wrap(async (req, res) => {
 router.delete('/templates/:id', mgr, wrap(async (req, res) => { await query(`DELETE FROM templates WHERE id=$1 AND company_id=$2 AND status='local'`, [req.params.id, C()]); res.json({ ok: true }); }));
 
 // ---- Contacts ----
-router.get('/contacts', mgr, wrap(async (req, res) => {
+const normPhone = (raw, cc) => { let d = String(raw || '').replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = cc + d.slice(1); return d.length < 8 || d.length > 15 ? null : d; };
+const cleanEmail = (e) => { e = String(e || '').trim().slice(0, 120); return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null; };
+// A contact's tags are the ones put on the contact here plus the ones agents put on the chat.
+const TAGS_SQL = `COALESCE((SELECT json_agg(json_build_object('id', l.id, 'name', l.name, 'color', l.color) ORDER BY l.name) FROM labels l
+  WHERE l.id IN (SELECT label_id FROM contact_labels WHERE contact_id=ct.id UNION SELECT label_id FROM conversation_labels WHERE conversation_id=c.id)), '[]') AS tags`;
+const CONTACT_COLS = `ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.email, COALESCE(ct.source,'organic') AS source, ct.list_name, ct.opted_out, ct.is_personal, ct.created_at,
+  c.id AS conversation_id, c.status AS chat_status, c.last_customer_message_at AS last_seen, u.name AS agent, ${TAGS_SQL}`;
+const CONTACT_FROM = 'FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id LEFT JOIN users u ON u.id=c.assigned_to';
+// The search box and the filters of the Contacts page, shared by the list and the export.
+function contactFilter(qs) {
   const w = ['ct.company_id=$1'], p = [C()];
-  if (req.query.q) { p.push(`%${req.query.q}%`); w.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
-  if (req.query.list) { p.push(req.query.list); w.push(`ct.list_name=$${p.length}`); }
-  const rows = (await query(
-    `SELECT ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.source, ct.list_name, ct.opted_out, ct.is_personal, c.status AS chat_status, u.name AS agent
-       FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id LEFT JOIN users u ON u.id=c.assigned_to
-      WHERE ${w.join(' AND ')} ORDER BY ct.id DESC LIMIT 200`, p)).rows;
-  res.json({ rows, total: (await query('SELECT COUNT(*)::int AS n FROM contacts WHERE company_id=$1', [C()])).rows[0].n });
+  const add = (sql, v) => { p.push(v); w.push(sql.replace(/\?/g, '$' + p.length)); };
+  if (qs.q) add('(ct.name ILIKE ? OR ct.profile_name ILIKE ? OR ct.wa_id ILIKE ? OR ct.email ILIKE ?)', `%${String(qs.q).replace(/^\+/, '')}%`);
+  if (qs.list) add('ct.list_name=?', String(qs.list));
+  if (qs.source) add("COALESCE(ct.source,'organic')=?", String(qs.source));
+  if (Number(qs.tag)) add('(EXISTS (SELECT 1 FROM contact_labels x WHERE x.contact_id=ct.id AND x.label_id=?) OR EXISTS (SELECT 1 FROM conversation_labels y WHERE y.conversation_id=c.id AND y.label_id=?))', Number(qs.tag));
+  if (qs.opt === 'in') w.push('NOT ct.opted_out'); else if (qs.opt === 'out') w.push('ct.opted_out');
+  if (qs.status === 'active') w.push('NOT ct.is_personal'); else if (qs.status === 'ignored') w.push('ct.is_personal');
+  return { where: w.join(' AND '), p };
+}
+// Puts exactly these tags on a contact, and on the chat of that contact when there is one, so both places agree.
+async function setTags(contactId, ids) {
+  const want = [...new Set((Array.isArray(ids) ? ids : []).map(Number).filter(Boolean))].slice(0, 50);
+  const ok = want.length ? (await query('SELECT id FROM labels WHERE company_id=$1 AND id = ANY($2::int[])', [C(), want])).rows.map(r => r.id) : [];
+  await query('DELETE FROM contact_labels WHERE contact_id=$1', [contactId]);
+  if (ok.length) await query('INSERT INTO contact_labels(contact_id,label_id) SELECT $1, unnest($2::int[]) ON CONFLICT DO NOTHING', [contactId, ok]);
+  const conv = (await query('SELECT id FROM conversations WHERE contact_id=$1', [contactId])).rows[0];
+  if (conv) {
+    await query('DELETE FROM conversation_labels WHERE conversation_id=$1', [conv.id]);
+    if (ok.length) await query('INSERT INTO conversation_labels(conversation_id,label_id) SELECT $1, unnest($2::int[]) ON CONFLICT DO NOTHING', [conv.id, ok]);
+  }
+}
+// Deletes contacts of this company with everything that hangs on them: chat, messages, notes, follow-ups and broadcast rows.
+async function removeContacts(ids) {
+  const own = (await query('SELECT id FROM contacts WHERE company_id=$1 AND id = ANY($2::int[])', [C(), ids])).rows.map(r => r.id);
+  if (!own.length) return 0;
+  const convs = (await query('SELECT id FROM conversations WHERE contact_id = ANY($1::int[])', [own])).rows.map(r => r.id);
+  await query('DELETE FROM drip_enrollments WHERE contact_id = ANY($1::int[])', [own]);
+  await query('DELETE FROM broadcast_recipients WHERE contact_id = ANY($1::int[])', [own]);
+  if (convs.length) {
+    await query('DELETE FROM notes WHERE conversation_id = ANY($1::int[])', [convs]);
+    await query('DELETE FROM messages WHERE conversation_id = ANY($1::int[])', [convs]);
+    await query('DELETE FROM conversations WHERE id = ANY($1::int[])', [convs]);
+  }
+  await query('DELETE FROM contacts WHERE company_id=$1 AND id = ANY($2::int[])', [C(), own]);
+  return own.length;
+}
+router.get('/contacts', mgr, wrap(async (req, res) => {
+  const { where, p } = contactFilter(req.query);
+  const per = Math.min(200, Math.max(10, Number(req.query.per) || 50)), page = Math.max(1, Number(req.query.page) || 1);
+  const rows = (await query(`SELECT ${CONTACT_COLS} ${CONTACT_FROM} WHERE ${where} ORDER BY ct.id DESC LIMIT ${per} OFFSET ${(page - 1) * per}`, p)).rows;
+  const found = (await query(`SELECT COUNT(*)::int AS n ${CONTACT_FROM} WHERE ${where}`, p)).rows[0].n;
+  const stats = (await query(`SELECT COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE c.last_customer_message_at > now() - interval '30 days')::int AS active,
+      COUNT(*) FILTER (WHERE ct.source='import')::int AS imported,
+      COUNT(*) FILTER (WHERE ct.opted_out OR ct.is_personal)::int AS blocked ${CONTACT_FROM} WHERE ct.company_id=$1`, [C()])).rows[0];
+  res.json({ rows, total: stats.total, found, page, per, stats });
+}));
+// Everything the current search and filters show, for the Excel export (up to 50,000 people).
+router.get('/contacts/export', mgr, wrap(async (req, res) => {
+  const { where, p } = contactFilter(req.query);
+  res.json({ rows: (await query(`SELECT ${CONTACT_COLS} ${CONTACT_FROM} WHERE ${where} ORDER BY ct.id DESC LIMIT 50000`, p)).rows });
 }));
 router.get('/contacts/lists', mgr, wrap(async (req, res) =>
   res.json((await query(`SELECT list_name, COUNT(*)::int AS n FROM contacts WHERE company_id=$1 AND list_name IS NOT NULL GROUP BY 1 ORDER BY 1`, [C()])).rows)));
+router.post('/contacts', mgr, wrap(async (req, res) => {
+  const b = req.body || {}, wa = normPhone(b.phone, String(b.country || '92').replace(/\D/g, '') || '92');
+  if (!wa) return res.status(400).json({ error: 'Type a valid phone number with the country code, for example 923001234567' });
+  if (b.email && !cleanEmail(b.email)) return res.status(400).json({ error: 'This email address does not look right' });
+  const name = String(b.name || '').trim().slice(0, 60) || null;
+  if ((await query('SELECT 1 FROM contacts WHERE company_id=$1 AND wa_id=$2', [C(), wa])).rows[0]) return res.status(409).json({ error: 'A contact with this number already exists' });
+  const c = (await query(`INSERT INTO contacts(company_id,wa_id,name,profile_name,custom_name,email,source,list_name,opt_in_source) VALUES($1,$2,$3,$3,$4,$5,'manual',$6,$7) RETURNING id`,
+    [C(), wa, name, !!name, cleanEmail(b.email), String(b.list_name || '').trim().slice(0, 60) || null, `added by ${req.user.name}`])).rows[0];
+  await setTags(c.id, b.tags);
+  res.json({ id: c.id });
+}));
 router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
-  const id = Number(req.params.id) || 0;
+  const id = Number(req.params.id) || 0, b = req.body || {};
   if (!(await query('SELECT 1 FROM contacts WHERE id=$1 AND company_id=$2', [id, C()])).rows[0]) return res.status(404).json({ error: 'Contact not found' });
-  if ('is_personal' in req.body) { if (req.body.is_personal) await markPersonal(id); else await query('UPDATE contacts SET is_personal=FALSE WHERE id=$1 AND company_id=$2', [id, C()]); }
-  if ('opted_out' in req.body) await query('UPDATE contacts SET opted_out=$2 WHERE id=$1 AND company_id=$3', [id, !!req.body.opted_out, C()]);
+  if ('email' in b && b.email && !cleanEmail(b.email)) return res.status(400).json({ error: 'This email address does not look right' });
+  if ('is_personal' in b) { if (b.is_personal) await markPersonal(id); else await query('UPDATE contacts SET is_personal=FALSE WHERE id=$1 AND company_id=$2', [id, C()]); }
+  if ('opted_out' in b) await query('UPDATE contacts SET opted_out=$2 WHERE id=$1 AND company_id=$3', [id, !!b.opted_out, C()]);
+  if ('name' in b) { // a name typed here stays, even when the person's WhatsApp profile name is different
+    const name = String(b.name || '').trim().slice(0, 60);
+    if (!name) return res.status(400).json({ error: 'Type a name' });
+    await query('UPDATE contacts SET name=$2, profile_name=$2, custom_name=TRUE WHERE id=$1 AND company_id=$3', [id, name, C()]);
+  }
+  if ('email' in b) await query('UPDATE contacts SET email=$2 WHERE id=$1 AND company_id=$3', [id, cleanEmail(b.email), C()]);
+  if ('list_name' in b) await query('UPDATE contacts SET list_name=$2 WHERE id=$1 AND company_id=$3', [id, String(b.list_name || '').trim().slice(0, 60) || null, C()]);
+  if ('tags' in b) await setTags(id, b.tags);
   res.json({ ok: true });
+}));
+router.delete('/contacts/:id', mgr, wrap(async (req, res) => {
+  const n = await removeContacts([Number(req.params.id) || 0]);
+  n ? res.json({ ok: true }) : res.status(404).json({ error: 'Contact not found' });
+}));
+router.post('/contacts/delete', mgr, wrap(async (req, res) => {
+  const ids = [...new Set((Array.isArray(req.body.ids) ? req.body.ids : []).map(Number).filter(Boolean))].slice(0, 5000);
+  if (!ids.length) return res.status(400).json({ error: 'Choose at least one contact' });
+  res.json({ deleted: await removeContacts(ids) });
 }));
 router.post('/contacts/ignore', mgr, wrap(async (req, res) => {
   const cc = String(req.body.country || '92').replace(/\D/g, '') || '92'; let n = 0;
@@ -179,19 +261,31 @@ router.post('/contacts/import', mgr, wrap(async (req, res) => {
   if (!consent) return res.status(400).json({ error: 'Please confirm these people agreed to receive WhatsApp messages from you' });
   if (!String(list_name || '').trim()) return res.status(400).json({ error: 'Give the list a name' });
   const cc = String(country).replace(/\D/g, '') || '92', seen = new Map(); let bad = 0;
-  for (const r of rows.slice(0, 20000)) {
-    let d = String(r.phone || '').replace(/\D/g, '');
-    if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('0')) d = cc + d.slice(1);
-    if (d.length < 8 || d.length > 15) { bad++; continue; }
-    if (!seen.has(d)) seen.set(d, String(r.name || '').trim().slice(0, 60) || null);
+  for (const r of (Array.isArray(rows) ? rows : []).slice(0, 20000)) {
+    const d = normPhone(r && r.phone, cc);
+    if (!d) { bad++; continue; }
+    if (!seen.has(d)) seen.set(d, { name: String(r.name || '').trim().slice(0, 60) || null, email: cleanEmail(r.email),
+      tags: (Array.isArray(r.tags) ? r.tags : String(r.tags || '').split(/[,;|]/)).map(t => String(t).trim().slice(0, 30)).filter(Boolean).slice(0, 10) });
   }
   if (!seen.size) return res.status(400).json({ error: 'No valid phone numbers found' });
+  const vals = [...seen.values()];
   const out = await query(
-    `INSERT INTO contacts(company_id,wa_id,name,source,list_name,opt_in_source) SELECT $5, x.w, x.n, 'import', $3, $4 FROM unnest($1::text[], $2::text[]) AS x(w, n)
-     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name) RETURNING (xmax = 0) AS inserted`,
-    [[...seen.keys()], [...seen.values()], String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C()]);
+    `INSERT INTO contacts(company_id,wa_id,name,email,source,list_name,opt_in_source) SELECT $5, x.w, x.n, x.e, 'import', $3, $4 FROM unnest($1::text[], $2::text[], $6::text[]) AS x(w, n, e)
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name), email=COALESCE(EXCLUDED.email, contacts.email) RETURNING id, wa_id, (xmax = 0) AS inserted`,
+    [[...seen.keys()], vals.map(v => v.name), String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C(), vals.map(v => v.email)]);
+  // Tags from the file: a tag that does not exist yet is created (same name in other letter case counts as the same tag).
+  const have = new Map((await query('SELECT id, name FROM labels WHERE company_id=$1', [C()])).rows.map(l => [l.name.toLowerCase(), l.id]));
+  let made = 0;
+  for (const t of new Set(vals.flatMap(v => v.tags))) {
+    if (have.has(t.toLowerCase()) || have.size >= 300) continue;
+    const l = (await query('INSERT INTO labels(company_id,name) VALUES($1,$2) ON CONFLICT (company_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [C(), t])).rows[0];
+    have.set(t.toLowerCase(), l.id); made++;
+  }
+  const cs = [], ls = [];
+  for (const r of out.rows) for (const t of seen.get(r.wa_id).tags) { const id = have.get(t.toLowerCase()); if (id) { cs.push(r.id); ls.push(id); } }
+  if (cs.length) await query('INSERT INTO contact_labels(contact_id,label_id) SELECT * FROM unnest($1::int[], $2::int[]) ON CONFLICT DO NOTHING', [cs, ls]);
   const added = out.rows.filter(r => r.inserted).length;
-  res.json({ added, updated: out.rows.length - added, skipped: bad });
+  res.json({ added, updated: out.rows.length - added, skipped: bad, tags_created: made });
 }));
 
 // ---- Broadcasts ----

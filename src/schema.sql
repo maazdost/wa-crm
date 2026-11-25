@@ -432,3 +432,57 @@ CREATE TABLE IF NOT EXISTS company_requests (
   decided_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_company_requests ON company_requests(status, id DESC);
+
+-- ============================================================================
+-- Chatbots: flows built from steps (messages, questions with buttons, open questions, actions, hand over).
+-- conversations.flow_id and flow_step say which flow a chat is in and which question it waits at.
+-- Safe to run again and again: nothing is deleted. A new flow is saved switched off.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS bot_flows (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL DEFAULT 'keyword' CHECK (trigger IN ('welcome','keyword')),
+  match_type TEXT NOT NULL DEFAULT 'contains',
+  keywords JSONB NOT NULL DEFAULT '[]',
+  steps JSONB NOT NULL DEFAULT '[]',
+  retry_text TEXT NOT NULL DEFAULT '',
+  active BOOLEAN NOT NULL DEFAULT FALSE,
+  started_count INT NOT NULL DEFAULT 0,
+  finished_count INT NOT NULL DEFAULT 0,
+  last_started_at TIMESTAMPTZ,
+  created_by INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_bot_flows_company ON bot_flows(company_id, active);
+CREATE TABLE IF NOT EXISTS bot_flow_runs (
+  id BIGSERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  flow_id INT NOT NULL REFERENCES bot_flows(id) ON DELETE CASCADE,
+  conversation_id INT REFERENCES conversations(id) ON DELETE CASCADE,
+  client TEXT NOT NULL DEFAULT '',
+  answers JSONB NOT NULL DEFAULT '{}',
+  tries INT NOT NULL DEFAULT 0,
+  result TEXT,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_bot_flow_runs_company ON bot_flow_runs(company_id, id DESC);
+CREATE INDEX IF NOT EXISTS idx_bot_flow_runs_conv ON bot_flow_runs(conversation_id, flow_id);
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS flow_id INT REFERENCES bot_flows(id) ON DELETE SET NULL;
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS flow_step TEXT;
+
+-- ============================================================================
+-- Contacts page: an email on a contact, tags on a contact (also for people who never wrote),
+-- and a name that a manager typed and that WhatsApp's own profile name must not replace.
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS custom_name BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS contact_labels (
+  contact_id INT NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  label_id INT NOT NULL REFERENCES labels(id) ON DELETE CASCADE, PRIMARY KEY (contact_id, label_id)
+);
+CREATE INDEX IF NOT EXISTS idx_contact_labels_label ON contact_labels(label_id);

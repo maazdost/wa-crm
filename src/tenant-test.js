@@ -61,6 +61,9 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('WhatsApp numbers are separate', !aNums.some(n => n.phone_number_id === pid) && bNums.length === 1);
   check('company 2 cannot change a company 1 number', !aNums[0] || (await j('/api/whatsapp/numbers/' + aNums[0].id, { method: 'PATCH', body: { label: 'x' } }, Bt)).status === 404);
   check('contacts are separate', (await j('/api/contacts', {}, Bt)).data.total === 1);
+  const aCt = (await j('/api/contacts', {}, A.token)).data.rows[0];
+  check('other company cannot edit, delete or export a contact', (await j('/api/contacts/' + aCt.id, { method: 'PATCH', body: { name: 'Hacked' } }, Bt)).status === 404 && (await j('/api/contacts/' + aCt.id, { method: 'DELETE' }, Bt)).status === 404
+    && (await j('/api/contacts/delete', { method: 'POST', body: { ids: [aCt.id] } }, Bt)).data.deleted === 0 && (await j('/api/contacts/export', {}, Bt)).data.rows.every(c => c.id !== aCt.id) && (await j('/api/contacts', {}, A.token)).data.rows.some(c => c.id === aCt.id && c.name === aCt.name));
   check('templates are separate', (await j('/api/templates', {}, Bt)).data.length === 0);
   check('dashboard counts only own chats', (await j('/api/analytics', {}, Bt)).data.kpi.with_bot === 1);
   check('stats count only own chats', (await j('/api/stats', {}, Bt)).data.totals.with_bot === 1);
@@ -84,6 +87,11 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await j('/api/social/rules/' + sr.id, { method: 'DELETE' }, Bt);
   check('other company cannot delete a social rule', (await j('/api/social/facebook', {}, A.token)).data.rules.some(r => r.id === sr.id));
   await j('/api/social/rules/' + sr.id, { method: 'DELETE' }, A.token);
+  const fa = (await j('/api/flows', { method: 'POST', body: { name: 'A bot', trigger: 'keyword', keywords: ['hello a'], steps: [{ id: 'a', type: 'message', kind: 'text', text: 'Hi' }] } }, A.token)).data;
+  check('chatbots are separate', fa.id && (await j('/api/flows', {}, Bt)).data.flows.length === 0 && (await j('/api/flows/' + fa.id, { method: 'PATCH', body: { active: true } }, Bt)).status === 404);
+  await j('/api/flows/' + fa.id, { method: 'DELETE' }, Bt);
+  check('other company cannot delete a chatbot', (await j('/api/flows', {}, A.token)).data.flows.some(f => f.id === fa.id));
+  await j('/api/flows/' + fa.id, { method: 'DELETE' }, A.token);
   // Catalogs stay inside each company
   const pa = (await j('/api/products', { method: 'POST', body: { name: 'A product', price: 10 } }, A.token)).data;
   check('products are separate', pa.id && !(await j('/api/products', {}, Bt)).data.products.some(p => p.id === pa.id) && (await j('/api/products/' + pa.id, { method: 'PATCH', body: { name: 'stolen' } }, Bt)).status === 404
