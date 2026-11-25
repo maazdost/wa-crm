@@ -1,6 +1,15 @@
 name: Build Android app
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: 'Site the app opens, e.g. https://wof.teaminboxpro.com (leave empty for the main site)'
+        required: false
+        default: ''
+      name:
+        description: 'Short name for the download page, e.g. wof (leave empty for the main app)'
+        required: false
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -8,7 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: android-app } }
     env:
-      SERVER_URL: ${{ vars.SERVER_URL }}
+      SERVER_URL: ${{ inputs.server_url || vars.SERVER_URL }}
+      APP_NAME: ${{ inputs.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +27,10 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - run: npm ci
       - name: Check server address
-        run: test -n "$SERVER_URL" || (echo "Set the SERVER_URL repository variable first" && exit 1)
+        run: |
+          test -n "$SERVER_URL" || (echo "Set the SERVER_URL repository variable first" && exit 1)
+          [[ "$SERVER_URL" =~ ^https://[A-Za-z0-9.-]+/?$ ]] || (echo "The site must look like https://name.example.com" && exit 1)
+          [[ "$APP_NAME" =~ ^[a-z0-9-]{0,20}$ ]] || (echo "The short name may only have small letters, numbers and dashes" && exit 1)
       - name: Add Firebase config (optional, enables push notifications)
         env: { GSJ: "${{ secrets.GOOGLE_SERVICES_JSON }}" }
         run: if [ -n "$GSJ" ]; then echo "$GSJ" > android/app/google-services.json; echo "HAS_FIREBASE=1" >> "$GITHUB_ENV"; fi
@@ -29,12 +42,12 @@ jobs:
           name: team-inbox-apk
           path: android-app/android/app/build/outputs/apk/debug/app-debug.apk
       # Also keeps the newest APK at one fixed address, so it can be downloaded without opening the build page:
-      # https://github.com/<owner>/<repo>/releases/tag/android-latest
+      # https://github.com/<owner>/<repo>/releases/tag/android-latest  (or android-<name> for a client's own app)
       - name: Publish the APK as a download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-latest
-          name: Android app (latest build)
+          tag_name: ${{ inputs.name && format('android-{0}', inputs.name) || 'android-latest' }}
+          name: ${{ inputs.name && format('Android app for {0} (latest build)', inputs.name) || 'Android app (latest build)' }}
           body: Download app-debug.apk below and install it on the phone (allow "install unknown apps" once).
           files: android-app/android/app/build/outputs/apk/debug/app-debug.apk
-          make_latest: true
+          make_latest: ${{ inputs.name == '' }}
