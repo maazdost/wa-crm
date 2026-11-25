@@ -4,9 +4,11 @@ const { saveOutbound } = require('./messages');
 const tenant = require('./tenant');
 const first = (n) => (n || '').trim().split(/\s+/)[0] || 'there';
 
-// Called when a client is handed to an agent: joins every active follow-up sequence.
+// Called when a client is handed to an agent: joins every active follow-up sequence that is for everyone
+// or for the department of the client's chat.
 async function enroll(contactId) {
-  const ds = (await query(`SELECT id, steps FROM drips WHERE active AND company_id=$1`, [tenant.cid()])).rows;
+  const team = (await query('SELECT team FROM conversations WHERE contact_id=$1', [contactId])).rows[0]?.team || null;
+  const ds = (await query(`SELECT id, steps FROM drips WHERE active AND company_id=$1 AND (team IS NULL OR team=$2)`, [tenant.cid(), team])).rows;
   for (const d of ds) {
     if (!d.steps.length) continue;
     await query(`INSERT INTO drip_enrollments(drip_id,contact_id,next_at) VALUES($1,$2, now() + ($3 || ' hours')::interval) ON CONFLICT DO NOTHING`,
