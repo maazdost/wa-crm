@@ -317,6 +317,9 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 .ctpg{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}.ghost.danger{color:var(--red)}
 .ctfile{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--tint-line);background:var(--tint);border-radius:12px;padding:12px;margin-bottom:12px}.ctfile>div{flex:1;min-width:0;display:grid;gap:2px}.ctfile b{overflow-wrap:anywhere}.ctfile small{color:var(--ink2)}.ctfile .ctprev{margin-top:4px;color:var(--mute)}
 .ctbar .search{flex:1 1 240px}
+@media (min-width:761px){.ctt th,.ctt td{padding-left:10px;padding-right:10px}.ctt th:last-child,.ctt td:last-child{position:sticky;right:0;background:var(--card);box-shadow:-10px 0 10px -10px rgba(0,0,0,.18)}.ctt th:last-child{background:var(--thead)}.ctt tbody tr:hover td:last-child{background:var(--thead)}[dir=rtl] .ctt th:last-child,[dir=rtl] .ctt td:last-child{right:auto;left:0}}
+@media (min-width:761px) and (max-width:1500px){.ctt th:nth-child(8),.ctt td:nth-child(8){display:none}}
+@media (min-width:761px) and (max-width:1280px){.ctt th:nth-child(7),.ctt td:nth-child(7){display:none}}
 @media (max-width:760px){.ctbar select{flex:1 1 calc(50% - 8px);max-width:none}.ctbar .search{flex:1 1 100%;max-width:none}.ctbar>span{display:none}.ctbar #cexp{flex:1 1 100%;justify-content:center}
   .ctt{display:block}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
   .ctt tr[data-id]{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
