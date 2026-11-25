@@ -1008,7 +1008,7 @@ function renderList(quiet) {
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
       <span class="r2"><span class="prev">${esc(snip(c.last_type, c.last_body))}</span><span class="rx">${c.pinned ? `<span class="pinic">${ico('pin', 15)}</span>` : ''}${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : c.marked_unread ? '<i class="ub dotb"></i>' : ''}<button class="rowx" data-x="${c.id}" aria-label="Chat options" tabindex="-1">${ico('chev', 18)}</button></span></span>
-      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${c.bot_step === 'ai' && c.status === 'bot' ? `<em class="chip ok">${tr('With the AI')}</em>` : ''}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
+      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${c.status === 'bot' ? (c.bot_step === 'ai' ? `<em class="chip ok">${tr('With the AI')}</em>` : c.bot_step !== 'done' ? `<em class="chip warn">${tr('With the chatbot')}</em>` : '') : ''}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
   el.scrollTop = top;
   el.querySelectorAll('.row').forEach(r => {
     r.onclick = e => { if (r.__lp) { r.__lp = false; return; } const x = e.target.closest('.rowx'); if (x) { e.stopPropagation(); const b = x.getBoundingClientRect(); return rowMenu(+x.dataset.x, b.left - 150, b.bottom + 4); } openConv(+r.dataset.id); };
@@ -2271,9 +2271,9 @@ async function showFlows() {
     <div class="qsec"><div class="qsec-h"><b>Steps</b><small id="flc"></small></div>
       <div id="flsteps"></div>
       <div class="qadd fladd"><span>Add a step</span>${Object.entries(FL_TYPES).map(([k, v]) => `<button type="button" class="ghost" data-fa="${k}">${ico(v[0], 15)}${v[1]}</button>`).join('')}</div></div>
-    <div class="qsec"><div class="qsec-h"><b>If the client types something else</b></div>
-      <small class="mute">At a question with buttons, the bot asks once more with this text. The second time, it hands the chat to your team.</small>
-      <input id="fl9" maxlength="300" placeholder="${esc(d.retry_text || '')}"></div>
+    <div class="qsec"><div class="qsec-h"><b>If the client types instead of tapping, or does not answer</b></div>
+      <small class="mute">The bot picks the button that fits the words they typed (for example "classes" for 📚 Forex Classes, or 1, 2, 3). Anything else, and any client who does not answer for 5 minutes, goes straight to your team, so nobody from an ad is lost.</small>
+      <input id="fl9" type="hidden"></div>
     <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button type="button" class="ghost" id="fltr">${ico('play', 15)}Try it</button><button class="btn">Save</button></div></form>`, 1)}
   ${modal('m-fltry', 'Try it', `<div class="flph"><div class="flph-h"><span class="flav">${ico('bot', 18)}</span><div><b data-notr id="flpn"></b><small>Nothing is sent to anyone</small></div><button type="button" class="ib" id="flpr" title="Start again" aria-label="Start again">${ico('refresh', 18)}</button></div>
     <div class="flph-c" id="flpc"></div><form class="flph-i" id="flpf"><input id="flpi" maxlength="300" placeholder="Type a message" autocomplete="off"><button class="ib" aria-label="Send">${ico('send', 18)}</button></form></div>`)}`;
@@ -2386,9 +2386,10 @@ async function showFlows() {
     if (st.type === 'question') { if (st.save === 'name') P.name = txt.slice(0, 60); return runFrom(nextI(P.at, st.next)); }
     const bt = arr(st.buttons); let b = j != null ? j : bt.findIndex(x => (x.title || '').trim().toLowerCase() === txt.trim().toLowerCase());
     if (b < 0 && /^[1-3]$/.test(txt.trim()) && +txt.trim() <= bt.length) b = +txt.trim() - 1;
+    if (b < 0) { const ws = t => t.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(w => w.length >= 4), said = new Set(ws(txt));
+      const hits = bt.map((x, k) => ws(x.title || '').some(w => said.has(w) || said.has(w.replace(/s$/, ''))) ? k : -1).filter(k => k >= 0); if (hits.length === 1) b = hits[0]; }
     if (b >= 0) return runFrom(nextI(P.at, bt[b].next));
-    if (P.tries++ < 1) return botSay(st, P.retry || d.retry_text);
-    done('No button was chosen twice, so the chat goes to your team.'); };
+    done('That is not one of the buttons, so the chat goes straight to your team and an agent answers.'); };
   function tryFlow(f) {
     if (!arr(f.steps).length) return toast('Add a step first');
     P = { steps: JSON.parse(JSON.stringify(arr(f.steps))), name: '', wait: null, over: false, retry: f.retry_text, first: f.trigger === 'welcome' ? 'Hi' : (arr(f.keywords)[0] || 'Hi') };

@@ -283,7 +283,8 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
   // "All" also shows clients who finished the bot but got no agent (for example when the company has no agents yet), so nobody is missed.
   // Chats the AI Agent is answering (bot_step 'ai') are listed too, so the team can watch and step in.
-  if (status === 'open') where.push("(c.status='open' OR (c.status='bot' AND (c.bot_step='ai' OR (c.bot_step='done' AND c.assigned_to IS NULL))))");
+  // Managers also see clients who are still talking to the chatbot or the welcome bot, with their number, so nobody from an ad is missed.
+  if (status === 'open') where.push(isAgent(req.user) ? "(c.status='open' OR (c.status='bot' AND (c.bot_step='ai' OR (c.bot_step='done' AND c.assigned_to IS NULL))))" : "c.status IN ('open','bot')");
   else if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
   else if (!unassigned) where.push(`(c.status <> 'bot' OR c.bot_step='ai')`);
   where.push(req.query.held === 'true' ? "c.bot_step='held'" : "c.bot_step <> 'held'");

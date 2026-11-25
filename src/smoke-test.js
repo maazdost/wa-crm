@@ -1,4 +1,4 @@
-// End-to-end check against a running server (WA_DRY_RUN=true). Usage: npm run seed && npm start & npm test
+// End-to-end check against a running server (WA_DRY_RUN=true, FLOW_SWEEP_MS=1000 so the chatbot wait check is quick). Usage: npm run seed && npm start & npm test
 const B = process.env.BASE || 'http://localhost:3000';
 const j = async (path, opts = {}, token) => {
   const r = await fetch(B + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) }, body: opts.body && JSON.stringify(opts.body) });
@@ -197,22 +197,39 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await inbound(fp, { text: { body: 'Start course' } }); await sleep(500);
   let fs = await botSaid(fp), fc = await convOf(fp);
   check('a keyword starts the chatbot, which sends up to its first question', fs.length === 2 && fs[0] === 'Welcome WA!' && fs[1].startsWith('What do you need?') && fc.flow_id === fl.id && fc.flow_step === 's2' && fc.status === 'bot');
-  await inbound(fp, { text: { body: 'hmm what' } }); await sleep(400);
-  fs = await botSaid(fp);
-  check('another answer than the buttons asks once more', fs.length === 3 && fs[2].includes('Please tap one of the buttons above.') && (await convOf(fp)).flow_step === 's2');
+  { // typing instead of tapping: words that fit one button choose it, anything else goes straight to a person
+    const tp = '9230020002' + Date.now().toString().slice(-4), tq = '9230020003' + Date.now().toString().slice(-4);
+    await inbound(tp, { text: { body: 'Start course' } }); await sleep(400);
+    await inbound(tp, { text: { body: 'what are the prices?' } }); await sleep(400);
+    check('typed words that fit a button choose that button', (await botSaid(tp))[2] === 'Which city are you in?' && (await convOf(tp)).flow_step === 's3');
+    await inbound(tq, { text: { body: 'Start course' } }); await sleep(400);
+    await inbound(tq, { text: { body: 'hmm what is this' } }); await sleep(500);
+    const tc = await convOf(tq), trun = (await pool.query('SELECT result, answers FROM bot_flow_runs WHERE conversation_id=$1', [tc.id])).rows[0];
+    check('anything else typed hands the chat to a person at once', (await botSaid(tq)).length === 2 && tc.flow_id === null && tc.status === 'open' && !!tc.assigned_to
+      && trun.result === 'no_answer' && trun.answers['Typed instead'] === 'hmm what is this');
+    // a client who does not answer: after FLOW_WAIT_MINUTES the chat goes to the team (the server checks every FLOW_SWEEP_MS)
+    const wp = '9230020004' + Date.now().toString().slice(-4);
+    await inbound(wp, { text: { body: 'Start course' } }); await sleep(400);
+    const wc0 = await convOf(wp);
+    const shown = (await j('/api/conversations?status=open', {}, admin)).data.some(c => c.id === wc0.id);
+    await pool.query(`UPDATE bot_flow_runs SET updated_at = now() - interval '10 minutes' WHERE conversation_id=$1`, [wc0.id]);
+    let wc = wc0; for (let k = 0; k < 40 && wc.flow_id; k++) { await sleep(500); wc = await convOf(wp); }
+    check('managers see a client who is still with the chatbot, and one who does not answer goes to the team', shown && wc.flow_id === null && wc.status === 'open' && !!wc.assigned_to);
+  }
   await inbound(fp, { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: `fl${fl.id}:s2:0`, title: 'Prices' } } }); await sleep(400);
-  check('a button leads to its own step', (await botSaid(fp))[3] === 'Which city are you in?' && (await convOf(fp)).flow_step === 's3');
+  check('a button leads to its own step', (await botSaid(fp))[2] === 'Which city are you in?' && (await convOf(fp)).flow_step === 's3');
   await inbound(fp, { text: { body: 'Lahore' } }); await sleep(400);
   await inbound(fp, { text: { body: 'Bilal Ahmed' } }); await sleep(600);
   fs = await botSaid(fp); fc = await convOf(fp);
+  fs.splice(2, 0, ''); // (before, the bot asked once more here; the steps below keep their numbers)
   const ftags = (await pool.query('SELECT label_id FROM conversation_labels WHERE conversation_id=$1', [fc.id])).rows.map(r => r.label_id);
   check('answers are kept, the name is saved and the chat is handed to the team', fs[4] === 'And your name?' && fs[5] === 'Thanks Bilal Ahmed, our team will write to you.' && fc.cname === 'Bilal Ahmed'
     && fc.flow_id === null && fc.status === 'open' && fc.assigned_to === a3.user.id && fc.team === 'classes' && ftags.includes(ftag.id));
   const fget = (await j('/api/flows', {}, admin)).data, frun = fget.runs.find(r => r.conversation_id === fc.id);
-  check('the chatbot counts who started and who reached the end', fget.flows.find(f => f.id === fl.id).started_count === 1 && fget.flows.find(f => f.id === fl.id).finished_count === 1
+  check('the chatbot counts who started and who reached the end', fget.flows.find(f => f.id === fl.id).started_count === 4 && fget.flows.find(f => f.id === fl.id).finished_count === 1
     && frun && frun.result === 'done' && frun.answers.City === 'Lahore' && frun.answers.Name === 'Bilal Ahmed' && frun.answers['What do you need?'] === 'Prices' && frun.client === 'Bilal Ahmed');
   await inbound(fp, { text: { body: 'thank you' } }); await sleep(300);
-  check('the chatbot is silent after the hand over', (await botSaid(fp)).length === 6);
+  check('the chatbot is silent after the hand over', (await botSaid(fp)).length === 5);
   // an agent who writes in the chat stops the chatbot
   await inbound(own.wa_id, { text: { body: 'start course' } }); await sleep(500);
   const mid = await convOf(own.wa_id);
