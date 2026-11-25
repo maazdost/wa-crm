@@ -5,7 +5,7 @@ module.exports = async function ensureAdmin() {
   const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME } = process.env;
   if (!ADMIN_EMAIL || !ADMIN_PASSWORD) return;
   if ((await query('SELECT COUNT(*)::int AS n FROM users')).rows[0].n > 0) return;
-  await query(`INSERT INTO users(company_id,name,email,password_hash,role,team) VALUES(1,$1,$2,$3,'admin','general')`,
+  await query(`INSERT INTO users(company_id,name,email,password_hash,role,team,in_rotation) VALUES(1,$1,$2,$3,'admin','general',false)`,
     [ADMIN_NAME || 'Admin', ADMIN_EMAIL.toLowerCase(), await bcrypt.hash(ADMIN_PASSWORD, 10)]);
   await query(`INSERT INTO templates(company_id,name,language,body,category)
     VALUES(1,'followup_interest','en','Hi {{1}}, are you still interested? Reply here and we will continue.','utility') ON CONFLICT (company_id,name) DO NOTHING`);

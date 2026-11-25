@@ -60,7 +60,7 @@ router.get('/reports', mgr, wrap(async (req, res) => {
                   (SELECT COUNT(*) FROM conversations o WHERE o.assigned_to=u.id AND o.status='open')::int AS open_now,
                   (SELECT COUNT(*) FROM conversations o WHERE o.assigned_to=u.id AND o.status='closed')::int AS closed_now
              FROM users u LEFT JOIN LATERAL (SELECT c.id, c.assigned_at, ${FIRST_REPLY} AS fr FROM conversations c WHERE c.assigned_to=u.id AND ${R('c.assigned_at')}) c ON TRUE
-            WHERE u.company_id=$4 AND u.role='agent' GROUP BY u.id HAVING u.is_active OR COUNT(c.id) > 0 ORDER BY assigned DESC, u.name`, P),
+            WHERE u.company_id=$4 AND (u.role='agent' OR u.in_rotation) GROUP BY u.id HAVING u.is_active OR COUNT(c.id) > 0 ORDER BY assigned DESC, u.name`, P),
     query(`SELECT EXTRACT(HOUR FROM m.created_at AT TIME ZONE $3)::int AS hour, COUNT(*)::int AS n
              FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE c.company_id=$4 AND m.direction='in' AND ${R('m.created_at')} GROUP BY 1 ORDER BY 1`, P),
     query(`SELECT COALESCE(c.intent,'unknown') AS k, COUNT(*)::int AS n FROM conversations c WHERE c.company_id=$4 AND ${R('c.created_at')} GROUP BY 1 ORDER BY n DESC`, P),
@@ -119,7 +119,7 @@ router.get('/health-audit', mgr, wrap(async (req, res) => {
         COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done' AND status <> 'closed')::int AS unassigned
       FROM conversations WHERE company_id=$1`);
   const [ag] = await q(`SELECT COUNT(*) FILTER (WHERE is_active)::int AS active, COUNT(*) FILTER (WHERE is_active AND in_rotation)::int AS rotation, COUNT(*) FILTER (WHERE is_active AND is_online)::int AS online
-      FROM users WHERE company_id=$1 AND role='agent'`);
+      FROM users WHERE company_id=$1 AND (role='agent' OR in_rotation)`);
   const [qm] = await q(`SELECT COUNT(*) FILTER (WHERE active)::int AS active FROM auto_replies WHERE company_id=$1`);
   const away = await settings.get('away');
 

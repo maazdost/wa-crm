@@ -7,7 +7,7 @@ const { migrate } = require('./migrate');
   const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME } = process.env;
   const hash = await bcrypt.hash(ADMIN_PASSWORD, 10);
   await pool.query(
-    `INSERT INTO users(company_id,name,email,password_hash,role,team) VALUES(1,$1,$2,$3,'admin','general')
+    `INSERT INTO users(company_id,name,email,password_hash,role,team,in_rotation) VALUES(1,$1,$2,$3,'admin','general',false)
      ON CONFLICT (email) DO NOTHING`, [ADMIN_NAME || 'Admin', ADMIN_EMAIL.toLowerCase(), hash]);
   await pool.query(
     `INSERT INTO templates(company_id,name,language,body,category) VALUES

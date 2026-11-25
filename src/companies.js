@@ -21,7 +21,7 @@ async function create({ company, name, email, password, status = 'active' }) {
     await c.query('BEGIN');
     const co = (await c.query(`INSERT INTO companies(name, plan, status) VALUES($1, 'free', $2) RETURNING *`, [company, status])).rows[0];
     const u = (await c.query(
-      `INSERT INTO users(company_id,name,email,password_hash,role,team) VALUES($1,$2,$3,$4,'admin','general') RETURNING *`,
+      `INSERT INTO users(company_id,name,email,password_hash,role,team,in_rotation) VALUES($1,$2,$3,$4,'admin','general',false) RETURNING *`,
       [co.id, name, email, await bcrypt.hash(password, 10)])).rows[0];
     for (const [key, label] of DEPARTMENTS)
       await c.query('INSERT INTO departments(company_id,key,name) VALUES($1,$2,$3) ON CONFLICT DO NOTHING', [co.id, key, label]);

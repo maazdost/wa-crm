@@ -354,6 +354,27 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     check('switched off, new clients get the welcome bot as before', (await convOf(q6)).bot_step === 'ask_intent');
     if (wasOn.length) await pool.query('UPDATE bot_flows SET active=TRUE WHERE id = ANY($1::int[])', [wasOn]);
   }
+  // Managers and admins can be put in the rotation: they get new chats, still see all chats, and have a "Mine" tab
+  {
+    const me = `rotmgr${Date.now()}@t.co`;
+    const made = await j('/api/users', { method: 'POST', body: { name: 'Rota Manager', email: me, password: 'pw123456', role: 'manager', team: 'general' } }, admin);
+    const mgr = (await j('/api/auth/login', { method: 'POST', body: { email: me, password: 'pw123456' } })).data;
+    const startsOut = (await pool.query('SELECT in_rotation FROM users WHERE id=$1', [made.data.id])).rows[0].in_rotation === false;
+    const before = (await pool.query(`SELECT id FROM users WHERE company_id=1 AND in_rotation AND id<>$1`, [made.data.id])).rows.map(r => r.id);
+    await pool.query('UPDATE users SET in_rotation=false WHERE id = ANY($1::int[])', [before]);
+    const on = await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { in_rotation: true } }, admin);
+    const ph = '9230040001' + Date.now().toString().slice(-4);
+    await inbound(ph, { text: { body: 'hi' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'more info please' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'Rota Client' } }); await sleep(400);
+    const rc = await convOf(ph);
+    check('a new manager starts out of the rotation, and once switched on gets new chats', startsOut && on.status === 200 && rc && rc.assigned_to === made.data.id);
+    const mine = (await j('/api/conversations?status=open&view=mine', {}, mgr.token)).data, all = (await j('/api/conversations?status=open', {}, mgr.token)).data;
+    const counts = (await j('/api/conversations/counts', {}, mgr.token)).data;
+    check('the manager sees all chats, and only their own under Mine', mine.length === 1 && mine[0].id === rc.id && all.length > mine.length && counts.mine === 1);
+    await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { in_rotation: false, is_active: false } }, admin);
+    await pool.query('UPDATE users SET in_rotation=true WHERE id = ANY($1::int[])', [before]);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

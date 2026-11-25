@@ -960,8 +960,8 @@ async function boot() {
 function debounce(f, ms) { let t; return () => { clearTimeout(t); t = setTimeout(f, ms); }; }
 async function loadAgents() {
   const us = await api('/users'); if (us.error) return;
-  S.agents = us.filter(u => u.role === 'agent' && u.is_active);
-  $('#as').innerHTML = '<option value="">All agents</option>' + S.agents.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  S.agents = us.filter(u => u.is_active); // agents, and managers or admins, can all be given chats
+  $('#as').innerHTML = '<option value="">Everyone</option>' + S.agents.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('');
 }
 async function loadList() {
   const p = new URLSearchParams(), t = S.tab;
@@ -969,9 +969,10 @@ async function loadList() {
   else if (t === 'held') p.set('held', 'true');
   else if (t === 'unread') { p.set('status', 'open'); p.set('view', 'unread'); }
   else if (t === 'fav') p.set('view', 'fav');
+  else if (t === 'mine') { p.set('status', 'open'); p.set('view', 'mine'); }
   else if (t === 'archived') p.set('view', 'archived');
   else p.set('status', t);
-  if (S.agent && !['unassigned', 'held'].includes(t)) p.set('assigned_to', S.agent);
+  if (S.agent && !['unassigned', 'held', 'mine'].includes(t)) p.set('assigned_to', S.agent);
   const q = ($('#q') || { value: '' }).value.trim(); if (q) p.set('q', q); // the box is gone when a signed-out person is sent back to sign in
   if (S.label) p.set('label', S.label);
   const d = await api('/conversations?' + p); if (d.error) return;
@@ -980,7 +981,7 @@ async function loadList() {
 async function loadCounts() { const c = await api('/conversations/counts'); if (c.error) return; S.counts = c; renderTabs(); renderList(true); }
 function renderTabs() {
   const c = S.counts || {}, mgr = isMgr(), el = $('#tabs'); if (!el) return;
-  const tabs = [['open', 'All'], ['unread', 'Unread', c.unread], ['fav', 'Favourites', c.fav], ...(mgr ? [['unassigned', 'Unassigned', c.unassigned], ['held', 'Held', c.held]] : []), ['closed', 'Closed']];
+  const tabs = [['open', 'All'], ...(mgr ? [['mine', 'Mine', c.mine]] : []), ['unread', 'Unread', c.unread], ['fav', 'Favourites', c.fav], ...(mgr ? [['unassigned', 'Unassigned', c.unassigned], ['held', 'Held', c.held]] : []), ['closed', 'Closed']];
   el.innerHTML = tabs.map(([k, l, n]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}${n ? ` <i>${n}</i>` : ''}</button>`).join('');
 }
 async function setFlag(id, body) { const r = await api(`/conversations/${id}/flags`, 'POST', body); if (r.error) { toast(r.error); return false; } loadList(); return true; }
@@ -1001,7 +1002,7 @@ function renderList(quiet) {
   if (!el) return;
   const top = el.scrollTop;
   const head = S.tab === 'archived' ? `<button class="archrow" id="archback">${ico('back', 20)}<span>Archived chats</span></button>` : (cnt.archived ? `<button class="archrow" id="archopen">${ico('archive', 20)}<span>Archived</span><b>${cnt.archived}</b></button>` : '');
-  el.innerHTML = head + (!S.convs.length ? `<div class="nochats">${ico('inbox', 36)}<b>${S.tab === 'archived' ? 'No archived chats' : S.tab === 'open' ? 'No open chats yet' : 'Nothing here'}</b>${S.tab === 'open' ? '<span>New clients appear here as soon as the bot hands them over.</span>' : ''}</div>` :
+  el.innerHTML = head + (!S.convs.length ? `<div class="nochats">${ico('inbox', 36)}<b>${S.tab === 'archived' ? 'No archived chats' : S.tab === 'open' ? 'No open chats yet' : S.tab === 'mine' ? 'No chats assigned to you' : 'Nothing here'}</b>${S.tab === 'open' ? '<span>New clients appear here as soon as the bot hands them over.</span>' : S.tab === 'mine' ? '<span>Chats given to you, by hand or by the rotation, appear here.</span>' : ''}</div>` :
     S.convs.map(c => { const w = win(c), nm = c.contact_name || '+' + c.wa_id;
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
@@ -1580,7 +1581,7 @@ async function showTeam() {
   <div class="tbl"><div class="tbl-h"><b>Members</b><div class="search">${ico('search', 16)}<input id="uq" placeholder="Search name or email"></div></div>
   <table><thead><tr><th>Member</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>New chats</th><th></th>' : ''}</tr></thead><tbody id="utb">
   ${us.map(u => `<tr><td>${userCell(u.name, u.email)}</td><td><em class="chip${u.role === 'admin' ? ' ok' : u.role === 'manager' ? ' warn' : ''}">${esc(cap(u.role))}</em></td><td>${admin ? `<select data-ut="${u.id}" style="min-width:130px">${dopt(u.team)}</select>` : esc(dname(u.team))}</td><td>${u.active_chats} <span class="mute">/ ${u.max_active_chats}</span></td>
-  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.role === 'agent' ? `<label class="ck"><span class="tog"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}><i></i></span> In rotation</label>` : '<span class="mute">—</span>'}</td>
+  <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.is_active ? `<label class="ck"><span class="tog"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}><i></i></span> In rotation</label>` : '<span class="mute">—</span>'}</td>
   <td class="tdm"><button class="rowbtn" data-um="${u.id}" aria-label="Actions for ${esc(u.name)}">${ico('more', 18)}</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
   ${admin ? modal('m-user', 'Add a team member', `<form class="add" id="af"><label class="fld"><span>Full name</span><input id="an" required></label><label class="fld"><span>Email</span><input id="ae" type="email" required></label>
     <label class="fld"><span>Password</span><input id="ap" type="password" minlength="8" placeholder="8 or more characters" autocomplete="new-password" required></label><label class="fld"><span>Department</span><select id="at">${dopt('general')}</select></label>
@@ -1589,7 +1590,7 @@ async function showTeam() {
   $('#tb').onclick = showInbox;
   $('#uq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $('#utb').querySelectorAll('tr').forEach(r => { r.hidden = !!q && !r.querySelector('.uc').textContent.toLowerCase().includes(q); }); };
   el.querySelectorAll('[data-ut]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ut, 'PATCH', { team: x.value }); toast(r.error || 'Department changed'); });
-  el.querySelectorAll('[data-ur]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ur, 'PATCH', { in_rotation: x.checked }); toast(r.error || (x.checked ? 'Now gets new chats' : 'Will not get new chats automatically')); });
+  el.querySelectorAll('[data-ur]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ur, 'PATCH', { in_rotation: x.checked }); if (r.error) { x.checked = !x.checked; return toast(r.error); } toast(x.checked ? 'Now gets new chats' : 'Will not get new chats automatically'); });
   const changeEmail = async u => {
     const em = await ask('Change email', { note: `New email address for ${u.name}. They are signed out and can use "Forgot your password?" to set a new password.`, value: u.email, type: 'email' }); if (!em || em.trim().toLowerCase() === u.email) return;
     const nm = await ask('Name for this person', { value: u.name, ok: 'Save' });
