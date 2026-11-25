@@ -17,6 +17,7 @@ const PERMS = {
     social: { label: 'Facebook and Instagram Automation', hint: 'Create and change automatic replies to comments and messages', on: true, rules: [['ANY', /^\/social(\/|$)/]] },
     tags: { label: 'Tags', hint: 'Create and delete tags', on: true, rules: [['POST|DELETE', /^\/labels(\/|$)/]] },
     settings: { label: 'Settings, Bot and Away', hint: 'Change the welcome bot, away message and assignment rules', on: true, rules: [['PUT', /^\/settings\//]] },
+    payments: { label: 'Payments', hint: 'Check payment screenshots and send receipts', on: true, rules: [['ANY', /^\/(payments|payments-settings)(\/|$)/]] },
     reports: { label: 'Reports and Health Audit', hint: 'Open reports and export them', on: true, rules: [['ANY', /^\/(reports|health-audit)(\/|$)/]] },
     reassign: { label: 'Reassign chats', hint: 'Move a chat to another agent or release it', on: true, rules: [['POST', /^\/conversations\/\d+\/(reassign|release)$/]] },
     activity: { label: 'Activity Log', hint: 'See who did what', on: false, rules: [['ANY', /^\/activity-log(\/|$)/]] }
@@ -116,6 +117,10 @@ const EVENTS = [
   ['POST', /^\/ad-rules$/, 'Ad routing', 'Created an ad rule', (r) => r.body.name || String(r.body.keywords || '')],
   ['PATCH', /^\/ad-rules\/(\d+)$/, 'Ad routing', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on an ad rule' : 'Switched off an ad rule') : 'Changed an ad rule', byId('ad_rules')],
   ['DELETE', /^\/ad-rules\/(\d+)$/, 'Ad routing', 'Deleted an ad rule', byId('ad_rules')],
+  ['POST', /^\/payments\/(\d+)\/confirm$/, 'Payments', 'Confirmed a payment', (r) => `${r.body.currency || 'PKR'} ${r.body.amount || ''} ${r.body.item || ''}`.trim()],
+  ['POST', /^\/payments\/(\d+)\/reject$/, 'Payments', (r) => r.body.notify ? 'Marked a payment not received' : 'Marked a photo as not a payment'],
+  ['POST', /^\/messages\/(\d+)\/payment$/, 'Payments', 'Marked a photo as a payment'],
+  ['PUT', /^\/payments-settings$/, 'Payments', 'Changed the payment settings'],
   ['PUT', /^\/demo-settings$/, 'Demo classes', 'Changed the demo class settings', (r) => r.body.enabled === false ? 'switched off' : ''],
   ['PUT', /^\/demo-settings\/link$/, 'Demo classes', 'Set a class link', (r) => `${r.body.place || ''} ${r.body.day || ''}`],
   ['POST', /^\/demo\/bookings$/, 'Demo classes', 'Booked a demo seat', (r) => `${r.body.place || ''} ${r.body.day || ''}`],

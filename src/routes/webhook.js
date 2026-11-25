@@ -12,6 +12,7 @@ const autoreply = require('../autoreply');
 const flows = require('../flows');
 const adroute = require('../adroute');
 const demo = require('../demo');
+const payments = require('../payments');
 const ai = require('../ai');
 const settings = require('../settings');
 const numbers = require('../numbers');
@@ -78,6 +79,7 @@ async function handleMessage(m, profileName, numId) {
   query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
   if (msg.mediaId) mediaStore.ensure(msg.mediaId, w).catch(e => console.error('media download', e.message));
+  if (msg.mediaId) await payments.detect(conv, msg, saved.message).catch(e => console.error('payment check', e.message)); // a payment screenshot waits on the Payments page
   if (msg.callPermission) { rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null }); return; } // answer to "May we call you?": not a chat message for the bot
 
   // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)

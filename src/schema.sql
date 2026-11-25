@@ -605,3 +605,15 @@ CREATE TABLE IF NOT EXISTS demo_sessions (
   company_id INT NOT NULL REFERENCES companies(id), day DATE NOT NULL, place TEXT NOT NULL, link TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (company_id, day, place)
 );
+
+-- Payments: a payment screenshot from a client, waiting to be checked, then confirmed (with a receipt number) or not.
+-- Status: pending, confirmed, not_received, dismissed. receipt_no counts up per company.
+CREATE TABLE IF NOT EXISTS payments (
+  id SERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id), conversation_id INT REFERENCES conversations(id) ON DELETE SET NULL,
+  contact_id INT NOT NULL REFERENCES contacts(id) ON DELETE CASCADE, message_id BIGINT UNIQUE, status TEXT NOT NULL DEFAULT 'pending',
+  amount NUMERIC(14,2), currency TEXT NOT NULL DEFAULT 'PKR', item TEXT NOT NULL DEFAULT '', product_id INT, method TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '',
+  receipt_no INT, receipt_sent BOOLEAN NOT NULL DEFAULT FALSE, flagged_by INT REFERENCES users(id) ON DELETE SET NULL, decided_by INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(), decided_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS payments_company_status ON payments(company_id, status, created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS payments_receipt_no ON payments(company_id, receipt_no) WHERE receipt_no IS NOT NULL;

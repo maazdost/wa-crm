@@ -577,6 +577,15 @@ td .ghost+.ghost{margin-inline-start:6px}
 .ddays{display:flex;flex-wrap:wrap;gap:8px}.chkp{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
 .dpl{grid-template-columns:2fr 1fr 1fr;margin-bottom:10px}.dpl .dwide{grid-column:1/-1}
 .drow{display:flex;align-items:center;justify-content:space-between;gap:10px}.drow select{flex:1;min-width:0}
+.paygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:12px}
+.paycard{display:flex;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.payimg{width:96px;height:120px;flex:none;border:0;border-radius:10px;overflow:hidden;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center;cursor:zoom-in;padding:0}
+.payimg img{width:100%;height:100%;object-fit:cover}
+.payb{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}.payb p{margin:2px 0;font-size:13px;overflow-wrap:anywhere}
+.paya{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:6px}.paya button{padding:6px 10px;font-size:13px}
+.payr{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.payr input{width:auto}
+.payitems{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
+@media(max-width:700px){.paygrid{grid-template-columns:1fr;padding:8px}.payimg{width:80px;height:100px}}
 .dmsgs{margin:12px 0}.dmsgs summary{cursor:pointer;font-weight:600;margin-bottom:8px}
 #dsf .fld{margin-bottom:12px}#cpdemo p{margin:0 0 8px}
 @media(max-width:700px){.dpl{grid-template-columns:1fr 1fr}.dpl .fld:first-child{grid-column:1/-1}.dbtns{white-space:normal}.dbtns .ghost{margin:2px 0}}
@@ -723,7 +732,7 @@ const ICONS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
-  check: '<polyline points="20 6 9 17 4 12"/>', calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
+  check: '<polyline points="20 6 9 17 4 12"/>', calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>', money: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>'
 };
 const ico = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const hueOf = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
@@ -732,20 +741,20 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 // key, label, icon, managers only, super admin only, menu group
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['dc', 'Demo Classes', 'calendar', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'], ['au', 'Audience', 'userplus', 1, 0, 'CRM'], ['pl', 'Pipeline', 'panel', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
-  ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
+  ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['pay', 'Payments', 'money', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
   ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['ai', 'AI Agent', 'spark', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -1106,7 +1115,7 @@ function bindMsgs() {
 function msgMenu(id, anchor, ev) {
   const m = S.msgs.find(x => x.id === id); if (!m) return;
   const pt = anchor ? (r => ({ x: r.left - 150, y: r.bottom + 4 }))(anchor.getBoundingClientRect()) : { x: ev.clientX, y: ev.clientY };
-  floatMenu([canReply() ? ['reply', 'Reply', () => setReply(m)] : null, ['copy', 'Copy', () => copyToClipboard(m.media_id && /^\[\w+\]$/.test(m.body || '') ? '<' + m.type + '>' : (m.body || ''))], ['select', 'Select', () => { startSel(); toggleSel(id); }]].filter(Boolean), pt.x, pt.y);
+  floatMenu([canReply() ? ['reply', 'Reply', () => setReply(m)] : null, ['copy', 'Copy', () => copyToClipboard(m.media_id && /^\[\w+\]$/.test(m.body || '') ? '<' + m.type + '>' : (m.body || ''))], ['select', 'Select', () => { startSel(); toggleSel(id); }], m.direction === 'in' && m.media_id ? ['money', 'Mark as payment', async () => { const r = await api('/messages/' + id + '/payment', 'POST'); toast(r.error || (r.already ? 'Already on the Payments list' : 'Sent to Payments to check')); }] : null].filter(Boolean), pt.x, pt.y);
 }
 /* replying to a specific message */
 function setReply(m) { S.replyTo = { id: m.id, name: msgWho(m), text: snip(m.type, m.body), m }; renderReply(); const t = $('#txt'); if (t) t.focus(); }
@@ -1444,6 +1453,7 @@ function connect() {
     sock.on('conversation:late', p => { if (isMgr()) { alertUser('Late reply', p.text || ''); toast(p.text || 'An agent has not replied in time'); } loadList(); });
     sock.on('conversation:escalated', () => { if (isMgr()) toast('A client has been waiting for a reply too long'); loadList(); });
     sock.on('conversation:updated', loadList);
+    sock.on('payment:new', () => { if (isMgr()) { alertUser('Payment to check', 'A client sent a payment screenshot'); toast('New payment screenshot to check'); if (S.nav === 'pay') showPayments(); } loadList(); });
     sock.on('call:incoming', showRing);
     sock.on('call:taken', e => { if (e.by !== S.user.id) { CALL.ring.delete(e.id); drawRing(); } });
     sock.on('call:answer', e => { const a = CALL.active; if (!a || a.dir !== 'out' || a.answered || (a.id && a.id !== e.id)) return; a.id = a.id || e.id; a.answered = true; a.status = 'Ringing…'; a.pc.setRemoteDescription({ type: 'answer', sdp: e.sdp }).catch(() => { toast('Could not connect the call'); hangUp(); }); drawBar(); });
@@ -2140,6 +2150,81 @@ async function fillDemoPanel() {
   const btn = $('#cpdb'); if (btn) btn.onclick = async () => { const v = $('#cpds').value; if (!v) return; const [day, place] = v.split('|'); btn.disabled = true;
     const r = await api('/demo/bookings', 'POST', { conversation_id: id, day, place }); btn.disabled = false; if (r.error) return toast(r.error);
     toast(r.already ? tr('Already booked for this class') : r.sent && !r.sent.sent ? tr('Seat booked. The message was not sent') + ': ' + tr(r.sent.why || '') : tr('Seat booked and the client was told')); fillDemoPanel(); };
+}
+
+/* ---------- Payments (payment screenshots to check, receipts, totals) ---------- */
+const fmtMoney = (n, cur) => `${cur || 'PKR'} ${Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+const ago = t => { const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000)); return m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + ' h ' + (m % 60) + ' min' : Math.floor(m / 1440) + ' days'; };
+async function showPayments(range) {
+  S.payRange = range || S.payRange || {};
+  const sc = screen('Payments', 'Payment screenshots from clients wait here until you check them. Confirm sends the client a WhatsApp receipt and marks them Enrolled.',
+    `<button class="ghost" id="pyset">${ico('sliders', 16)}Settings</button>`);
+  const q = new URLSearchParams(Object.entries(S.payRange).filter(([, v]) => v)).toString();
+  const d = await api('/payments' + (q ? '?' + q : '')); if (d.error) return toast(d.error); if (S.nav !== 'pay') return;
+  if (!S.products) await loadProducts().catch(() => {});
+  const s = d.settings, t = d.totals, cur = s.currency || 'PKR', pend = arr(d.pending), done = arr(d.done);
+  const card = p => `<div class="paycard"><button class="payimg" data-pi="${p.message_id || ''}" aria-label="Open screenshot">${p.media_type === 'image' ? `<img data-mid="${p.message_id}" alt="Payment screenshot">` : ico('file', 34)}</button>
+    <div class="payb"><b data-notr>${esc(p.client)}</b><small class="mute">+${esc(p.wa_id)}${p.agent ? ' · ' + esc(p.agent) : ''}</small>
+    ${p.caption && !/^\[\w+\]$/.test(p.caption) ? `<p data-notr>“${esc(p.caption)}”</p>` : ''}
+    <small class="mute">${tr('Waiting')} ${esc(ago(p.created_at))}${p.flagged_by_name ? ' · ' + tr('marked by') + ' ' + esc(p.flagged_by_name) : ' · ' + tr('found automatically')}</small>
+    <div class="paya"><button class="btn" data-pc="${p.id}">${ico('check', 15)}${tr('Confirm')}</button><button class="ghost" data-pr="${p.id}">${tr('Not received')}</button><button class="ghost" data-pd="${p.id}">${tr('Not a payment')}</button><button class="rowbtn" data-po="${p.conversation_id}" title="${tr('Open chat')}" aria-label="${tr('Open chat')}">${ico('chat', 16)}</button></div></div></div>`;
+  const STAT = { confirmed: ['Confirmed', 'ok'], not_received: ['Not received', 'closed'] };
+  sc.innerHTML = `<div class="stats">${kpi('hourglass', pend.length, 'Waiting to be checked', pend.length ? 'amber' : '')}${kpi('money', fmtMoney(t.today, cur), 'Received today', 'blue')}${kpi('chart', fmtMoney(t.month, cur), 'Received this month', 'violet')}${kpi('check', t.month_count, 'Payments this month')}</div>
+    <div class="tbl"><div class="tbl-h"><b>${tr('Waiting to be checked')}</b><small class="mute">${tr('Photos and PDFs clients sent after the fees, or with words like paid or JazzCash. Agents can also mark a photo as a payment in the chat.')}</small></div>
+    ${pend.length ? `<div class="paygrid">${pend.map(card).join('')}</div>` : emptyState('check', 'Nothing to check', 'New payment screenshots show here, and managers get an alert.')}</div>
+    <div class="tbl" style="margin-top:18px"><div class="tbl-h ctbar"><b>${tr('Checked payments')}</b>
+      <span class="payr"><input type="date" id="pyf" value="${esc(d.from)}" aria-label="From"><input type="date" id="pyt" value="${esc(d.to)}" aria-label="To"><button class="ghost" id="pyx">${ico('download', 15)}${tr('Download for Excel')}</button></span></div>
+    ${arr(d.byItem).length ? `<div class="payitems">${arr(d.byItem).map(x => `<span class="chip"><b data-notr>${esc(x.item)}</b> ${x.n} · ${esc(fmtMoney(x.total, x.currency))}</span>`).join('')}<span class="chip ok"><b>${tr('Total')}</b> ${esc(fmtMoney(t.range, cur))}</span></div>` : ''}
+    ${done.length ? `<table><thead><tr><th>Receipt</th><th>Date</th><th>Client</th><th>For</th><th>Amount</th><th>Method</th><th>Status</th><th>Checked by</th></tr></thead><tbody>${done.map(p => { const [lb, c] = STAT[p.status] || [p.status, ''];
+      return `<tr><td>${p.receipt ? `<b data-notr>${esc(p.receipt)}</b>${p.receipt_sent ? '' : `<small class="mute" style="display:block">${tr('Receipt not sent')}</small>`}` : '—'}</td><td>${esc(new Date(p.decided_at).toLocaleDateString())}</td>
+      <td><button class="lnk" data-po="${p.conversation_id}" data-notr>${esc(p.client)}</button></td><td data-notr>${esc(p.item || '—')}</td><td>${p.amount ? esc(fmtMoney(p.amount, p.currency)) : '—'}</td><td>${esc(p.method || '—')}</td><td><em class="chip ${c}">${tr(lb)}</em></td><td>${esc(p.decided_by_name || '—')}</td></tr>`; }).join('')}</tbody></table>`
+      : emptyState('money', 'No checked payments in these dates')}</div>`;
+  hydrateMedia(sc);
+  sc.querySelectorAll('[data-pi]').forEach(b => b.onclick = () => { const id = +b.dataset.pi; if (!id) return; mediaBlob(id).then(u => { const p = pend.find(x => x.message_id == id); p && p.media_type !== 'image' ? window.open(u, '_blank') : lightbox(u); }).catch(() => toast('This file is no longer available')); });
+  sc.querySelectorAll('[data-po]').forEach(b => b.onclick = () => { if (!+b.dataset.po) return; goNav('inbox'); openConv(+b.dataset.po); });
+  sc.querySelectorAll('[data-pc]').forEach(b => b.onclick = () => confirmPay(pend.find(p => p.id === +b.dataset.pc), s));
+  sc.querySelectorAll('[data-pr]').forEach(b => b.onclick = async () => { if (!await sure('Payment not received?', 'The client gets a polite message asking them to check the payment and send it again.', { ok: 'Send message' })) return;
+    const r = await api(`/payments/${b.dataset.pr}/reject`, 'POST', { notify: true }); if (r.error) return toast(r.error); toast(r.sent && r.sent.sent ? 'The client was told' : 'Saved. The message was not sent: ' + ((r.sent && r.sent.why) || '')); showPayments(); });
+  sc.querySelectorAll('[data-pd]').forEach(b => b.onclick = async () => { const r = await api(`/payments/${b.dataset.pd}/reject`, 'POST', { notify: false }); if (r.error) return toast(r.error); toast('Removed from the list'); showPayments(); });
+  const reRange = () => showPayments({ from: $('#pyf').value, to: $('#pyt').value });
+  $('#pyf').onchange = reRange; $('#pyt').onchange = reRange;
+  $('#pyx').onclick = () => downloadCsv(`Payments ${d.from} to ${d.to}.csv`, [['Receipt', 'Date', 'Client', 'Number', 'For', 'Amount', 'Currency', 'Method', 'Status', 'Checked by', 'Note'],
+    ...done.map(p => [p.receipt || '', new Date(p.decided_at).toLocaleDateString(), p.client, '+' + p.wa_id, p.item, p.amount || '', p.currency, p.method, (STAT[p.status] || [p.status])[0], p.decided_by_name || '', p.note || ''])]);
+  $('#pyset').onclick = () => paySettings(s);
+}
+function confirmPay(p, s) {
+  if (!p) return; $('#m-pc') && $('#m-pc').remove();
+  const prods = arr(S.products), m0 = arr(s.methods);
+  document.body.insertAdjacentHTML('beforeend', modal('m-pc', 'Confirm payment', `<form id="pcf"><p class="mute" style="margin:0 0 12px">${tr('From')} <b data-notr>${esc(p.client)}</b>. ${tr('The client gets a WhatsApp receipt.')}</p>
+    <label class="fld"><span>${tr('What is it for')}</span><select id="pc1"><option value="">${tr('Choose from your catalog')}</option>${prods.map(x => `<option value="${x.id}" data-price="${x.price ?? ''}" data-cur="${esc(x.currency || '')}">${esc(x.name)}${x.price != null ? ' · ' + esc(fmtMoney(x.price, x.currency)) : ''}</option>`).join('')}<option value="other">${tr('Something else')}</option></select></label>
+    <label class="fld" id="pc2w" hidden><span>${tr('Describe it')}</span><input id="pc2" maxlength="120" placeholder="e.g. Copy Trading, $300 plan"></label>
+    <div class="qtwo"><label class="fld"><span>${tr('Amount received')}</span><input id="pc3" type="number" min="1" step="any" inputmode="decimal" required></label>
+      <label class="fld"><span>${tr('Currency')}</span><select id="pc4">${['PKR', 'USD', 'AED', 'SAR', 'GBP', 'EUR'].map(c => `<option${c === (s.currency || 'PKR') ? ' selected' : ''}>${c}</option>`).join('')}</select></label></div>
+    <label class="fld"><span>${tr('Paid by')}</span><select id="pc5">${m0.map(x => `<option>${esc(x)}</option>`).join('')}</select></label>
+    <label class="fld"><span>${tr('Note for your team (optional)')}</span><input id="pc6" maxlength="300" placeholder="e.g. transaction ID"></label>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">${tr('Confirm and send receipt')}</button></div></form>`));
+  const m = $('#m-pc'); m.hidden = false; m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.remove());
+  $('#pc1').onchange = () => { const o = $('#pc1').selectedOptions[0]; $('#pc2w').hidden = $('#pc1').value !== 'other'; if (o && o.dataset.price) { $('#pc3').value = o.dataset.price; if (o.dataset.cur) $('#pc4').value = o.dataset.cur; } };
+  $('#pcf').onsubmit = async e => { e.preventDefault(); const v = $('#pc1').value;
+    if (!v) return toast('Choose what the payment is for');
+    const r = await api(`/payments/${p.id}/confirm`, 'POST', { product_id: v === 'other' ? null : +v, item: v === 'other' ? $('#pc2').value : '', amount: +$('#pc3').value, currency: $('#pc4').value, method: $('#pc5').value, note: $('#pc6').value });
+    if (r.error) return toast(r.error); m.remove();
+    toast(r.sent && r.sent.sent ? `${r.payment.receipt} sent to the client` : `${r.payment.receipt} saved. The receipt was not sent: ${(r.sent && r.sent.why) || ''}`); showPayments(); };
+}
+function paySettings(s) {
+  $('#m-ps') && $('#m-ps').remove();
+  document.body.insertAdjacentHTML('beforeend', modal('m-ps', 'Payment settings', `<form id="psf">
+    <label class="fld drow"><span>${tr('Find payment screenshots automatically')}</span><label class="tog"><input type="checkbox" id="ps0"${s.enabled ? ' checked' : ''} aria-label="Switched on"><i></i></label></label>
+    <div class="qtwo">${field('ps1', 'Receipt number starts with', s.prefix || 'RCPT')}<label class="fld"><span>${tr('Main currency')}</span><select id="ps2">${['PKR', 'USD', 'AED', 'SAR', 'GBP', 'EUR'].map(c => `<option${c === s.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label></div>
+    ${field('ps3', 'Payment methods, separated by commas', arr(s.methods).join(', '))}
+    ${field('ps4', 'Words that show a photo is a payment, separated by commas', arr(s.words).join(', '))}
+    <label class="fld"><span>${tr('Receipt message')} <small class="mute">{{receipt}} {{name}} {{item}} {{amount}} {{method}} {{date}} {{company}}</small></span><textarea id="ps5" rows="7" maxlength="1000">${esc(s.receipt || '')}</textarea></label>
+    <label class="fld"><span>${tr('Message when the payment is not received')}</span><textarea id="ps6" rows="3" maxlength="1000">${esc(s.not_received || '')}</textarea></label>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`, 1));
+  const m = $('#m-ps'); m.hidden = false; m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.remove());
+  $('#psf').onsubmit = async e => { e.preventDefault();
+    const r = await api('/payments-settings', 'PUT', { enabled: $('#ps0').checked, prefix: $('#ps1').value, currency: $('#ps2').value, methods: $('#ps3').value, words: $('#ps4').value, receipt: $('#ps5').value, not_received: $('#ps6').value });
+    if (r.error) return toast(r.error); toast('Saved'); m.remove(); showPayments(); };
 }
 
 /* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */
