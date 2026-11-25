@@ -33,6 +33,8 @@ const DEFAULTS = {
     receipt: '🧾 *Payment receipt {{receipt}}*\n{{company}}\n\nName: {{name}}\nFor: {{item}}\nAmount: {{amount}}\nMethod: {{method}}\nDate: {{date}}\n\nThank you, your payment is confirmed! ✅',
     not_received: 'Thank you {{first_name}}. We could not find this payment in our account yet. Please check the details and send the screenshot again, or tell us the time and the account you paid from.'
   },
+  // Daily summary on WhatsApp (Settings > Daily summary). numbers: with country code. last_day: the day it was last sent (set by the app).
+  summary: { enabled: false, time: '22:00', tz: 'Asia/Karachi', numbers: [], push: true, template: 'daily_summary', last_day: '' },
   away: {
     enabled: false, message: 'Thanks for your message! Our team is offline right now and will reply as soon as we are back.',
     start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5, 6], tz: 'Asia/Karachi'

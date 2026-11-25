@@ -577,6 +577,12 @@ td .ghost+.ghost{margin-inline-start:6px}
 .ddays{display:flex;flex-wrap:wrap;gap:8px}.chkp{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
 .dpl{grid-template-columns:2fr 1fr 1fr;margin-bottom:10px}.dpl .dwide{grid-column:1/-1}
 .drow{display:flex;align-items:center;justify-content:space-between;gap:10px}.drow select{flex:1;min-width:0}
+.sumgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.sumb{padding:14px 16px;display:flex;flex-direction:column;gap:6px}.sumb .dlg-f{margin-top:6px}
+.sumprev{background:var(--chat) var(--doodle);padding:16px;border-bottom:1px solid var(--line)}
+.wabub{background:var(--out);color:var(--ink);border-radius:10px 10px 10px 2px;padding:10px 12px;max-width:380px;font-size:14px;line-height:1.5;box-shadow:var(--sh);overflow-wrap:anywhere}
+.sumt .chip{margin-inline-start:6px}.sumtpl{font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:4px 0}.sumt .ghost{align-self:flex-start}
+@media(max-width:900px){.sumgrid{grid-template-columns:1fr}}
 .paygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:12px}
 .paycard{display:flex;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
 .payimg{width:96px;height:120px;flex:none;border:0;border-radius:10px;overflow:hidden;background:var(--tint);color:var(--tint-ink);display:grid;place-items:center;cursor:zoom-in;padding:0}
@@ -732,7 +738,7 @@ const ICONS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
-  check: '<polyline points="20 6 9 17 4 12"/>', calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>', money: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>'
+  check: '<polyline points="20 6 9 17 4 12"/>', calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>', moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', money: '<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>'
 };
 const ico = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const hueOf = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
@@ -744,17 +750,17 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['pay', 'Payments', 'money', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
   ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['ai', 'AI Agent', 'spark', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
-  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
+  ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ds', 'Daily Summary', 'moon', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -2225,6 +2231,33 @@ function paySettings(s) {
   $('#psf').onsubmit = async e => { e.preventDefault();
     const r = await api('/payments-settings', 'PUT', { enabled: $('#ps0').checked, prefix: $('#ps1').value, currency: $('#ps2').value, methods: $('#ps3').value, words: $('#ps4').value, receipt: $('#ps5').value, not_received: $('#ps6').value });
     if (r.error) return toast(r.error); toast('Saved'); m.remove(); showPayments(); };
+}
+
+/* ---------- Daily summary (one WhatsApp message every night with the day's numbers) ---------- */
+const waFmt = t => esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+async function showSummary(d) {
+  const sc = screen('Daily Summary', 'Every night one WhatsApp message tells you how the day went: new leads, demo seats, payments and chats waiting for a reply.');
+  d = d || await api('/summary-settings'); if (d.error) return toast(d.error); if (S.nav !== 'ds') return;
+  const s = d.settings, t = d.template, TST = { APPROVED: ['Approved', 'ok'], PENDING: ['Waiting for Meta', 'warn'], REJECTED: ['Rejected', 'closed'] };
+  const [tl, tc] = t ? (TST[t.status] || [t.status, '']) : ['Not sent to Meta yet', 'warn'];
+  sc.innerHTML = `<div class="sumgrid"><form class="tbl sumcard" id="smf"><div class="tbl-h"><b>${tr('When and to whom')}</b></div><div class="sumb">
+      <label class="fld drow"><span>${tr('Send the daily summary')}</span><label class="tog"><input type="checkbox" id="sm_on"${s.enabled ? ' checked' : ''} aria-label="Switched on"><i></i></label></label>
+      <label class="fld"><span>${tr('Time')} <small class="mute">(${esc(s.tz || 'Asia/Karachi')})</small></span><input type="time" id="sm_time" value="${esc(s.time || '22:00')}"></label>
+      <label class="fld"><span>${tr('WhatsApp numbers, one per line, with the country code')}</span><textarea id="sm_nums" rows="3" placeholder="923001234567">${esc(arr(s.numbers).join('\n'))}</textarea></label>
+      <label class="fld drow"><span>${tr('Also send it as a phone notification to managers and admins')}</span><label class="tog"><input type="checkbox" id="sm_push"${s.push !== false ? ' checked' : ''} aria-label="Phone notification"><i></i></label></label>
+      <div class="dlg-f"><button type="button" class="ghost" id="sm_now">${ico('send', 15)}${tr('Send now')}</button><button class="btn">${tr('Save')}</button></div></div></form>
+    <div class="tbl sumcard"><div class="tbl-h"><b>${tr('Tonight’s message so far')}</b><small class="mute">${tr('Numbers for today until now')}</small></div>
+      <div class="sumprev"><div class="wabub" data-notr>${waFmt(d.preview)}</div></div>
+      <div class="sumb sumt"><div><b>${tr('Summary template')}</b> <em class="chip ${tc}">${tr(tl)}</em></div>
+        <small class="mute">${tr('WhatsApp only lets your business message a number that wrote to it in the last 24 hours. For the other nights, the summary goes as this short template, once Meta approves it (usually within a day).')}</small>
+        <p class="mute sumtpl" data-notr>${esc(d.template_text)}</p>${t && t.rejected_reason ? `<small class="er">${esc(t.rejected_reason)}</small>` : ''}
+        ${!t || t.status === 'REJECTED' ? `<button class="ghost" id="sm_tpl">${ico('send', 15)}${tr('Send the template to Meta')}</button>` : t.status !== 'APPROVED' ? `<small class="mute">${tr('Check again later with Templates > Sync from Meta.')}</small>` : ''}</div></div></div>`;
+  const body = () => ({ enabled: $('#sm_on').checked, time: $('#sm_time').value, numbers: $('#sm_nums').value, push: $('#sm_push').checked });
+  $('#smf').onsubmit = async e => { e.preventDefault(); const r = await api('/summary-settings', 'PUT', body()); if (r.error) return toast(r.error); toast(r.settings.enabled ? `Saved. It goes out every day at ${r.settings.time}` : 'Saved'); showSummary(r); };
+  $('#sm_now').onclick = async () => { const s1 = await api('/summary-settings', 'PUT', body()); if (s1.error) return toast(s1.error);
+    const r = await api('/summary-settings/send', 'POST'); if (r.error) return toast(r.error);
+    const bad = arr(r.results).filter(x => !x.sent); toast(bad.length ? `Not sent to +${bad[0].to}: ${bad[0].why}` : `Sent to ${arr(r.results).length} ${arr(r.results).length === 1 ? 'number' : 'numbers'}`); };
+  const tb = $('#sm_tpl'); if (tb) tb.onclick = async () => { tb.disabled = true; const r = await api('/summary-settings/template', 'POST'); tb.disabled = false; if (r.error) return toast(r.error); toast('Sent to Meta for approval'); showSummary(); };
 }
 
 /* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */
