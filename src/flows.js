@@ -144,18 +144,58 @@ async function reply(conv, contact, msg, waId) {
   let b = tap ? buttons.findIndex((_, j) => btnId(flow, st, j) === tap) : -1;
   if (b < 0) b = buttons.findIndex(x => norm(x.title) === norm(msg.body));
   if (b < 0 && /^[1-3]$/.test((msg.body || '').trim())) b = Number(msg.body.trim()) - 1 < buttons.length ? Number(msg.body.trim()) - 1 : -1;
+  if (b < 0) b = wordMatch(buttons, msg.body); // "classes kab hain?" picks the Classes button
+
   if (b >= 0) {
     if (run) await query('UPDATE bot_flow_runs SET answers = answers || $2::jsonb, updated_at=now() WHERE id=$1', [run.id, JSON.stringify({ [String(st.text || '').slice(0, 60)]: buttons[b].title })]);
     return runFrom(flow, conv, contact, waId, nextIndex(steps, i, buttons[b].next), run);
   }
-  // Something else was typed: ask once more, then give the chat to a person instead of going round in circles.
-  if (run && run.tries < 1) {
-    await query('UPDATE bot_flow_runs SET tries = tries + 1, updated_at=now() WHERE id=$1', [run.id]);
-    await sendStep(flow, conv, waId, contact, { ...st, text: `${flow.retry_text || RETRY}\n\n${st.text}` }).catch(e => console.error('chatbot step', e.message));
-    return { conversation: await fresh(conv.id), finished: false, flow, newlyAssigned: false };
-  }
+  // Something else was typed (a question, a voice note...): a person answers it straight away instead of the bot asking again,
+  // so a client who does not like buttons is never lost.
+  if (run) await query('UPDATE bot_flow_runs SET answers = answers || $2::jsonb, updated_at=now() WHERE id=$1', [run.id, JSON.stringify({ 'Typed instead': (msg.body || `[${msg.type}]`).slice(0, 300) })]);
   return finish(flow, conv, contact, run, 'no_answer');
 }
+
+// The meaningful words of a button title ("📚 Forex Classes" -> forex, classes), for clients who type instead of tapping.
+const words = (t) => norm(t).replace(/[^\p{L}\p{N} ]/gu, ' ').split(' ').filter(w => w.length >= 4);
+function wordMatch(buttons, text) {
+  const said = new Set(words(text)); if (!said.size) return -1;
+  const hits = buttons.map((x, j) => words(x.title).some(w => said.has(w) || said.has(w.replace(/s$/, ''))) ? j : -1).filter(j => j >= 0);
+  return hits.length === 1 ? hits[0] : -1; // only when exactly one button fits
+}
+
+const WAIT_MIN = () => Math.max(1, Number(process.env.FLOW_WAIT_MINUTES) || 5);
+/**
+ * A client who has not answered the chatbot for a few minutes (FLOW_WAIT_MINUTES, 5 by default) is handed to the team,
+ * so an agent sees the chat and the number and can write to them. Returns the hand overs that were made.
+ */
+async function sweep() {
+  const due = (await query(`SELECT r.id AS run_id, r.company_id, r.conversation_id FROM bot_flow_runs r JOIN conversations c ON c.id=r.conversation_id AND c.flow_id=r.flow_id
+    WHERE r.finished_at IS NULL AND c.flow_step IS NOT NULL AND r.updated_at < now() - ($1 || ' minutes')::interval ORDER BY r.id LIMIT 20`, [String(WAIT_MIN())])).rows;
+  const out = [];
+  for (const d of due) await tenant.run(d.company_id, async () => {
+    try {
+      const conv = await fresh(d.conversation_id), flow = (await query('SELECT * FROM bot_flows WHERE id=$1', [conv.flow_id])).rows[0];
+      const contact = (await query('SELECT * FROM contacts WHERE id=$1', [conv.contact_id])).rows[0];
+      const run = (await query('SELECT * FROM bot_flow_runs WHERE id=$1', [d.run_id])).rows[0];
+      if (!flow || !contact) { await query(`UPDATE bot_flow_runs SET finished_at=now(), result='changed' WHERE id=$1`, [d.run_id]); return; }
+      const r = await finish(flow, conv, contact, run, 'no_answer');
+      out.push(r); tellTeam(r, contact);
+    } catch (e) { console.error('chatbot wait', e.message); }
+  });
+  return out;
+}
+// Lets the team know about a chat the bot handed over by itself.
+function tellTeam(r, contact) {
+  const rt = require('./realtime'), push = require('./push'), c = r.conversation, who = contact.name || contact.profile_name || '+' + contact.wa_id;
+  if (c.assigned_to) {
+    push.notifyUser(c.assigned_to, 'New client assigned', `${who}: did not answer the chatbot`, { conversationId: c.id }, 'assigned');
+    rt.toUser(c.assigned_to, 'conversation:assigned', { conversationId: c.id, name: who });
+    rt.toConversation(c, 'conversation:updated', { conversationId: c.id });
+  } else rt.toConversation({}, 'conversation:unassigned', { conversationId: c.id });
+}
+let busy = false;
+const startSweep = () => setInterval(async () => { if (busy) return; busy = true; try { await sweep(); } catch (e) { console.error('chatbot wait', e.message); } finally { busy = false; } }, Number(process.env.FLOW_SWEEP_MS || 60000));
 
 /** An agent wrote in the chat: the bot steps back. */
 async function agentTookOver(convId) {
@@ -163,4 +203,4 @@ async function agentTookOver(convId) {
   if (c) await query(`UPDATE bot_flow_runs SET finished_at=now(), result='agent' WHERE conversation_id=$1 AND finished_at IS NULL`, [convId]);
 }
 
-module.exports = { TYPES, KINDS, RETRY, welcome, findKeyword, start, reply, agentTookOver, nextIndex };
+module.exports = { TYPES, KINDS, RETRY, welcome, findKeyword, start, reply, agentTookOver, nextIndex, sweep, startSweep };
