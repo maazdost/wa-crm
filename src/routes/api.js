@@ -27,6 +27,21 @@ const NUMBER_LABEL_SQL = `(CASE WHEN (SELECT COUNT(*) FROM wa_numbers WHERE comp
 const LABELS_SQL = `(SELECT COALESCE(json_agg(json_build_object('id',l.id,'name',l.name,'color',l.color)),'[]'::json) FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=c.id) AS labels`;
 
 const attempts = new Map(); // "ip|email" -> { n, since }
+// One sign-in for every copy. CLIENT_SITES lists the separate copies that clients run on (comma separated, for example
+// https://wof.teaminboxpro.com). When an email is not known here, the same email and password are tried on each copy,
+// and on a match the person is sent to their own copy, already signed in. Data stays where it is, nothing is copied.
+const clientSites = () => (process.env.CLIENT_SITES || '').split(',').map(s => s.trim().replace(/\/+$/, '')).filter(s => /^https:\/\/[a-z0-9.-]+$/i.test(s) || /^http:\/\/localhost(:\d+)?$/.test(s));
+async function signInElsewhere(email, password) {
+  for (const site of clientSites()) {
+    try {
+      const r = await fetch(site + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Sign-In-From': 'main' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(8000) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.token) return { go: site + '/#signin=' + Buffer.from(JSON.stringify({ token: d.token, user: d.user })).toString('base64url') };
+      if (r.status === 403 && d.error) return { status: 403, error: d.error }; // right password, but that company is waiting or paused
+    } catch (e) { console.error('sign-in check on', site, e.message); }
+  }
+  return null;
+}
 router.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body;
   const key = `${req.ip}|${String(email || '').toLowerCase()}`, rec = attempts.get(key);
@@ -34,6 +49,12 @@ router.post('/auth/login', wrap(async (req, res) => {
   if ((attempts.get(key)?.n || 0) >= 8) return res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
   const u = (await query('SELECT u.*, co.status AS company_status, co.name AS company_name FROM users u JOIN companies co ON co.id=u.company_id WHERE u.email=$1 AND u.is_active', [String(email || '').toLowerCase()])).rows[0];
   if (!u || !(await bcrypt.compare(password || '', u.password_hash))) {
+    // not known here: maybe the account lives on a client's own copy (a request that already came from another copy is never passed on)
+    if (!u && email && password && !req.headers['x-sign-in-from']) {
+      const other = await signInElsewhere(String(email).toLowerCase(), String(password));
+      if (other && other.go) { attempts.delete(key); return res.json({ go: other.go }); }
+      if (other) return res.status(other.status).json({ error: other.error });
+    }
     const r = attempts.get(key) || { n: 0, since: Date.now() }; r.n++; attempts.set(key, r);
     return res.status(401).json({ error: 'Invalid email or password' });
   }

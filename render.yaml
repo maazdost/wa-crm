@@ -23,6 +23,9 @@ services:
         sync: false
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
+      # Main site only: the clients' own copies, comma separated (https://wof.teaminboxpro.com). Their people can then sign in on the main site and app.
+      - key: CLIENT_SITES
+        sync: false
       - key: META_APP_ID
         sync: false
       - key: META_CONFIG_ID

@@ -860,6 +860,7 @@ function showLogin(err) {
     const r = await fetch(API + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:$('#em').value, password:$('#pw').value }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return showLogin(d.error || 'Could not sign in');
+    if (d.go) { location.href = d.go; return; } // this account lives on the company's own copy: go there, already signed in
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token:d.token, user:d.user })); boot();
   };
 }
@@ -2998,6 +2999,8 @@ async function askCallPermission(id) {
 
 /* ---------- Start ---------- */
 applyTheme();
+// Arriving from the main site after signing in there: the sign-in comes in the address after # (never sent to a server) and is removed at once.
+if (/^#signin=/.test(location.hash)) { try { const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(location.hash.slice(8).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)))); if (a && a.token && a.user) localStorage.setItem('wa_auth', JSON.stringify({ token: a.token, user: a.user })); } catch {} history.replaceState(null, '', location.pathname + location.search); }
 const resetTok = new URLSearchParams(location.search).get('reset');
 const signupLink = new URLSearchParams(location.search).has('signup');
 if (resetTok) showReset(resetTok);
