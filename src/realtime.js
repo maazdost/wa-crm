@@ -18,6 +18,7 @@ function init(httpServer) {
     socket.join(`user:${id}`);
     if (role !== 'agent') socket.join(`managers:${cid}`); // managers only hear about their own company
     await require('./db').query('UPDATE users SET is_online=TRUE WHERE id=$1', [id]);
+    socket.on('vis', v => { socket.data.vis = !!v; }); // the page says when it is on screen
     socket.on('disconnect', async () => {
       const left = await io.in(`user:${id}`).fetchSockets();
       if (!left.length) await require('./db').query('UPDATE users SET is_online=FALSE WHERE id=$1', [id]);
@@ -36,4 +37,9 @@ function toConversation(conv, event, payload) {
 }
 const toUser = (userId, event, payload) => io && io.to(`user:${userId}`).emit(event, payload);
 
-module.exports = { init, toConversation, toUser };
+// True when this person has the app open and on screen right now.
+async function watching(userId) {
+  if (!io) return false;
+  try { return (await io.in(`user:${userId}`).fetchSockets()).some(s => s.data && s.data.vis); } catch { return false; }
+}
+module.exports = { init, toConversation, toUser, watching };

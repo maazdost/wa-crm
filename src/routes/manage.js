@@ -47,4 +47,16 @@ router.put('/me/notifications', required(), wrap(async (req, res) => {
   await query('UPDATE users SET notify=$3 WHERE id=$1 AND company_id=$2', [req.user.id, C(), next]);
   res.json({ ...next, tz: TZ(), push_ready: push.ready() });
 }));
+// ---- Notifications for the installed web app and browsers ----
+router.get('/push/key', required(), wrap(async (_req, res) => res.json({ key: await push.publicKey() })));
+router.post('/push/subscribe', required(), wrap(async (req, res) => {
+  const b = req.body || {}, k = b.keys || {}, ep = String(b.endpoint || '');
+  if (!/^https:\/\//.test(ep) || ep.length > 1000 || !k.p256dh || !k.auth) return res.status(400).json({ error: 'This device did not give what is needed for notifications' });
+  await query(`INSERT INTO web_push_subs(user_id,endpoint,p256dh,auth) VALUES($1,$2,$3,$4) ON CONFLICT (endpoint) DO UPDATE SET user_id=EXCLUDED.user_id, p256dh=EXCLUDED.p256dh, auth=EXCLUDED.auth`,
+    [req.user.id, ep, String(k.p256dh).slice(0, 200), String(k.auth).slice(0, 100)]);
+  res.json({ ok: true });
+}));
+router.post('/push/unsubscribe', required(), wrap(async (req, res) => {
+  await query('DELETE FROM web_push_subs WHERE endpoint=$1 AND user_id=$2', [String((req.body || {}).endpoint || ''), req.user.id]); res.json({ ok: true });
+}));
 module.exports = router;

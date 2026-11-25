@@ -317,15 +317,45 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 .ctpg{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}.ghost.danger{color:var(--red)}
 .ctfile{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--tint-line);background:var(--tint);border-radius:12px;padding:12px;margin-bottom:12px}.ctfile>div{flex:1;min-width:0;display:grid;gap:2px}.ctfile b{overflow-wrap:anywhere}.ctfile small{color:var(--ink2)}.ctfile .ctprev{margin-top:4px;color:var(--mute)}
 .ctbar .search{flex:1 1 240px}
+.aubar,.plbar{overflow:visible}.aubar .tbl-h,.plbar .tbl-h{border-bottom:0}.auv{flex:none}.auv button{padding:7px 14px;flex:none}
+.augh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}.augh i{width:12px;height:12px;border-radius:50%;flex:none}.augh b{font-size:16px;overflow-wrap:anywhere}
+.aup{position:relative;display:grid;grid-template-columns:40px minmax(150px,1.2fr) minmax(0,2fr) minmax(0,1fr) 84px 28px;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line)}.augl.list .aup:last-child{border-bottom:0}.aup.can{cursor:pointer}.aup.can:hover{background:var(--thead)}
+.aun{display:grid;min-width:0;line-height:1.35}.aun b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aun small{color:var(--mute);display:flex;align-items:center;gap:4px}
+.aucp{border:0;background:none;color:var(--icon);padding:3px;border-radius:5px;display:inline-grid}.aucp:hover{background:var(--hover)}
+.aum{display:flex;gap:6px;align-items:center;color:var(--ink2);font-size:13px;min-width:0}.aum span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:italic}.aum .ic{flex:none;color:var(--icon)}
+.aut2{display:flex;gap:4px;flex-wrap:wrap;min-width:0}.auw{color:var(--mute);white-space:nowrap;text-align:right}
+.aub{font-style:normal;background:var(--brand);color:#fff;border-radius:999px;min-width:20px;height:20px;display:inline-grid;place-items:center;font-size:11px;font-weight:700;padding:0 6px;flex:none}
+.augl.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;padding:14px}.augl.grid .aup{grid-template-columns:40px minmax(0,1fr) auto;border:1px solid var(--line);border-radius:12px;padding:12px;gap:8px 10px;align-content:start}
+.augl.grid .aun{grid-column:2/4}.augl.grid .aum{grid-column:1/4}.augl.grid .aum:empty,.augl.grid .aut2:empty{display:none}.augl.grid .aut2{grid-column:1/3}.augl.grid .auw{grid-column:3}.augl.grid .aub{position:absolute;top:10px;right:10px}
+.aumore{margin:10px 16px 14px}
+.plb{display:flex;gap:16px;overflow-x:auto;padding-bottom:14px;align-items:flex-start;min-height:320px}
+.plc{flex:0 0 320px;min-width:0;background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 220px);min-height:200px}
+.plc header{display:flex;align-items:center;gap:6px;padding:12px 8px 6px 14px}.plc header i{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}.plc header b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:4px}
+.plc header .rowbtn{width:26px;height:26px;font-size:19px;line-height:1}.plc header .rowbtn:disabled{opacity:.3}
+.plcs{padding:0 14px 10px;color:var(--mute);border-bottom:1px solid var(--line)}.plcs .kw{margin:0}
+.plcl{padding:10px;display:grid;gap:10px;overflow-y:auto;align-content:start;flex:1}.plc.over{outline:2px dashed var(--c);outline-offset:-3px}.plce{text-align:center;padding:22px 8px;margin:0}
+.pld{border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;background:var(--thead);cursor:grab;min-width:0}.pld.drag{opacity:.45}
+.pldh{display:flex;align-items:center;gap:10px;min-width:0}.pldh>div{display:grid;min-width:0;flex:1;line-height:1.3}.pldh b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pldh small{color:var(--mute)}
+.pldm{display:flex;gap:6px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 9px;font-size:12.5px;color:var(--ink2);min-width:0}.pldm span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.pldm .ic{flex:none;margin-top:2px;color:var(--icon)}
+.pldf{display:flex;align-items:center;gap:4px 10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:8px}.plk{border:0;background:none;color:var(--brand-d);font-weight:600;font-size:12.5px;display:inline-flex;align-items:center;gap:4px;padding:3px 2px;border-radius:6px}.plk:hover{background:var(--hover)}
+#plu{gap:8px}#plu.on{border-color:var(--brand);background:var(--pillon);color:var(--pillon-ink)}
+.plml{display:grid;gap:8px}.plml button{justify-content:flex-start;gap:10px}.plml i{width:10px;height:10px;border-radius:50%;flex:none}
+.npop{position:fixed;right:18px;bottom:18px;z-index:60;display:grid;gap:10px;width:min(360px,calc(100vw - 24px))}[dir=rtl] .npop{right:auto;left:18px}
+.npc{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh2);padding:14px;display:grid;gap:10px;animation:npin .18s ease-out}@keyframes npin{from{transform:translateY(10px);opacity:0}}
+.npch{display:flex;align-items:center;gap:10px;min-width:0}.npch>div{display:grid;flex:1;min-width:0;line-height:1.3}.npch b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.npch small{color:var(--mute)}
+.npcm{display:flex;gap:8px;align-items:flex-start;background:var(--field);border-radius:10px;padding:9px 11px;font-size:13.5px;min-width:0}.npcm span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}.npcm .ic{flex:none;margin-top:2px;color:var(--icon)}.npc .btn{justify-content:center}
+@media (max-width:760px){.aup,.augl.grid .aup{grid-template-columns:40px minmax(0,1fr) auto;gap:6px 10px}.aun{grid-area:1/2}.auw{grid-area:1/3}.aum{grid-area:2/2/3/4}.aut2{grid-area:3/2/4/4}.aum:empty,.aut2:empty{display:none}.aub{position:absolute;top:34px;right:14px}
+  .augl.grid{grid-template-columns:minmax(0,1fr)}.auv{display:none}.plc{flex-basis:86vw;max-height:none}.plb{scroll-snap-type:x mandatory;margin:0 -12px;padding:0 12px 14px}.plc{scroll-snap-align:center}.npop{right:12px;left:12px;bottom:12px;width:auto}}
+.cfrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.cfrow>div{flex:1;min-width:0;display:grid}.cfrow small{color:var(--mute);overflow-wrap:anywhere}.cfrow .ck{margin:0;white-space:nowrap}.cfadd{margin-top:16px;display:grid;gap:10px}.cfnone{margin:0 0 4px}.c-cf{white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}#cc9:empty{display:none}
 @media (min-width:761px){.ctt th,.ctt td{padding-left:10px;padding-right:10px}.ctt th:last-child,.ctt td:last-child{position:sticky;right:0;background:var(--card);box-shadow:-10px 0 10px -10px rgba(0,0,0,.18)}.ctt th:last-child{background:var(--thead)}.ctt tbody tr:hover td:last-child{background:var(--thead)}[dir=rtl] .ctt th:last-child,[dir=rtl] .ctt td:last-child{right:auto;left:0}}
 @media (min-width:761px) and (max-width:1500px){.ctt th:nth-child(8),.ctt td:nth-child(8){display:none}}
 @media (min-width:761px) and (max-width:1280px){.ctt th:nth-child(7),.ctt td:nth-child(7){display:none}}
 @media (max-width:760px){.ctbar select{flex:1 1 calc(50% - 8px);max-width:none}.ctbar .search{flex:1 1 100%;max-width:none}.ctbar>span{display:none}.ctbar #cexp{flex:1 1 100%;justify-content:center}
   .ctt{display:block}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
   .ctt tr[data-id]{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
-  .ctt tr[data-id] td{display:block;padding:0;border:0;min-width:0}.ctt tr[data-id] td:nth-child(1){grid-area:1/1}.ctt tr[data-id] td:nth-child(2){grid-area:1/2}.ctt tr[data-id] td:nth-child(10){grid-area:1/3}
+  .ctt tr[data-id] td{display:block;padding:0;border:0;min-width:0}.ctt tr[data-id] td:nth-child(1){grid-area:1/1}.ctt tr[data-id] td:nth-child(2){grid-area:1/2}.ctt tr[data-id] td:last-child{grid-area:1/3}
   .ctt tr[data-id] td:nth-child(3){grid-area:2/2/3/4}.ctt tr[data-id] td:nth-child(5){grid-area:3/2}.ctt tr[data-id] td:nth-child(6){grid-area:3/3;justify-self:end}
-  .ctt tr[data-id] td:nth-child(4),.ctt tr[data-id] td:nth-child(7),.ctt tr[data-id] td:nth-child(8),.ctt tr[data-id] td:nth-child(9),.ctt .cttl .mute{display:none}
+  .ctt tr[data-id] td:nth-child(4),.ctt tr[data-id] td:nth-child(7),.ctt tr[data-id] td:nth-child(8),.ctt tr[data-id] td:nth-child(9),.ctt .cttl .mute,.ctt .c-cf{display:none!important}
   .ctph{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}.ctpg{flex-wrap:wrap}
   .ph{flex-wrap:wrap}.pha{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px 2px}.pha::-webkit-scrollbar{display:none}.pha:empty{display:none}.pha>*{flex:none}
   .pha .btn,.pha .ghost{min-height:36px;padding:6px 12px;font-size:13px}}
@@ -408,7 +438,7 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 .pmrow>div{flex:1;min-width:0;display:grid;gap:2px}
 .pmrow b{font-size:14.5px;font-weight:600}
 .pmrow small{color:var(--mute);font-size:12.5px;line-height:1.4}
-.pmnote{margin:0;padding:12px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.45}
+.npon{color:var(--tint-ink)}.pmnote .ghost{margin-left:6px}.pmnote{margin:0;padding:12px 0;border-top:1px solid var(--line);font-size:13px;line-height:1.45}
 .pmnote .ghost{margin-left:6px}
 .rpc.npq{margin:0 0 12px;border:0;padding:12px 0 0;border-top:1px solid var(--line);border-radius:0;background:none}
 .alf .search{flex:1;min-width:200px}
@@ -578,6 +608,18 @@ function pwaButton() { const b = $('#pwai'); if (!b) return; b.hidden = PWA.nati
   b.onclick = async () => { closeOverlays();
     if (PWA.evt) { PWA.evt.prompt(); const r = await PWA.evt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') { PWA.evt = null; pwaButton(); } return; }
     sure('Add TeamInbox Pro to your home screen', PWA.ios ? 'In Safari, tap the Share button at the bottom, then choose "Add to Home Screen".' : 'Open the browser menu (the three dots at the top), then choose "Add to Home screen" or "Install app".', { ok: 'OK' }); }; }
+/* Notifications when the app is closed: the installed app on iPhone and Android, and browsers on a computer. The Android APK uses its own (initPush). */
+const b64u = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+const webPushOk = () => !PWA.native && 'serviceWorker' in navigator && 'PushManager' in window && !!window.Notification;
+async function webPush() {
+  if (!webPushOk() || Notification.permission !== 'granted' || !S.token) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription();
+    if (!sub) { const k = await api('/push/key'); if (!k.key) return false; sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(k.key) }); }
+    const r = await api('/push/subscribe', 'POST', sub.toJSON()); if (r.error) return false; S.webPush = sub.endpoint; return true;
+  } catch (e) { console.log('notifications not set up', e); return false; }
+}
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { const id = e.data && e.data.openChat; if (id && S.token && $('.shell')) { goNav('inbox'); openConv(+id); } });
 async function api(path, method = 'GET', body) {
   const r = await fetch(API + '/api' + path, { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + S.token }, body: body ? JSON.stringify(body) : undefined });
   if (r.status === 401) { logout(); return { error:'Session expired' }; }
@@ -654,7 +696,7 @@ const hueOf = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charC
 const avatar = (name, size = 44) => `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .4)}px;background:hsl(${hueOf(name)} 42% 40%)">${esc(((String(name).replace(/[^\p{L}\p{N}]/gu, '')[0]) || '#').toUpperCase())}</span>`;
 const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a conversation</b><span>Pick a chat on the left to read it and reply. Every client stays with one team member from start to finish.</span>`;
 // key, label, icon, managers only, super admin only, menu group
-const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'],
+const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'], ['au', 'Audience', 'userplus', 1, 0, 'CRM'], ['pl', 'Pipeline', 'panel', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
@@ -662,14 +704,14 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -839,7 +881,7 @@ function showSignup() {
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
     setTimeout(() => toast('Welcome! Next step: open Settings and connect your WhatsApp number.'), 800); };
 }
-function logout() { if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
+function logout() { if (S.webPush && S.token) fetch(API + '/api/push/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ endpoint: S.webPush }) }).catch(() => {}); S.webPush = null; if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
 
 /* ---------- Shell + list ---------- */
 async function boot() {
@@ -887,8 +929,9 @@ async function boot() {
   renderTabs(); $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tab = b.dataset.t; renderTabs(); loadList(); };
   if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
   S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib(); loadProducts();
-  await loadList(); connect(); initPush();
-  document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Notification.requestPermission(), { once:true });
+  await loadList(); connect(); initPush(); webPush();
+  document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Promise.resolve(Notification.requestPermission()).then(webPush).catch(() => {}), { once:true });
+  const chat = +new URLSearchParams(location.search).get('chat'); if (chat) { history.replaceState(null, '', location.pathname); goNav('inbox'); openConv(chat); } // opened from a notification
   setInterval(tick, 30000);
 }
 function debounce(f, ms) { let t; return () => { clearTimeout(t); t = setTimeout(f, ms); }; }
@@ -1323,9 +1366,22 @@ async function initPush() {
 }
 
 /* ---------- Realtime ---------- */
+/* New message pop up: a small box in the corner with who wrote, the message and a Reply button. Each person can switch it off. */
+function popMsg(e) {
+  if (!npOn('popup')) return;
+  let box = $('#npop'); if (!box) { box = document.createElement('div'); box.id = 'npop'; box.className = 'npop'; document.body.appendChild(box); }
+  box.querySelectorAll(`[data-c="${e.conversationId}"]`).forEach(x => x.remove()); while (box.children.length >= 3) box.firstChild.remove();
+  const el = document.createElement('div'), m = e.message, name = e.from.name || '+' + e.from.wa_id;
+  const kind = { image: 'Photo', video: 'Video', audio: 'Voice message', document: 'File', sticker: 'Sticker', location: 'Location', contacts: 'Contact card' }[m.type] || 'New message';
+  el.className = 'npc'; el.dataset.c = e.conversationId;
+  el.innerHTML = `<div class="npch">${avatar(name, 36)}<div><b data-notr>${esc(name)}</b><small data-notr>+${esc(e.from.wa_id)} · ${new Date(m.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="ib" data-x aria-label="Close">${ico('x', 18)}</button></div>
+    <div class="npcm">${ico('chat', 15)}<span${m.body ? ' data-notr' : ''}>${m.body ? esc(String(m.body).slice(0, 200)) : kind}</span></div><button type="button" class="btn" data-go>${ico('reply', 16)}Reply</button>`;
+  el.onclick = ev => { if (ev.target.closest('[data-go]')) { goNav('inbox'); openConv(e.conversationId); } if (ev.target.closest('[data-x],[data-go]')) el.remove(); };
+  box.appendChild(el); setTimeout(() => el.remove(), 12000);
+}
 function alertUser(title, body) {
   if (npOn('sound')) try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); o.stop(a.currentTime + .12); } catch {}
-  if (npOn('desktop') && window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(title, { body });
+  if (npOn('desktop') && !S.webPush && window.Notification && Notification.permission === 'granted' && document.hidden) new Notification(title, { body }); // with S.webPush the server sends the notification itself
 }
 function connect() {
   const s = document.createElement('script'); s.src = API + '/socket.io/socket.io.js';
@@ -1333,10 +1389,15 @@ function connect() {
     const sock = S.sock = API ? window.io(API, { auth:{ token:S.token } }) : window.io({ auth:{ token:S.token } });
     const live = on => { const p = $('#live'); if (p) { p.classList.toggle('off', !on); p.lastElementChild.textContent = on ? 'Live' : 'Reconnecting…'; } };
     sock.on('connect', () => live(true)); sock.on('disconnect', () => live(false)); if (sock.connected) live(true);
+    const vis = () => sock.emit('vis', document.visibilityState === 'visible'); // the server skips phone style notifications while the app is on screen
+    sock.on('connect', vis); document.addEventListener('visibilitychange', vis); if (sock.connected) vis();
     sock.on('message:new', e => {
-      const inbound = e.message.direction === 'in';
-      if (e.conversationId === S.active) { inbound ? refreshActive() : addMsg(e.message); }
-      else if (inbound && !isMgr()) alertUser('New message', e.message.body || '');
+      const inbound = e.message.direction === 'in', here = e.conversationId === S.active;
+      if (here) { inbound ? refreshActive() : addMsg(e.message); }
+      if (inbound && !(here && !document.hidden)) {
+        if (!isMgr() || !e.assignedTo || e.assignedTo === S.user.id) alertUser((e.from && e.from.name) || 'New message', e.message.body || '');
+        if (e.from) popMsg(e);
+      }
       loadList();
     });
     sock.on('message:status', e => { const m = S.msgs.find(x => x.wa_message_id === e.waMessageId); if (m && e.conversationId === S.active) { m.status = e.status; renderMsgs(false); } });
@@ -2334,7 +2395,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', qm: 'automation', cb: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', au: 'contacts', pl: 'contacts', qm: 'automation', cb: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
@@ -2362,11 +2423,11 @@ async function showNotif() {
   const p = await loadNotif(); if (S.nav !== 'np') return; if (p.error) { sc.innerHTML = emptyState('bell', 'Could not load your preferences', esc(p.error)); return; }
   const row = (k, title, hint) => `<label class="pmrow"><div><b>${title}</b><small>${hint}</small></div><span class="tog"><input type="checkbox" data-nk="${k}"${p[k] ? ' checked' : ''} aria-label="${title}"><i></i></span></label>`;
   const perm = window.Notification ? Notification.permission : 'none';
-  sc.innerHTML = `<div class="two"><div class="panel pmp"><div class="pmh"><span>${ico('phone', 20)}</span><div><h3>Alerts on your phone</h3><p class="mute">Sent by the Android app, even when the app is closed.</p></div></div>
+  sc.innerHTML = `<div class="two"><div class="panel pmp"><div class="pmh"><span>${ico('phone', 20)}</span><div><h3>Alerts when the app is closed</h3><p class="mute">Sent to your phone or computer, even when TeamInbox Pro is not open.</p></div></div>
       ${row('assigned', 'New chat assigned to me', 'When a new client or a manager gives you a chat')}${row('message', 'New message from my clients', 'When a client writes in one of your chats')}${row('calls', 'Incoming WhatsApp calls', 'When a client calls the business number')}${row('missed', 'Missed calls', 'When a call was not answered')}
-      ${p.push_ready ? '' : '<p class="mute pmnote">Phone alerts are not switched on for this system yet. Your choices are saved and will apply when they are.</p>'}</div>
+      <p class="mute pmnote" id="npdev"></p></div>
     <div class="panel pmp"><div class="pmh"><span>${ico('chat', 20)}</span><div><h3>Alerts in this browser</h3><p class="mute">While TeamInbox Pro is open on your computer.</p></div></div>
-      ${row('sound', 'Sound', 'A short beep for a new message or a new chat')}${row('desktop', 'Desktop pop-up', 'A small pop-up when this tab is in the background')}
+      ${row('popup', 'New message pop-up', 'A small box in the corner with the message and a Reply button')}${row('sound', 'Sound', 'A short beep for a new message or a new chat')}${row('desktop', 'Desktop pop-up', 'A small pop-up when this tab is in the background')}
       ${perm === 'granted' || perm === 'none' ? '' : `<p class="mute pmnote">${perm === 'denied' ? 'Your browser is blocking pop-ups for this site. Allow notifications in the browser address bar to get them.' : 'Your browser has not allowed pop-ups yet.'} ${perm === 'default' ? '<button class="ghost" id="npask">Allow pop-ups</button>' : ''}</p>`}</div></div>
     <div class="panel pmp"><div class="pmh"><span>${ico('clock', 20)}</span><div><h3>Quiet hours</h3><p class="mute">No phone alerts between these times. Chats still arrive and wait for you. Time zone: ${esc(p.tz)}.</p></div><span class="tog"><input type="checkbox" id="npq"${p.quiet.on ? ' checked' : ''} aria-label="Quiet hours"><i></i></span></div>
       <div class="rpc npq"><label>From <input type="time" id="npf" value="${p.quiet.from}"></label><label>To <input type="time" id="npt" value="${p.quiet.to}"></label></div></div>`;
@@ -2374,7 +2435,15 @@ async function showNotif() {
   sc.querySelectorAll('[data-nk]').forEach(t => t.onchange = async () => { if (!await save({ [t.dataset.nk]: t.checked })) t.checked = !t.checked; });
   const quiet = () => save({ quiet: { on: $('#npq').checked, from: $('#npf').value, to: $('#npt').value } });
   $('#npq').onchange = quiet; $('#npf').onchange = quiet; $('#npt').onchange = quiet;
-  if ($('#npask')) $('#npask').onclick = async () => { await Notification.requestPermission(); if (S.nav === 'np') showNotif(); };
+  if ($('#npask')) $('#npask').onclick = async () => { await Notification.requestPermission(); await webPush(); if (S.nav === 'np') showNotif(); };
+  // this device: is it getting alerts while the app is closed?
+  const dev = $('#npdev'), on = '<b class="npon">This device gets alerts.</b>';
+  if (PWA.native) dev.innerHTML = S.pushToken ? on : 'This Android app was built without notifications. Ask your admin for the newest app.';
+  else if (!webPushOk()) dev.textContent = PWA.ios ? 'On iPhone, first add TeamInbox Pro to your home screen (Safari, Share, Add to Home Screen), open it from there, then come back to this page.' : 'This browser cannot show alerts while the app is closed.';
+  else if (Notification.permission === 'denied') dev.textContent = 'Notifications are blocked for TeamInbox Pro on this device. Allow them in the device or browser settings.';
+  else if (Notification.permission === 'granted' && await webPush()) dev.innerHTML = on;
+  else { dev.innerHTML = 'This device is not getting alerts yet. <button class="ghost" id="npdevb">Turn on alerts on this device</button>';
+    $('#npdevb').onclick = async () => { await Notification.requestPermission(); const ok = await webPush(); if (!ok && Notification.permission === 'granted') toast('Could not turn on alerts on this device'); if (S.nav === 'np') showNotif(); }; }
 }
 
 /* ---------- Activity Log ---------- */
@@ -2453,18 +2522,19 @@ function readCsv(text) {
   return rows;
 }
 /** Finds the name, phone, email and tags columns of a sheet and returns people as { name, phone, email, tags }. */
-function sheetPeople(rows) {
+function sheetPeople(rows, fields = []) {
   const clean = v => { v = String(v == null ? '' : v).trim(); return /^[—–-]+$/.test(v) ? '' : v; }, digits = v => String(v || '').replace(/\D/g, '');
   const head = (rows[0] || []).map(h => String(h || '').trim().toLowerCase()), find = re => head.findIndex(h => re.test(h));
   let ph = find(/mobile|phone|whatsapp|cell|contact ?(no|number)|^number$|^no\.?$/), nm = head.findIndex(h => /name/.test(h) && !/list|group|user ?name/.test(h)), em = find(/e-?mail/), tg = find(/tag|label/);
   const hasHead = ph >= 0 && digits((rows[0] || [])[ph]).length < 7;
   if (!hasHead) { ph = nm = em = tg = -1; }
-  const cols = hasHead ? [nm >= 0 && rows[0][nm], rows[0][ph], em >= 0 && rows[0][em], tg >= 0 && rows[0][tg]].filter(Boolean).map(x => String(x).trim()) : [];
+  const fx = hasHead ? fields.map(f => [f.id, head.indexOf(f.name.toLowerCase())]).filter(x => x[1] >= 0 && ![ph, nm, em, tg].includes(x[1])) : []; // columns named like a custom field
+  const cols = hasHead ? [nm >= 0 && rows[0][nm], rows[0][ph], em >= 0 && rows[0][em], tg >= 0 && rows[0][tg], ...fx.map(x => rows[0][x[1]])].filter(Boolean).map(x => String(x).trim()) : [];
   const out = [];
   for (const r of rows.slice(hasHead ? 1 : 0)) { const c = r.map(clean); let phone, name, email = '', tags = [];
     if (hasHead) { phone = c[ph]; name = nm >= 0 ? c[nm] : ''; email = em >= 0 ? c[em] : ''; tags = tg >= 0 ? (c[tg] || '').split(/[,;|]/).map(x => x.trim()).filter(Boolean) : []; }
     else { phone = c.find(x => digits(x).length >= 7 && !/@/.test(x)); name = c.find(x => x && x !== phone && !/@/.test(x) && digits(x).length < 7) || ''; email = c.find(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || ''; }
-    if (phone && digits(phone).length >= 7) out.push({ phone, name: name || '', email, tags }); }
+    if (phone && digits(phone).length >= 7) out.push({ phone, name: name || '', email, tags, ...(fx.length ? { fields: Object.fromEntries(fx.map(([id, i]) => [id, c[i]]).filter(x => x[1])) } : {}) }); }
   return { people: out, cols, withTags: out.filter(p => p.tags.length).length };
 }
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -2493,12 +2563,115 @@ function makeXlsx(rows, sheet = 'Contacts') {
   return new Blob([...parts, ...central, end.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
 /* ---------- Contacts ---------- */
+/* ---------- Audience: everyone grouped by tag ---------- */
+const crmTags = (p, all, skip) => arr(p.tags).filter(id => id !== skip).map(id => all.find(l => l.id === id)).filter(Boolean).slice(0, 3).map(t => `<span class="cttag" data-notr style="--c:${esc(t.color)}">${esc(t.name)}</span>`).join('');
+const crmOpen = id => { goNav('inbox'); openConv(+id); };
+async function showAudience() {
+  const sc = screen('Audience', 'Everyone you talk to, grouped by tag. See who is in each group and jump straight into the chat.',
+    `<button class="ghost" id="aur" title="Refresh" aria-label="Refresh">${ico('refresh', 15)}</button><button class="ghost" id="aut">${ico('tag', 15)}Manage tags</button><button class="btn" id="auc">${ico('chat', 16)}Open Live Chat</button>`);
+  const F = { view: localStorage.getItem('ti_auv') === 'grid' ? 'grid' : 'list' }; let D = null;
+  const labels = arr(await api('/labels')); if (S.nav !== 'au') return;
+  sc.innerHTML = `<div class="stats" id="aust"></div>
+  <div class="tbl aubar"><div class="tbl-h ctbar"><div class="search">${ico('search', 16)}<input id="auq" placeholder="Search by name or number"></div>
+    <select id="auf" aria-label="Tag"><option value="">All tags and untagged</option>${labels.map(l => `<option value="${l.id}" data-notr>${esc(l.name)}</option>`).join('')}<option value="none">Without a tag</option></select>
+    <select id="aus" aria-label="Sort"><option value="recent">Recently active</option><option value="name">Name A to Z</option><option value="new">Newest first</option></select>
+    <div class="seg auv" id="auv"><button type="button" data-v="list">List</button><button type="button" data-v="grid">Grid</button></div></div></div>
+  <div id="aug"><p class="mute">Loading…</p></div>`;
+  const person = (p, gid) => `<div class="aup${p.conversation_id ? ' can' : ''}" data-conv="${p.conversation_id || ''}">${avatar(p.name || p.wa_id, 40)}
+    <div class="aun"><b data-notr>${esc(p.name || '+' + p.wa_id)}</b><small data-notr>+${esc(p.wa_id)}<button type="button" class="aucp" data-copy="${esc(p.wa_id)}" title="Copy number" aria-label="Copy number">${ico('copy', 13)}</button></small></div>
+    <div class="aum" data-notr>${p.last_text ? ico('chat', 14) + `<span>${esc(String(p.last_text).slice(0, 140))}</span>` : ''}</div>
+    <div class="aut2">${crmTags(p, labels, gid)}</div><small class="auw">${p.last_message_at ? agoTxt(p.last_message_at) : ''}</small>${p.unread_count ? `<em class="aub">${p.unread_count}</em>` : ''}</div>`;
+  const draw = () => { const st = D.stats;
+    $('#aust').innerHTML = kpi('users', st.total.toLocaleString(), 'Total people') + kpi('tag', st.tags.toLocaleString(), 'Tags', 'violet') + kpi('user', st.untagged.toLocaleString(), 'Without a tag', 'amber') + kpi('select', st.multi.toLocaleString(), 'With 2 or more tags', 'blue');
+    $('#auv').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === F.view));
+    $('#aug').innerHTML = D.groups.length ? D.groups.map(g => `<section class="tbl aug" data-g="${g.id}"><div class="augh"><i style="background:${esc(g.color)}"></i><b${g.id ? ' data-notr' : ''}>${g.id ? esc(g.name) : 'Without a tag'}</b><em class="chip ok" data-notr>${g.count.toLocaleString()}</em></div>
+      <div class="augl ${F.view}">${g.people.map(p => person(p, g.id)).join('')}</div>${g.count > g.people.length ? `<button type="button" class="ghost aumore" data-more="${g.id}">Show more</button>` : ''}</section>`).join('')
+      : `<div class="tbl">${emptyState('users', 'Nobody found', 'Try another search or tag.')}</div>`; };
+  const params = () => new URLSearchParams({ q: $('#auq').value.trim(), sort: $('#aus').value });
+  const load = async () => { const p = params(); p.set('tag', $('#auf').value); const r = await api('/contacts/audience?' + p); if (S.nav !== 'au' || !$('#aug')) return; if (r.error) return toast(r.error); D = r; draw(); };
+  $('#auq').oninput = debounce(load, 300); $('#auf').onchange = load; $('#aus').onchange = load; $('#aur').onclick = load;
+  $('#aut').onclick = () => goNav('tg'); $('#auc').onclick = () => goNav('inbox');
+  $('#auv').onclick = e => { const b = e.target.closest('[data-v]'); if (!b) return; F.view = b.dataset.v; localStorage.setItem('ti_auv', F.view); if (D) draw(); };
+  $('#aug').onclick = async e => { const c = s => e.target.closest(s);
+    if (c('[data-copy]')) { try { await navigator.clipboard.writeText('+' + c('[data-copy]').dataset.copy); toast('Number copied'); } catch { toast('Could not copy the number'); } return; }
+    if (c('[data-more]')) { const g = D.groups.find(x => x.id == c('[data-more]').dataset.more), p = params(); p.set('tag', g.id); p.set('offset', g.people.length);
+      const r = await api('/contacts/audience/people?' + p); if (r.error) return toast(r.error); g.people.push(...arr(r.rows)); if (!arr(r.rows).length) g.count = g.people.length; return draw(); }
+    const row = c('.aup'); if (!row) return; if (row.dataset.conv) return crmOpen(row.dataset.conv); toast('This person has not written to you yet, so there is no chat to open'); };
+  load();
+}
+
+/* ---------- Pipeline: a board with one column per stage. A stage is a tag. ---------- */
+async function showPipeline() {
+  const sc = screen('Pipeline', 'Follow every lead from the first message to a customer. Each stage is a tag: move a card and the tag changes with it.',
+    `<button class="ghost" id="plu">${ico('users', 15)}Not in a stage<em class="chip warn" id="plun" data-notr>0</em></button><button class="ghost" id="plr" title="Refresh" aria-label="Refresh">${ico('refresh', 15)}</button><button class="btn" id="pla">${ico('plus', 16)}Add stage</button>`);
+  let D = null, free = false, drag = null, QR = null, MV = null;
+  sc.innerHTML = `<div class="tbl plbar"><div class="tbl-h ctbar"><div class="search">${ico('search', 16)}<input id="plq" placeholder="Search leads by name or number"></div>
+    <select id="plt" aria-label="Tag"><option value="">All tags</option></select><select id="plg" aria-label="Agent"><option value="">All agents</option></select><span style="flex:1"></span><small class="mute" id="pltot"></small></div></div>
+  <div class="plb" id="plb"><p class="mute">Loading…</p></div>
+  ${modal('m-pls', 'Add stage', `<form id="plsf"><p class="mute" style="margin-top:0">A stage is a tag. Type a new name, or the name of a tag you already have to make it a stage.</p>
+    <div style="display:flex;gap:8px"><input id="pls1" placeholder="Stage name, e.g. Won" maxlength="30" required style="flex:1" list="plsl"><datalist id="plsl"></datalist><input type="color" id="pls2" value="#10b981" style="width:56px;padding:2px;flex:none" aria-label="Colour"></div>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Add stage</button></div></form>`)}
+  ${modal('m-plq', 'Quick reply', `<form id="plqf"><p class="mute" id="plqn" data-notr style="margin-top:0"></p><label class="fld"><span>Message</span><textarea id="plq1" rows="4" maxlength="4000" required></textarea></label>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">${ico('send', 16)}Send</button></div></form>`)}
+  ${modal('m-plm', 'Move to a stage', `<p class="mute" id="plmn" data-notr style="margin-top:0"></p><div class="plml" id="plml"></div>`)}`;
+  const card = (p, sid, label) => `<article class="pld" draggable="true" data-id="${p.id}" data-from="${sid}"><div class="pldh">${avatar(p.name || p.wa_id, 36)}<div><b data-notr>${esc(p.name || '+' + p.wa_id)}</b><small data-notr>+${esc(p.wa_id)}</small></div>${p.unread_count ? `<em class="aub">${p.unread_count}</em>` : ''}</div>
+    ${crmTags(p, D.tags, label) ? `<div class="aut2">${crmTags(p, D.tags, label)}</div>` : ''}
+    ${p.last_text ? `<div class="pldm" data-notr>${ico('chat', 14)}<span>${esc(String(p.last_text).slice(0, 110))}</span></div>` : ''}
+    <div class="pldf"><small class="mute">${p.last_message_at ? agoTxt(p.last_message_at) : ''}${p.agent ? ` · <span data-notr>${esc(p.agent)}</span>` : ''}</small><span style="flex:1"></span>
+      <button type="button" class="plk" data-mv>${ico('flow', 14)}Move</button>${p.conversation_id ? `<button type="button" class="plk" data-qr="${p.conversation_id}">${ico('send', 14)}Quick reply</button><button type="button" class="plk" data-fc="${p.conversation_id}">${ico('chat', 14)}Full chat</button>` : ''}</div></article>`;
+  const column = (s, i) => `<section class="plc" data-stage="${s.id}" style="--c:${esc(s.color || '#94a3b8')}"><header><i></i><b${s.id ? ' data-notr' : ''}>${s.id ? esc(s.name) : 'Not in a stage'}</b><em class="chip" data-notr>${s.count.toLocaleString()}</em><span style="flex:1"></span>
+      ${s.id ? `<button type="button" class="rowbtn" data-sl title="Move left" aria-label="Move left"${i === 0 ? ' disabled' : ''}>‹</button><button type="button" class="rowbtn" data-sr title="Move right" aria-label="Move right"${i === D.stages.length - 1 ? ' disabled' : ''}>›</button><button type="button" class="rowbtn" data-se title="Rename" aria-label="Rename">${ico('edit', 15)}</button><button type="button" class="rowbtn danger" data-sd title="Remove stage" aria-label="Remove stage">${ico('trash', 15)}</button>` : ''}</header>
+    <small class="plcs">${s.id ? `Has the tag <span class="kw" data-notr>${esc(s.name)}</span>` : 'People who are in no stage yet'}</small>
+    <div class="plcl">${s.cards.map(p => card(p, s.id, s.label_id)).join('') || `<p class="mute plce">${s.id ? 'Nobody here yet. Drag a card in.' : 'Everyone is in a stage.'}</p>`}</div>
+    ${s.count > s.cards.length ? `<button type="button" class="ghost aumore" data-more>Show more</button>` : ''}</section>`;
+  const cols = () => (free ? [{ id: 0, label_id: 0, name: '', color: '#94a3b8', ...D.unassigned }] : []).concat(D.stages);
+  const draw = () => { $('#plun').textContent = D.unassigned.count.toLocaleString(); $('#plu').classList.toggle('on', free); $('#pltot').textContent = `${D.total.toLocaleString()} leads`;
+    const keep = [$('#plt').value, $('#plg').value];
+    $('#plt').innerHTML = '<option value="">All tags</option>' + D.tags.map(l => `<option value="${l.id}" data-notr>${esc(l.name)}</option>`).join(''); $('#plt').value = keep[0];
+    $('#plg').innerHTML = '<option value="">All agents</option>' + D.agents.map(a => `<option value="${a.id}" data-notr>${esc(a.name)}</option>`).join(''); $('#plg').value = keep[1];
+    $('#plsl').innerHTML = D.tags.filter(l => !D.stages.some(s => s.label_id === l.id)).map(l => `<option value="${esc(l.name)}">`).join('');
+    const sx = $('#plb').scrollLeft;
+    $('#plb').innerHTML = cols().length ? cols().map((s, i) => column(s, i - (free ? 1 : 0))).join('') : `<div class="tbl" style="flex:1">${emptyState('flow', 'No stages yet', 'Add your first stage, for example New Lead.', `<button class="btn" data-open="m-pls">${ico('plus', 16)}Add stage</button>`)}</div>`;
+    $('#plb').scrollLeft = sx; };
+  const params = () => new URLSearchParams({ q: $('#plq').value.trim(), has: $('#plt').value, agent: $('#plg').value });
+  const load = async () => { const r = await api('/contacts/pipeline?' + params()); if (S.nav !== 'pl' || !$('#plb')) return; if (r.error) return toast(r.error); D = r; draw(); };
+  const find = id => cols().flatMap(s => s.cards).find(p => p.id == id);
+  const move = async (id, from, to) => { if (+from === +to) return; const r = await api('/contacts/pipeline/move', 'POST', { contact_id: +id, from: +from, to: +to }); if (r.error) return toast(r.error); load(); };
+  $('#plq').oninput = debounce(load, 300); $('#plt').onchange = load; $('#plg').onchange = load; $('#plr').onclick = load;
+  $('#plu').onclick = () => { free = !free; draw(); if (free) $('#plb').scrollLeft = 0; };
+  $('#pla').onclick = () => { $('#plsf').reset(); $('#pls2').value = '#10b981'; $('#m-pls').hidden = false; if (innerWidth > 760) $('#pls1').focus(); };
+  $('#plsf').onsubmit = async e => { e.preventDefault(); const r = await api('/contacts/pipeline/stages', 'POST', { name: $('#pls1').value, color: $('#pls2').value }); if (r.error) return toast(r.error); $('#m-pls').hidden = true; toast('Stage added'); await load(); $('#plb').scrollLeft = 1e6; };
+  $('#plqf').onsubmit = async e => { e.preventDefault(); const r = await api(`/conversations/${QR}/messages`, 'POST', { text: $('#plq1').value }); if (r.error) return toast(r.error); $('#m-plq').hidden = true; toast('Message sent'); load(); };
+  $('#plml').onclick = e => { const b = e.target.closest('[data-to]'); if (!b || !MV) return; $('#m-plm').hidden = true; move(MV.id, MV.from, b.dataset.to); };
+  const board = $('#plb');
+  board.onclick = async e => { const c = s => e.target.closest(s), col = c('.plc'), sid = col ? +col.dataset.stage : 0, st = D && D.stages.find(s => s.id === sid);
+    if (c('[data-fc]')) return crmOpen(c('[data-fc]').dataset.fc);
+    if (c('[data-qr]')) { const p = find(c('.pld').dataset.id); QR = +c('[data-qr]').dataset.qr; $('#plqn').textContent = `${p.name || ''} +${p.wa_id}`.trim(); $('#plq1').value = ''; $('#m-plq').hidden = false; if (innerWidth > 760) $('#plq1').focus(); return; }
+    if (c('[data-mv]')) { const el = c('.pld'), p = find(el.dataset.id); MV = { id: p.id, from: +el.dataset.from }; $('#plmn').textContent = p.name || '+' + p.wa_id;
+      $('#plml').innerHTML = D.stages.filter(s => s.id !== MV.from).map(s => `<button type="button" class="ghost" data-to="${s.id}"><i style="background:${esc(s.color)}"></i><span data-notr>${esc(s.name)}</span></button>`).join('') + (MV.from ? `<button type="button" class="ghost danger" data-to="0">Take out of this stage</button>` : '');
+      $('#m-plm').hidden = false; return; }
+    if (c('[data-more]')) { const s = cols().find(x => x.id === sid), p = params(); p.set('stage', sid); p.set('offset', s.cards.length);
+      const r = await api('/contacts/pipeline/cards?' + p); if (r.error) return toast(r.error); s.cards.push(...arr(r.rows)); s.count = arr(r.rows).length ? r.count : s.cards.length; return draw(); }
+    if (!st) return;
+    if (c('[data-sl]') || c('[data-sr]')) { const r = await api('/contacts/pipeline/stages/' + sid, 'PATCH', { move: c('[data-sl]') ? -1 : 1 }); if (r.error) return toast(r.error); return load(); }
+    if (c('[data-se]')) { const name = await ask('Rename the stage', { value: st.name, ok: 'Save', note: 'The tag gets the same new name.' }); if (name == null) return; const r = await api('/contacts/pipeline/stages/' + sid, 'PATCH', { name }); if (r.error) return toast(r.error); toast('Saved'); return load(); }
+    if (c('[data-sd]')) { if (!await sure('Remove this stage?', `The column goes away. The tag "${st.name}" and the people who have it stay.`, { ok: 'Remove', danger: 1 })) return; const r = await api('/contacts/pipeline/stages/' + sid, 'DELETE'); if (r.error) return toast(r.error); toast('Stage removed'); return load(); } };
+  // drag a card to another column (computer); on a phone use Move
+  board.addEventListener('dragstart', e => { const el = e.target.closest && e.target.closest('.pld'); if (!el) return; drag = { id: el.dataset.id, from: el.dataset.from }; el.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', el.dataset.id); } catch {} });
+  board.addEventListener('dragend', () => { drag = null; board.querySelectorAll('.drag,.over').forEach(x => x.classList.remove('drag', 'over')); });
+  board.addEventListener('dragover', e => { const col = e.target.closest('.plc'); if (!drag || !col) return; e.preventDefault(); board.querySelectorAll('.over').forEach(x => x !== col && x.classList.remove('over')); col.classList.add('over'); });
+  board.addEventListener('drop', e => { const col = e.target.closest('.plc'); if (!drag || !col) return; e.preventDefault(); const d = drag; drag = null; move(d.id, d.from, col.dataset.stage); });
+  load();
+}
+
 const CT_SRC = { organic: 'WhatsApp', ad: 'Ad', import: 'Imported', manual: 'Added by hand', personal: 'Ignore list' };
 const agoTxt = t => { if (!t) return '—'; const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000)); return m < 1 ? 'Just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : m < 43200 ? `${Math.round(m / 1440)}d ago` : new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }); };
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you, was added or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
-    `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="ghost" id="cimp">${ico('download', 15)}Import contacts</button><button class="btn" id="cadd">${ico('plus', 16)}Add contact</button>`);
-  const [d, lists, lb] = await Promise.all([api('/contacts?per=1'), api('/contacts/lists'), api('/labels')]); if (d.error) return toast(d.error); if (S.nav !== 'ct') return;
+    `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="ghost" id="cfb">${ico('sliders', 15)}Custom fields</button><button class="ghost" id="cimp">${ico('download', 15)}Import contacts</button><button class="btn" id="cadd">${ico('plus', 16)}Add contact</button>`);
+  const [d, lists, lb, cf] = await Promise.all([api('/contacts?per=1'), api('/contacts/lists'), api('/labels'), api('/contacts/fields')]); if (d.error) return toast(d.error); if (S.nav !== 'ct') return;
+  let CF = arr(cf); const CF_KIND = { text: 'Text', number: 'Number', date: 'Date', list: 'List of choices' };
+  const cfShow = (f, v) => !v ? '<span class="mute">—</span>' : esc(f.kind === 'date' && /^\d{4}-\d\d-\d\d$/.test(v) ? new Date(v + 'T00:00:00').toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }) : v);
   S.labels = arr(lb); const F = { page: 1, per: 50 }, sel = new Set(); let rows = [], file = null;
   const today = new Date().toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
   sc.innerHTML = `<div class="stats" id="cst"></div>
@@ -2520,9 +2693,16 @@ async function showContacts() {
   ${modal('m-ctc', 'Contact', `<form id="ccf"><div class="qtwo">${field('cc1', 'Name', '')}<label class="fld"><span>WhatsApp number with country code</span><input id="cc2" inputmode="tel" placeholder="923001234567"></label></div>
   <div class="qtwo"><label class="fld"><span>Email (optional)</span><input id="cc3" type="email" maxlength="120"></label><label class="fld"><span>List (optional)</span><input id="cc4" maxlength="60" list="ccl"><datalist id="ccl">${arr(lists).map(l => `<option value="${esc(l.list_name)}">`).join('')}</datalist></label></div>
   <div class="fld"><span>Tags</span><div class="cttags" id="cc5"></div></div>
+  <div class="qtwo" id="cc9"></div>
   <div id="cc6"><label class="qopt"><span>Opted out: no broadcasts or follow-ups go to this person</span><span class="tog"><input type="checkbox" id="cc7"><i></i></span></label>
   <label class="qopt" style="margin-top:10px"><span>Ignore: not a client. The chat is deleted and the system never replies.</span><span class="tog"><input type="checkbox" id="cc8"><i></i></span></label></div>
   <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`, 1)}
+  ${modal('m-cf', 'Custom fields', `<p class="mute" style="margin-top:0">Extra details you want to keep about each contact, for example City, Budget or Date of birth. You fill them in when you add or edit a contact, and a file you import can fill them when a column has the same name.</p>
+  <div id="cfl"></div>
+  <form id="cff" class="cfadd"><b>Add a field</b><div class="qtwo">${field('cf1', 'Field name', '')}<label class="fld"><span>Type</span><select id="cf2">${Object.entries(CF_KIND).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label></div>
+  <label class="fld" id="cf3b" hidden><span>Choices, one per line</span><textarea id="cf3" rows="3"></textarea></label>
+  <label class="ck"><input type="checkbox" id="cf4"> Show as a column in the contact list</label>
+  <div class="dlg-f"><button type="button" class="ghost" data-close>Close</button><button class="btn">${ico('plus', 16)}Add field</button></div></form>`, 1)}
   ${modal('m-ign', 'Personal numbers to ignore', `<form id="igf"><p class="mute" style="margin-top:0">Friends, family and anyone who is not a client. The system never replies to them, never stores their messages, and keeps them out of broadcasts.</p>
   <label class="fld"><span>One number per line</span><textarea id="ig1" rows="5" placeholder="0300 1234567"></textarea></label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Ignore these numbers</button></div></form>`)}`;
   const qs = () => new URLSearchParams({ q: $('#cq').value.trim(), tag: $('#cft').value, source: $('#cfs').value, opt: $('#cfo').value, list: $('#cl').value });
@@ -2535,7 +2715,7 @@ async function showContacts() {
     const st = r.stats; $('#cst').innerHTML = kpi('users', st.total.toLocaleString(), 'Total contacts') + kpi('chat', st.active.toLocaleString(), 'Active in 30 days', 'blue') + kpi('download', st.imported.toLocaleString(), 'Imported', 'violet') + kpi('ban', st.blocked.toLocaleString(), 'Opted out or ignored', 'red');
     const from = r.found ? (r.page - 1) * r.per + 1 : 0, to = Math.min(r.found, r.page * r.per);
     $('#cn').textContent = `Showing ${from} to ${to} of ${r.found}`; $('#cpp').disabled = r.page <= 1; $('#cpn').disabled = to >= r.found;
-    $('#ct').innerHTML = rows.length ? `<thead><tr><th class="ctc"><input type="checkbox" id="call" aria-label="Select all on this page"></th><th>Contact</th><th>Phone and email</th><th>Source</th><th>Tags</th><th>Opt status</th><th>Last seen</th><th>Added on</th><th>Status</th><th></th></tr></thead><tbody>` + rows.map(c => `<tr data-id="${c.id}">
+    $('#ct').innerHTML = rows.length ? `<thead><tr><th class="ctc"><input type="checkbox" id="call" aria-label="Select all on this page"></th><th>Contact</th><th>Phone and email</th><th>Source</th><th>Tags</th><th>Opt status</th><th>Last seen</th><th>Added on</th><th>Status</th>${CF.filter(f => f.in_list).map(f => `<th class="c-cf" data-notr>${esc(f.name)}</th>`).join('')}<th></th></tr></thead><tbody>` + rows.map(c => `<tr data-id="${c.id}">
       <td class="ctc"><input type="checkbox" data-cs="${c.id}"${sel.has(c.id) ? ' checked' : ''} aria-label="Select"></td>
       <td>${userCell(c.name || '+' + c.wa_id, c.list_name || '')}</td>
       <td><div class="ctph"><b>+${esc(c.wa_id)}</b><small data-notr>${esc(c.email || '')}</small></div></td>
@@ -2544,7 +2724,7 @@ async function showContacts() {
       <td>${c.opted_out ? '<em class="chip closed">Opted out</em>' : '<em class="chip ok">Opted in</em>'}</td>
       <td class="alw">${agoTxt(c.last_seen)}</td>
       <td class="alw">${new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-      <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : '<em class="chip ok">Active</em>'}</td>
+      <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : '<em class="chip ok">Active</em>'}</td>${CF.filter(f => f.in_list).map(f => `<td class="c-cf" data-notr>${cfShow(f, (c.fields || {})[f.id])}</td>`).join('')}
       <td class="tdm">${c.conversation_id ? `<button class="rowbtn" data-co="${c.conversation_id}" title="Open chat" aria-label="Open chat">${ico('chat', 16)}</button>` : ''}<button class="rowbtn" data-ce="${c.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn danger" data-cd="${c.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></td></tr>`).join('') + '</tbody>'
       : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search or filter, add a contact, or import a list.')}</td></tr></tbody>`;
     labelTables(); drawSel();
@@ -2569,20 +2749,40 @@ async function showContacts() {
   const openC = c => { E = c || null; tags = new Set(arr(c && c.tags).map(t => t.id));
     $('#cc1').value = c ? c.name || '' : ''; $('#cc2').value = c ? c.wa_id : ''; $('#cc2').disabled = !!c; $('#cc3').value = c ? c.email || '' : ''; $('#cc4').value = c ? c.list_name || '' : '';
     $('#cc6').hidden = !c; $('#cc7').checked = !!(c && c.opted_out); $('#cc8').checked = !!(c && c.is_personal);
+    $('#cc9').innerHTML = CF.map(f => { const v = (c && c.fields || {})[f.id] || '';
+      return `<label class="fld"><span data-notr>${esc(f.name)}</span>${f.kind === 'list' ? `<select data-cf="${f.id}"><option value=""></option>${arr(f.options).map(o => `<option${o === v ? ' selected' : ''} data-notr>${esc(o)}</option>`).join('')}</select>` : `<input data-cf="${f.id}" ${f.kind === 'date' ? 'type="date"' : f.kind === 'number' ? 'inputmode="decimal"' : 'maxlength="200"'} value="${esc(v)}">`}</label>`; }).join('');
     $('#m-ctc .dlg-h b').textContent = c ? 'Edit contact' : 'Add contact'; drawTags(); $('#m-ctc').hidden = false; if (innerWidth > 760) $('#cc1').focus(); };
   $('#cadd').onclick = () => openC(null);
   $('#cc5').onclick = e => { const b = e.target.closest('[data-tg]'); if (!b) return; const id = +b.dataset.tg; tags.has(id) ? tags.delete(id) : tags.add(id); drawTags(); };
   $('#ccf').onsubmit = async e => { e.preventDefault();
     const b = { email: $('#cc3').value.trim(), list_name: $('#cc4').value.trim(), tags: [...tags] }; if ($('#cc1').value.trim() || !E) b.name = $('#cc1').value.trim();
+    if (CF.length) b.fields = Object.fromEntries([...$('#cc9').querySelectorAll('[data-cf]')].map(i => [i.dataset.cf, i.value.trim()]));
     if (E) { if ($('#cc7').checked !== !!E.opted_out) b.opted_out = $('#cc7').checked;
       if ($('#cc8').checked !== !!E.is_personal) { if ($('#cc8').checked && !await sure('Ignore this number?', 'Their chat is deleted and the system will never reply to them.', { ok: 'Ignore', danger: 1 })) return; b.is_personal = $('#cc8').checked; } }
     else { b.phone = $('#cc2').value; if (!b.name) delete b.name; }
     const r = await api('/contacts' + (E ? '/' + E.id : ''), E ? 'PATCH' : 'POST', b); if (r.error) return toast(r.error);
-    $('#m-ctc').hidden = true; toast(E ? 'Contact updated' : 'Contact added'); draw(); };
+    $('#m-ctc').hidden = true; toast(r.warning || (E ? 'Contact updated' : 'Contact added')); draw(); };
+  // custom fields
+  const drawCF = () => { $('#cfl').innerHTML = CF.length ? CF.map(f => `<div class="cfrow"><div><b data-notr>${esc(f.name)}</b><small>${CF_KIND[f.kind] || ''}${f.kind === 'list' ? `: <span data-notr>${esc(arr(f.options).join(', '))}</span>` : ''}</small></div>
+      <label class="ck"><input type="checkbox" data-cfl="${f.id}"${f.in_list ? ' checked' : ''}> In the list</label><button type="button" class="rowbtn" data-cfe="${f.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button type="button" class="rowbtn danger" data-cfd="${f.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></div>`).join('')
+    : '<p class="mute cfnone">No custom fields yet.</p>'; };
+  const loadCF = async () => { CF = arr(await api('/contacts/fields')); if ($('#cfl')) { drawCF(); draw(); } };
+  $('#cfb').onclick = () => { drawCF(); $('#cff').reset(); $('#cf3b').hidden = true; $('#m-cf').hidden = false; };
+  $('#cf2').onchange = () => { $('#cf3b').hidden = $('#cf2').value !== 'list'; };
+  $('#cff').onsubmit = async e => { e.preventDefault();
+    const r = await api('/contacts/fields', 'POST', { name: $('#cf1').value, kind: $('#cf2').value, options: $('#cf3').value.split(/\n/), in_list: $('#cf4').checked }); if (r.error) return toast(r.error);
+    toast('Field added'); $('#cff').reset(); $('#cf3b').hidden = true; loadCF(); };
+  $('#cfl').onclick = async e => { const c = s => e.target.closest(s), f = id => CF.find(x => x.id == id);
+    if (c('[data-cfl]')) { const b = c('[data-cfl]'), r = await api('/contacts/fields/' + b.dataset.cfl, 'PATCH', { in_list: b.checked }); if (r.error) { b.checked = !b.checked; return toast(r.error); } return loadCF(); }
+    if (c('[data-cfe]')) { const x = f(c('[data-cfe]').dataset.cfe), name = await ask('Rename the field', { value: x.name, ok: 'Save' }); if (name == null) return; const body = { name };
+      if (x.kind === 'list') { const o = await ask('Choices, separated by commas', { value: arr(x.options).join(', '), ok: 'Save' }); if (o == null) return; body.options = o.split(','); }
+      const r = await api('/contacts/fields/' + x.id, 'PATCH', body); if (r.error) return toast(r.error); toast('Saved'); return loadCF(); }
+    if (c('[data-cfd]')) { const x = f(c('[data-cfd]').dataset.cfd); if (!await sure('Delete this field?', `What is saved in "${x.name}" is removed from every contact. This cannot be undone.`, { ok: 'Delete', danger: 1 })) return;
+      const r = await api('/contacts/fields/' + x.id, 'DELETE'); if (r.error) return toast(r.error); toast('Field deleted'); return loadCF(); } };
   // export what the search and filters show
   $('#cexp').onclick = async () => { toast('Preparing the Excel file…'); const r = await api('/contacts/export?' + qs()); if (r.error) return toast(r.error);
     const day = t => t ? new Date(t).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-    const out = [['Name', 'Mobile Number', 'Email', 'Tags', 'Opt Status', 'Source', 'List', 'Last Seen', 'Added On', 'Status']].concat(arr(r.rows).map(c => [c.name || '', c.wa_id, c.email || '', arr(c.tags).map(t => t.name).join(', '), c.opted_out ? 'Opted Out' : 'Opted In', CT_SRC[c.source] || c.source, c.list_name || '', day(c.last_seen), day(c.created_at), c.is_personal ? 'Ignored' : 'Active']));
+    const out = [['Name', 'Mobile Number', 'Email', 'Tags', 'Opt Status', 'Source', 'List', 'Last Seen', 'Added On', 'Status', ...CF.map(f => f.name)]].concat(arr(r.rows).map(c => [c.name || '', c.wa_id, c.email || '', arr(c.tags).map(t => t.name).join(', '), c.opted_out ? 'Opted Out' : 'Opted In', CT_SRC[c.source] || c.source, c.list_name || '', day(c.last_seen), day(c.created_at), c.is_personal ? 'Ignored' : 'Active', ...CF.map(f => (c.fields || {})[f.id] || '')]));
     const name = `contacts-${ymd(new Date())}.xlsx`; saveDoc(URL.createObjectURL(makeXlsx(out)), name); toast(`Saved ${name}`); };
   // import
   const showFile = () => { const b = $('#ifi'); b.hidden = !file; $('#i3b').hidden = !!file; if (!file) return;
@@ -2595,7 +2795,7 @@ async function showContacts() {
       if (u[0] === 0x50 && u[1] === 0x4B) sheet = await readXlsx(buf);
       else if (u[0] === 0xD0 && u[1] === 0xCF) { e.target.value = ''; return toast('This is an old Excel file (.xls). Open it in Excel, choose Save As, pick .xlsx or CSV, then import that file.'); }
       else sheet = readCsv(new TextDecoder().decode(buf));
-      const got = sheetPeople(sheet); if (!got.people.length) { e.target.value = ''; return toast('No phone numbers were found in this file'); }
+      const got = sheetPeople(sheet, CF); if (!got.people.length) { e.target.value = ''; return toast('No phone numbers were found in this file'); }
       file = { name: f.name, ...got }; if (!$('#i1').value.trim()) $('#i1').value = `Imported ${today}`; showFile();
     } catch (err) { e.target.value = ''; toast('This file could not be read. Save it as .xlsx or CSV and try again.'); } };
   $('#igf').onsubmit = async e => { e.preventDefault(); const numbers = $('#ig1').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); if (!numbers.length) return toast('Add at least one number');

@@ -486,3 +486,29 @@ CREATE TABLE IF NOT EXISTS contact_labels (
   label_id INT NOT NULL REFERENCES labels(id) ON DELETE CASCADE, PRIMARY KEY (contact_id, label_id)
 );
 CREATE INDEX IF NOT EXISTS idx_contact_labels_label ON contact_labels(label_id);
+
+-- ============================================================================
+-- Custom fields on contacts, the Pipeline board, and notifications for the installed web app.
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS contact_fields (
+  id SERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id),
+  name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'text', options JSONB NOT NULL DEFAULT '[]',
+  in_list BOOLEAN NOT NULL DEFAULT FALSE, position INT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contact_fields_name ON contact_fields(company_id, lower(name));
+-- The answers, kept on the contact as { "<field id>": "value" }
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fields JSONB NOT NULL DEFAULT '{}';
+-- A pipeline stage is a tag: everyone who has the tag is in that stage.
+CREATE TABLE IF NOT EXISTS pipeline_stages (
+  id SERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id),
+  label_id INT NOT NULL REFERENCES labels(id) ON DELETE CASCADE, position INT NOT NULL DEFAULT 0,
+  UNIQUE (company_id, label_id)
+);
+-- Browsers and installed web apps (iPhone, Android, computer) that asked for notifications
+CREATE TABLE IF NOT EXISTS web_push_subs (
+  id SERIAL PRIMARY KEY, user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT UNIQUE NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Keys this server makes for itself on first start (the key pair that signs web notifications)
+CREATE TABLE IF NOT EXISTS server_keys (key TEXT PRIMARY KEY, value JSONB NOT NULL);

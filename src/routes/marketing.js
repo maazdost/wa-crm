@@ -150,14 +150,14 @@ const cleanEmail = (e) => { e = String(e || '').trim().slice(0, 120); return /^[
 // A contact's tags are the ones put on the contact here plus the ones agents put on the chat.
 const TAGS_SQL = `COALESCE((SELECT json_agg(json_build_object('id', l.id, 'name', l.name, 'color', l.color) ORDER BY l.name) FROM labels l
   WHERE l.id IN (SELECT label_id FROM contact_labels WHERE contact_id=ct.id UNION SELECT label_id FROM conversation_labels WHERE conversation_id=c.id)), '[]') AS tags`;
-const CONTACT_COLS = `ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.email, COALESCE(ct.source,'organic') AS source, ct.list_name, ct.opted_out, ct.is_personal, ct.created_at,
+const CONTACT_COLS = `ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.email, COALESCE(ct.source,'organic') AS source, ct.list_name, ct.opted_out, ct.is_personal, ct.created_at, ct.fields,
   c.id AS conversation_id, c.status AS chat_status, c.last_customer_message_at AS last_seen, u.name AS agent, ${TAGS_SQL}`;
 const CONTACT_FROM = 'FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id LEFT JOIN users u ON u.id=c.assigned_to';
 // The search box and the filters of the Contacts page, shared by the list and the export.
 function contactFilter(qs) {
   const w = ['ct.company_id=$1'], p = [C()];
   const add = (sql, v) => { p.push(v); w.push(sql.replace(/\?/g, '$' + p.length)); };
-  if (qs.q) add('(ct.name ILIKE ? OR ct.profile_name ILIKE ? OR ct.wa_id ILIKE ? OR ct.email ILIKE ?)', `%${String(qs.q).replace(/^\+/, '')}%`);
+  if (qs.q) add('(ct.name ILIKE ? OR ct.profile_name ILIKE ? OR ct.wa_id ILIKE ? OR ct.email ILIKE ? OR EXISTS (SELECT 1 FROM jsonb_each_text(ct.fields) f WHERE f.value ILIKE ?))', `%${String(qs.q).replace(/^\+/, '')}%`);
   if (qs.list) add('ct.list_name=?', String(qs.list));
   if (qs.source) add("COALESCE(ct.source,'organic')=?", String(qs.source));
   if (Number(qs.tag)) add('(EXISTS (SELECT 1 FROM contact_labels x WHERE x.contact_id=ct.id AND x.label_id=?) OR EXISTS (SELECT 1 FROM conversation_labels y WHERE y.conversation_id=c.id AND y.label_id=?))', Number(qs.tag));
@@ -177,6 +177,74 @@ async function setTags(contactId, ids) {
     if (ok.length) await query('INSERT INTO conversation_labels(conversation_id,label_id) SELECT $1, unnest($2::int[]) ON CONFLICT DO NOTHING', [conv.id, ok]);
   }
 }
+// ---- Custom fields: extra things a company wants to keep about each contact (city, budget, birthday) ----
+const FIELD_KINDS = ['text', 'number', 'date', 'list'];
+const fieldList = async () => (await query('SELECT id, name, kind, options, in_list FROM contact_fields WHERE company_id=$1 ORDER BY position, id', [C()])).rows;
+// Keeps only answers that fit the field: a number for a number field, a real date for a date field, one of the choices for a list.
+function fitField(f, raw) {
+  const v = String(raw == null ? '' : raw).trim().slice(0, 200);
+  if (!v) return '';
+  if (f.kind === 'number') { const n = v.replace(/,/g, ''); return /^-?\d+(\.\d+)?$/.test(n) ? n : null; }
+  if (f.kind === 'date') {
+    let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/), y, mo, d;
+    if (m) [y, mo, d] = [+m[1], +m[2], +m[3]]; else if ((m = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/))) [d, mo, y] = [+m[1], +m[2], +m[3]]; else return null;
+    const dt = new Date(Date.UTC(y, mo - 1, d));
+    return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d ? dt.toISOString().slice(0, 10) : null;
+  }
+  if (f.kind === 'list') { const o = (f.options || []).find(x => String(x).toLowerCase() === v.toLowerCase()); return o == null ? null : String(o); }
+  return v;
+}
+// Turns { fieldId: answer } from the page into what is saved. bad lists the names of fields whose answer did not fit.
+function fitFields(defs, given) {
+  const set = {}, drop = [], bad = [];
+  for (const f of defs) {
+    if (!given || !(f.id in given)) continue;
+    const v = fitField(f, given[f.id]);
+    if (v === null) bad.push(f.name); else if (v === '') drop.push(String(f.id)); else set[f.id] = v;
+  }
+  return { set, drop, bad };
+}
+async function saveFields(contactId, given) {
+  if (!given || typeof given !== 'object') return [];
+  const { set, drop, bad } = fitFields(await fieldList(), given);
+  if (bad.length) return bad;
+  await query('UPDATE contacts SET fields = (fields || $2::jsonb) - $3::text[] WHERE id=$1 AND company_id=$4', [contactId, JSON.stringify(set), drop, C()]);
+  return [];
+}
+const fieldBody = (b) => {
+  const name = String(b.name || '').trim().replace(/\s+/g, ' ').slice(0, 40), kind = FIELD_KINDS.includes(b.kind) ? b.kind : 'text';
+  const options = kind === 'list' ? [...new Set((Array.isArray(b.options) ? b.options : String(b.options || '').split(/[\n,]/)).map(o => String(o).trim().slice(0, 40)).filter(Boolean))].slice(0, 30) : [];
+  return { name, kind, options, in_list: !!b.in_list };
+};
+router.get('/contacts/fields', mgr, wrap(async (_req, res) => res.json(await fieldList())));
+router.post('/contacts/fields', mgr, wrap(async (req, res) => {
+  const f = fieldBody(req.body || {});
+  if (!f.name) return res.status(400).json({ error: 'Give the field a name' });
+  if (f.kind === 'list' && f.options.length < 2) return res.status(400).json({ error: 'Add at least two choices for a list' });
+  const all = await fieldList();
+  if (all.length >= 30) return res.status(400).json({ error: 'You can have up to 30 custom fields' });
+  if (all.some(x => x.name.toLowerCase() === f.name.toLowerCase())) return res.status(409).json({ error: 'A field with this name already exists' });
+  res.json((await query('INSERT INTO contact_fields(company_id,name,kind,options,in_list,position) VALUES($1,$2,$3,$4,$5,$6) RETURNING id, name, kind, options, in_list',
+    [C(), f.name, f.kind, JSON.stringify(f.options), f.in_list, all.length])).rows[0]);
+}));
+// The kind of a field stays as it was made, so answers already saved keep fitting.
+router.patch('/contacts/fields/:id', mgr, wrap(async (req, res) => {
+  const id = Number(req.params.id) || 0, all = await fieldList(), cur = all.find(x => x.id === id);
+  if (!cur) return res.status(404).json({ error: 'Field not found' });
+  const b = req.body || {}, f = fieldBody({ name: 'name' in b ? b.name : cur.name, kind: cur.kind, options: 'options' in b ? b.options : cur.options, in_list: 'in_list' in b ? b.in_list : cur.in_list });
+  if (!f.name) return res.status(400).json({ error: 'Give the field a name' });
+  if (f.kind === 'list' && f.options.length < 2) return res.status(400).json({ error: 'Add at least two choices for a list' });
+  if (all.some(x => x.id !== id && x.name.toLowerCase() === f.name.toLowerCase())) return res.status(409).json({ error: 'A field with this name already exists' });
+  res.json((await query('UPDATE contact_fields SET name=$3, options=$4, in_list=$5 WHERE id=$1 AND company_id=$2 RETURNING id, name, kind, options, in_list', [id, C(), f.name, JSON.stringify(f.options), f.in_list])).rows[0]);
+}));
+router.delete('/contacts/fields/:id', mgr, wrap(async (req, res) => {
+  const id = Number(req.params.id) || 0;
+  const gone = (await query('DELETE FROM contact_fields WHERE id=$1 AND company_id=$2 RETURNING id', [id, C()])).rows[0];
+  if (!gone) return res.status(404).json({ error: 'Field not found' });
+  await query('UPDATE contacts SET fields = fields - $2 WHERE company_id=$1 AND fields ? $2', [C(), String(id)]);
+  res.json({ ok: true });
+}));
+
 // Deletes contacts of this company with everything that hangs on them: chat, messages, notes, follow-ups and broadcast rows.
 async function removeContacts(ids) {
   const own = (await query('SELECT id FROM contacts WHERE company_id=$1 AND id = ANY($2::int[])', [C(), ids])).rows.map(r => r.id);
@@ -219,7 +287,8 @@ router.post('/contacts', mgr, wrap(async (req, res) => {
   const c = (await query(`INSERT INTO contacts(company_id,wa_id,name,profile_name,custom_name,email,source,list_name,opt_in_source) VALUES($1,$2,$3,$3,$4,$5,'manual',$6,$7) RETURNING id`,
     [C(), wa, name, !!name, cleanEmail(b.email), String(b.list_name || '').trim().slice(0, 60) || null, `added by ${req.user.name}`])).rows[0];
   await setTags(c.id, b.tags);
-  res.json({ id: c.id });
+  const bad = await saveFields(c.id, b.fields);
+  res.json({ id: c.id, ...(bad.length ? { warning: 'Not saved, the answer does not fit: ' + bad.join(', ') } : {}) });
 }));
 router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
   const id = Number(req.params.id) || 0, b = req.body || {};
@@ -234,6 +303,7 @@ router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
   }
   if ('email' in b) await query('UPDATE contacts SET email=$2 WHERE id=$1 AND company_id=$3', [id, cleanEmail(b.email), C()]);
   if ('list_name' in b) await query('UPDATE contacts SET list_name=$2 WHERE id=$1 AND company_id=$3', [id, String(b.list_name || '').trim().slice(0, 60) || null, C()]);
+  if ('fields' in b) { const bad = await saveFields(id, b.fields); if (bad.length) return res.status(400).json({ error: 'The answer does not fit: ' + bad.join(', ') }); }
   if ('tags' in b) await setTags(id, b.tags);
   res.json({ ok: true });
 }));
@@ -256,29 +326,30 @@ router.post('/contacts/ignore', mgr, wrap(async (req, res) => {
   }
   res.json({ ignored: n });
 }));
+const TAG_COLORS = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#10b981', '#ef4444', '#06b6d4', '#84cc16', '#f97316', '#6366f1', '#14b8a6', '#a855f7', '#eab308', '#0ea5e9', '#f43f5e', '#64748b']; // new tags from a file each get their own colour
 router.post('/contacts/import', mgr, wrap(async (req, res) => {
   const { list_name, country = '92', consent, rows = [] } = req.body;
   if (!consent) return res.status(400).json({ error: 'Please confirm these people agreed to receive WhatsApp messages from you' });
   if (!String(list_name || '').trim()) return res.status(400).json({ error: 'Give the list a name' });
-  const cc = String(country).replace(/\D/g, '') || '92', seen = new Map(); let bad = 0;
+  const cc = String(country).replace(/\D/g, '') || '92', seen = new Map(), defs = await fieldList(); let bad = 0;
   for (const r of (Array.isArray(rows) ? rows : []).slice(0, 20000)) {
     const d = normPhone(r && r.phone, cc);
     if (!d) { bad++; continue; }
-    if (!seen.has(d)) seen.set(d, { name: String(r.name || '').trim().slice(0, 60) || null, email: cleanEmail(r.email),
+    if (!seen.has(d)) seen.set(d, { name: String(r.name || '').trim().slice(0, 60) || null, email: cleanEmail(r.email), fields: JSON.stringify(fitFields(defs, r.fields).set),
       tags: (Array.isArray(r.tags) ? r.tags : String(r.tags || '').split(/[,;|]/)).map(t => String(t).trim().slice(0, 30)).filter(Boolean).slice(0, 10) });
   }
   if (!seen.size) return res.status(400).json({ error: 'No valid phone numbers found' });
   const vals = [...seen.values()];
   const out = await query(
-    `INSERT INTO contacts(company_id,wa_id,name,email,source,list_name,opt_in_source) SELECT $5, x.w, x.n, x.e, 'import', $3, $4 FROM unnest($1::text[], $2::text[], $6::text[]) AS x(w, n, e)
-     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name), email=COALESCE(EXCLUDED.email, contacts.email) RETURNING id, wa_id, (xmax = 0) AS inserted`,
-    [[...seen.keys()], vals.map(v => v.name), String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C(), vals.map(v => v.email)]);
+    `INSERT INTO contacts(company_id,wa_id,name,email,source,list_name,opt_in_source,fields) SELECT $5, x.w, x.n, x.e, 'import', $3, $4, x.f::jsonb FROM unnest($1::text[], $2::text[], $6::text[], $7::text[]) AS x(w, n, e, f)
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name), email=COALESCE(EXCLUDED.email, contacts.email), fields=contacts.fields || EXCLUDED.fields RETURNING id, wa_id, (xmax = 0) AS inserted`,
+    [[...seen.keys()], vals.map(v => v.name), String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C(), vals.map(v => v.email), vals.map(v => v.fields)]);
   // Tags from the file: a tag that does not exist yet is created (same name in other letter case counts as the same tag).
   const have = new Map((await query('SELECT id, name FROM labels WHERE company_id=$1', [C()])).rows.map(l => [l.name.toLowerCase(), l.id]));
   let made = 0;
   for (const t of new Set(vals.flatMap(v => v.tags))) {
     if (have.has(t.toLowerCase()) || have.size >= 300) continue;
-    const l = (await query('INSERT INTO labels(company_id,name) VALUES($1,$2) ON CONFLICT (company_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [C(), t])).rows[0];
+    const l = (await query('INSERT INTO labels(company_id,name,color) VALUES($1,$2,$3) ON CONFLICT (company_id,name) DO UPDATE SET name=EXCLUDED.name RETURNING id', [C(), t, TAG_COLORS[have.size % TAG_COLORS.length]])).rows[0];
     have.set(t.toLowerCase(), l.id); made++;
   }
   const cs = [], ls = [];
