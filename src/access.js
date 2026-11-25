@@ -14,6 +14,7 @@ const PERMS = {
     automation: { label: 'Quick Message, Quick Replies and Follow-ups', hint: 'Create and change automatic messages', on: true, rules: [['ANY', /^\/(auto-replies|drips)(\/|$)/], ['POST|DELETE', /^\/quick-replies(\/|$)/]] },
     library: { label: 'Media Library', hint: 'Upload, rename and delete saved files', on: true, rules: [['POST|PATCH|DELETE', /^\/media-library(\/|$)/]] },
     catalog: { label: 'Catalogs', hint: 'Add, change and delete products', on: true, rules: [['POST|PATCH|DELETE', /^\/products(\/|$)/]] },
+    social: { label: 'Facebook and Instagram Automation', hint: 'Create and change automatic replies to comments and messages', on: true, rules: [['ANY', /^\/social(\/|$)/]] },
     tags: { label: 'Tags', hint: 'Create and delete tags', on: true, rules: [['POST|DELETE', /^\/labels(\/|$)/]] },
     settings: { label: 'Settings, Bot and Away', hint: 'Change the welcome bot, away message and assignment rules', on: true, rules: [['PUT', /^\/settings\//]] },
     reports: { label: 'Reports and Health Audit', hint: 'Open reports and export them', on: true, rules: [['ANY', /^\/(reports|health-audit)(\/|$)/]] },
@@ -103,7 +104,14 @@ const EVENTS = [
   ['POST', /^\/products$/, 'Catalogs', 'Added a product', (r) => r.body.name],
   ['PATCH', /^\/products\/(\d+)$/, 'Catalogs', (r) => Object.keys(r.body || {}).join() === 'in_stock' ? (r.body.in_stock ? 'Marked a product in stock' : 'Marked a product out of stock') : 'Changed a product', byId('products')],
   ['DELETE', /^\/products\/(\d+)$/, 'Catalogs', 'Deleted a product', byId('products')],
-  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => r.body.status === 'paused' ? 'Paused a company' : 'Changed a company']
+  ['POST', /^\/social\/(facebook|instagram)\/rules$/, 'Social Media', (r) => `Created ${/instagram/.test(r.path) ? 'an Instagram' : 'a Facebook'} rule`, (r) => r.body.name],
+  ['PATCH', /^\/social\/rules\/(\d+)$/, 'Social Media', (r) => Object.keys(r.body || {}).join() === 'active' ? (r.body.active ? 'Switched on a social rule' : 'Switched off a social rule') : 'Changed a social rule', byId('social_rules')],
+  ['DELETE', /^\/social\/rules\/(\d+)$/, 'Social Media', 'Deleted a social rule', byId('social_rules')],
+  ['PATCH', /^\/super\/companies\/(\d+)$/, 'Companies', (r) => 'plan' in (r.body || {}) ? 'Changed the plan of a company' : 'name' in (r.body || {}) ? 'Renamed a company' : r.body.status === 'paused' ? 'Paused a company' : r.body.status === 'rejected' ? 'Rejected a company' : r.body.status === 'active' ? 'Accepted or resumed a company' : 'Changed a company', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['POST', /^\/super\/companies\/(\d+)\/admin$/, 'Companies', 'Changed the sign-in of a company admin', look(async (id) => ((await query('SELECT name AS n FROM companies WHERE id=$1', [id])).rows[0] || {}).n)],
+  ['PATCH', /^\/super\/requests\/(\d+)$/, 'Companies', (r) => r.body.status === 'approved' ? 'Approved a request' : r.body.status === 'declined' ? 'Declined a request' : 'Reopened a request', look(async (id) => ((await query('SELECT co.name AS n FROM company_requests q JOIN companies co ON co.id=q.company_id WHERE q.id=$1', [id])).rows[0] || {}).n)],
+  ['POST', /^\/requests$/, 'Company', 'Sent a request to TeamInbox Pro', (r) => String(r.body.message || '').slice(0, 80)],
+  ['PUT', /^\/super\/plans\/(\w+)$/, 'Companies', 'Changed the limits of a plan', look(async (key) => ((await query('SELECT name AS n FROM plans WHERE key=$1', [key])).rows[0] || {}).n)]
 ];
 async function log({ cid, userId, userName, role, area, action, detail, ip }) {
   try {

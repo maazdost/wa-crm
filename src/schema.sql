@@ -349,3 +349,86 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id, id DESC);
+
+-- ============================================================================
+-- Facebook and Instagram Automation: rules that answer a comment or a direct message, and a list of what they did.
+-- keywords: ["price", "fee"]   match_type: any (every comment) | contains | exact
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS social_rules (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook','instagram')),
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL DEFAULT 'comment' CHECK (trigger IN ('comment','dm')),
+  match_type TEXT NOT NULL DEFAULT 'contains' CHECK (match_type IN ('any','contains','exact')),
+  keywords JSONB NOT NULL DEFAULT '[]',
+  reply_text TEXT NOT NULL DEFAULT '',
+  private_text TEXT NOT NULL DEFAULT '',
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  sent_count INT NOT NULL DEFAULT 0,
+  last_sent_at TIMESTAMPTZ,
+  created_by INT REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_social_rules_company ON social_rules(company_id, platform, active);
+CREATE TABLE IF NOT EXISTS social_log (
+  id BIGSERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  rule_id INT REFERENCES social_rules(id) ON DELETE SET NULL,
+  rule_name TEXT NOT NULL DEFAULT '',
+  platform TEXT NOT NULL,
+  trigger TEXT NOT NULL,
+  from_name TEXT NOT NULL DEFAULT '',
+  text TEXT NOT NULL DEFAULT '',
+  reply TEXT NOT NULL DEFAULT '',
+  private_reply TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'sent',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_social_log_company ON social_log(company_id, platform, id DESC);
+
+-- ============================================================================
+-- Plans and limits for client companies. An empty (NULL) limit means "no limit".
+-- Existing companies become Custom with no limits, so nothing changes for them.
+-- Safe to run again and again: nothing is deleted, and limits you changed are kept.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS plans (
+  key TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  sort INT NOT NULL DEFAULT 0,
+  members INT,
+  numbers INT,
+  broadcast INT,
+  storage_mb INT
+);
+INSERT INTO plans(key, name, sort, members, numbers, broadcast, storage_mb) VALUES
+  ('free', 'Free', 1, 3, 1, 500, 100), ('starter', 'Starter', 2, 5, 2, 5000, 500), ('pro', 'Pro', 3, 15, 5, 50000, 2000)
+  ON CONFLICT (key) DO NOTHING;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'custom';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS trial_ends DATE;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_note TEXT NOT NULL DEFAULT '';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS limits JSONB NOT NULL DEFAULT '{}';
+
+-- ============================================================================
+-- Super admin dashboard: new sign-ups wait for approval (status pending, then active or rejected),
+-- and a company admin can send a request (more team members, another number, a plan change).
+-- Safe to run again and again: nothing is deleted. Existing companies keep their status.
+-- ============================================================================
+ALTER TABLE companies DROP CONSTRAINT IF EXISTS companies_status_check;
+ALTER TABLE companies ADD CONSTRAINT companies_status_check CHECK (status IN ('active','paused','pending','rejected'));
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS status_reason TEXT NOT NULL DEFAULT '';
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS decided_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS company_requests (
+  id SERIAL PRIMARY KEY,
+  company_id INT NOT NULL REFERENCES companies(id),
+  user_id INT REFERENCES users(id) ON DELETE SET NULL,
+  user_name TEXT NOT NULL DEFAULT '',
+  kind TEXT NOT NULL DEFAULT 'other',
+  message TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','approved','declined')),
+  reply TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  decided_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_company_requests ON company_requests(status, id DESC);
