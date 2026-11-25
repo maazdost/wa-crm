@@ -473,3 +473,16 @@ CREATE INDEX IF NOT EXISTS idx_bot_flow_runs_company ON bot_flow_runs(company_id
 CREATE INDEX IF NOT EXISTS idx_bot_flow_runs_conv ON bot_flow_runs(conversation_id, flow_id);
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS flow_id INT REFERENCES bot_flows(id) ON DELETE SET NULL;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS flow_step TEXT;
+
+-- ============================================================================
+-- Contacts page: an email on a contact, tags on a contact (also for people who never wrote),
+-- and a name that a manager typed and that WhatsApp's own profile name must not replace.
+-- Safe to run again and again: nothing is deleted.
+-- ============================================================================
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS custom_name BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS contact_labels (
+  contact_id INT NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  label_id INT NOT NULL REFERENCES labels(id) ON DELETE CASCADE, PRIMARY KEY (contact_id, label_id)
+);
+CREATE INDEX IF NOT EXISTS idx_contact_labels_label ON contact_labels(label_id);

@@ -54,7 +54,7 @@ async function handleMessage(m, profileName, numId) {
   const cid = tenant.cid();
   const contact = (await query(
     `INSERT INTO contacts(company_id,wa_id,profile_name,source) VALUES($4,$1,$2,$3)
-     ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = COALESCE(EXCLUDED.profile_name, contacts.profile_name) RETURNING *`,
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = CASE WHEN contacts.custom_name THEN contacts.profile_name ELSE COALESCE(EXCLUDED.profile_name, contacts.profile_name) END RETURNING *`,
     [waId, profileName || null, m.referral ? 'ad' : 'organic', cid])).rows[0];
   if (contact.is_personal) return; // marked "not a client": nothing is stored and nothing is sent
   let conv = (await query(

@@ -2,6 +2,9 @@
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <title>TeamInbox Pro</title>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#075e54">
+<link rel="icon" type="image/png" href="/icons/icon-192.png"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="TeamInbox"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--ink:#111b21;--ink2:#3b4a54;--mute:#667781;--line:#e9edef;--line2:#d1d7db;--bg:#f0f2f5;--surface:#fff;--hover:#f5f6f6;--sel:#f0f2f5;--in:#fff;--out:#d9fdd3;--lav:#e8e6fb;--chat:#efeae2;--field:#f0f2f5;--inp:#fff;--pill:#f0f2f5;--pillon:#d9fdd3;--pillon-ink:#0a6e57;--icon:#54656f;--card:#fff;--tint:#e1f6ec;--tint-ink:#0a6e57;--tint-line:#cdebdd;--warnbg:#fff4cc;--warn:#8a5a00;--warn-line:#f0e3a5;--redbg:#fdecea;--red:#c0372b;--red-line:#f6cdc8;--notes:#fffbea;--notes-line:#f0e6b8;--rail:#f0f2f5;--railon:#d9dbdf;--menu:#fff;--toast:#111b21;--thead:#fafbfb;--quote:rgba(11,20,26,.06);--brand:#00a884;--brand-d:#008069;--pine2:#008069;--blue:#53bdeb;--ok:#25d366;--sh:0 1px .5px rgba(11,20,26,.13);--sh2:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16);--tx:#fff;--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23b9b1a2' stroke-width='1.2' opacity='.26'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:light}
 [data-theme="dark"]{--ink:#e9edef;--ink2:#c8d0d4;--mute:#8696a0;--line:#222d34;--line2:#33424b;--bg:#202c33;--surface:#111b21;--hover:#182229;--sel:#2a3942;--in:#202c33;--out:#005c4b;--lav:#2f2c55;--chat:#0b141a;--field:#202c33;--inp:#2a3942;--pill:#202c33;--pillon:#103529;--pillon-ink:#25d366;--icon:#aebac1;--card:#1d282f;--tint:#103529;--tint-ink:#7be3be;--tint-line:#1a4a3d;--warnbg:#3a3014;--warn:#f0c14d;--warn-line:#54471b;--redbg:#3a1d1a;--red:#ff8a80;--red-line:#5a2b27;--notes:#2d2a14;--notes-line:#4a4420;--rail:#202c33;--railon:#374248;--menu:#233138;--toast:#2a3942;--thead:#1a252b;--quote:rgba(255,255,255,.07);--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='.07'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:dark}
@@ -307,6 +310,22 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .kwadd{display:flex;gap:8px}.kwadd input{flex:1;min-width:0}.kwl{display:flex;flex-wrap:wrap;gap:6px}.kw.big{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;margin:0;font-size:12.5px;max-width:100%;overflow-wrap:anywhere}.kw.big button{border:0;background:none;color:inherit;display:grid;place-items:center;padding:2px;border-radius:50%;opacity:.7}.kw.big button:hover{opacity:1}
 .qopt{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink2);cursor:pointer}
 .qtwo{display:grid;grid-template-columns:1fr 1fr;gap:12px}.qtwo .fld{margin:0}
+.ctbar select{max-width:170px}.ctsel{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--tint);color:var(--tint-ink);border-bottom:1px solid var(--line)}.ctsel b{flex:1;font-size:13.5px}
+.ctt td{vertical-align:middle}.ctc{width:36px}.ctph{display:grid}.ctph b{font-weight:600;font-size:13px;white-space:nowrap}.ctph small{color:var(--mute);overflow-wrap:anywhere}.cttl{display:flex;flex-wrap:wrap;gap:4px}
+.cttag{display:inline-flex;align-items:center;border:1px solid color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--ink);border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap}
+button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{background:var(--c);border-color:var(--c);color:#fff}.cttags{display:flex;flex-wrap:wrap;gap:6px}
+.ctpg{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}.ghost.danger{color:var(--red)}
+.ctfile{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--tint-line);background:var(--tint);border-radius:12px;padding:12px;margin-bottom:12px}.ctfile>div{flex:1;min-width:0;display:grid;gap:2px}.ctfile b{overflow-wrap:anywhere}.ctfile small{color:var(--ink2)}.ctfile .ctprev{margin-top:4px;color:var(--mute)}
+.ctbar .search{flex:1 1 240px}
+@media (max-width:760px){.ctbar select{flex:1 1 calc(50% - 8px);max-width:none}.ctbar .search{flex:1 1 100%;max-width:none}.ctbar>span{display:none}.ctbar #cexp{flex:1 1 100%;justify-content:center}
+  .ctt{display:block}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
+  .ctt tr[data-id]{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .ctt tr[data-id] td{display:block;padding:0;border:0;min-width:0}.ctt tr[data-id] td:nth-child(1){grid-area:1/1}.ctt tr[data-id] td:nth-child(2){grid-area:1/2}.ctt tr[data-id] td:nth-child(10){grid-area:1/3}
+  .ctt tr[data-id] td:nth-child(3){grid-area:2/2/3/4}.ctt tr[data-id] td:nth-child(5){grid-area:3/2}.ctt tr[data-id] td:nth-child(6){grid-area:3/3;justify-self:end}
+  .ctt tr[data-id] td:nth-child(4),.ctt tr[data-id] td:nth-child(7),.ctt tr[data-id] td:nth-child(8),.ctt tr[data-id] td:nth-child(9),.ctt .cttl .mute{display:none}
+  .ctph{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}.ctpg{flex-wrap:wrap}
+  .ph{flex-wrap:wrap}.pha{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px 2px}.pha::-webkit-scrollbar{display:none}.pha:empty{display:none}.pha>*{flex:none}
+  .pha .btn,.pha .ghost{min-height:36px;padding:6px 12px;font-size:13px}}
 .flty{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--tint-ink);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flgo{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mute);font-weight:600}.flgo select{flex:1;min-width:0}
 .qbtn.flbtn input{flex:1 1 34%}.qbtn.flbtn select{flex:1 1 44%;min-width:0}.flbtn>.mute{font-size:12px;white-space:nowrap}
@@ -547,6 +566,15 @@ const tr = s => (I18N.map && trOne(String(s))) || s; // for the tab title and ot
 function setLang(code) { try { localStorage.setItem('ti_lang', code); } catch {} const parts = location.pathname.split('/'); if (LANGS[parts[1]]) { parts[1] = code; location.href = parts.join('/'); } else location.reload(); }
 
 
+/* ----- Install as an app ("Add to Home screen"). Not shown inside the Android app or once it is installed. ----- */
+const PWA = { evt: null, native: !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()), alone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true, ios: /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) };
+if ('serviceWorker' in navigator && !PWA.native) navigator.serviceWorker.register('/sw.js').catch(() => {});
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); PWA.evt = e; pwaButton(); });
+window.addEventListener('appinstalled', () => { PWA.evt = null; PWA.alone = true; pwaButton(); });
+function pwaButton() { const b = $('#pwai'); if (!b) return; b.hidden = PWA.native || PWA.alone || !(PWA.evt || PWA.ios || innerWidth <= 760);
+  b.onclick = async () => { closeOverlays();
+    if (PWA.evt) { PWA.evt.prompt(); const r = await PWA.evt.userChoice.catch(() => ({})); if (r.outcome === 'accepted') { PWA.evt = null; pwaButton(); } return; }
+    sure('Add TeamInbox Pro to your home screen', PWA.ios ? 'In Safari, tap the Share button at the bottom, then choose "Add to Home Screen".' : 'Open the browser menu (the three dots at the top), then choose "Add to Home screen" or "Install app".', { ok: 'OK' }); }; }
 async function api(path, method = 'GET', body) {
   const r = await fetch(API + '/api' + path, { method, headers: { 'Content-Type':'application/json', Authorization:'Bearer ' + S.token }, body: body ? JSON.stringify(body) : undefined });
   if (r.status === 401) { logout(); return { error:'Session expired' }; }
@@ -833,7 +861,7 @@ async function boot() {
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${k === 'inbox' ? 'Chats' : n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
-    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
+    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwai" hidden>${ico('download', 18)}<span>Install app</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
     ${mgr ? `<div class="sheet" id="sheet" hidden><div class="sheetbody">${more.map(n => `<button data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span></button>`).join('')}</div></div>` : ''}</div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
@@ -841,7 +869,7 @@ async function boot() {
   if ($('#sheet')) $('#sheet').onclick = e => { if (e.target.id === 'sheet') $('#sheet').hidden = true; };
   document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-more]')) closeOverlays(); });
   new MutationObserver(syncNav).observe($('#team'), { attributes: true, attributeFilter: ['hidden'] });
-  $('#out').onclick = logout; $('#out2').onclick = logout;
+  $('#out').onclick = logout; $('#out2').onclick = logout; pwaButton();
   $('#navtg').onclick = () => { const sh = $('.shell'), m = sh.classList.toggle('navmin'); localStorage.setItem(sh.classList.contains('onpage') ? 'ti_nav' : 'ti_navchat', m ? 'min' : 'full'); };
   $('#modebtn').onclick = () => { setPref({ mode: effTheme() === 'dark' ? 'light' : 'dark' }); applyTheme(); $('#modebtn').innerHTML = ico(effTheme() === 'dark' ? 'sun' : 'moon', 18); };
   if (mgr) api('/whatsapp/numbers').then(ns => { const n = arr(ns).find(x => x.is_default) || arr(ns)[0], p = $('#numpill'); if (!p) return; p.hidden = false; p.classList.toggle('off', !n); p.innerHTML = n ? `${ico('phone', 13)}<span>${esc(n.display_phone || n.label)}${arr(ns).length > 1 ? ' +' + (arr(ns).length - 1) : ''}</span>` : '<i></i><span>No WhatsApp number yet</span>'; if (!n) p.onclick = () => goNav('st'); });
@@ -1957,7 +1985,7 @@ async function showSocial(pf) {
 async function showQuickMsg() {
   const sc = screen('Quick Message', 'Automatic messages for your ads and common questions. When a client sends the message you choose, for example the ready-made first message of an ad, your saved messages go out in order, day or night.',
     `<div class="search">${ico('search', 18)}<input id="qmq" placeholder="Search quick messages"></div><button class="btn" id="qmn">${ico('plus', 16)}New quick message</button>`);
-  const [rs, us] = await Promise.all([api('/auto-replies'), api('/users'), loadLib(), loadProducts()]); if (rs.error) return toast(rs.error); if (S.nav !== 'qm') return;
+  const [rs, us, lbs] = await Promise.all([api('/auto-replies'), api('/users'), api('/labels'), loadLib(), loadProducts()]); if (rs.error) return toast(rs.error); S.labels = arr(lbs); if (S.nav !== 'qm') return;
   const list = arr(rs), agents = arr(us).filter(u => u.is_active && u.role === 'agent'), on = list.filter(r => r.active).length;
   const TY = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], audio: ['mic', 'Audio'], file: ['file', 'File'], product: ['bag', 'Product'] };
   const first = r => { const s = arr(r.steps).find(x => x.text) || arr(r.steps)[0] || {}, pr = s.type === 'product' && S.products.find(x => x.id == s.product_id); return s.text || (pr && pr.name) || `[${(TY[s.type] || TY.text)[1]}]`; };
@@ -2054,7 +2082,7 @@ const flFill = (t, name) => String(t || '').replace(/\{\{\s*(name|first_name|wha
 async function showFlows() {
   const sc = screen('Chatbots', 'Build a chatbot that greets new clients or answers a keyword: it sends messages, asks questions with buttons, saves the answers, then hands the chat to the right person.',
     `<button class="btn" id="fln">${ico('plus', 16)}New chatbot</button>`);
-  const [d, us, ds] = await Promise.all([api('/flows'), api('/users'), api('/departments'), loadLib(), loadProducts()]); if (d.error) return toast(d.error); if (S.nav !== 'cb') return;
+  const [d, us, ds, lbs] = await Promise.all([api('/flows'), api('/users'), api('/departments'), api('/labels'), loadLib(), loadProducts()]); if (d.error) return toast(d.error); S.labels = arr(lbs); if (S.nav !== 'cb') return;
   const list = arr(d.flows), agents = arr(us).filter(u => u.is_active && u.role === 'agent'), depts = arr(ds), wel = list.find(f => f.trigger === 'welcome' && f.active);
   const started = list.reduce((n, f) => n + f.started_count, 0), ended = list.reduce((n, f) => n + f.finished_count, 0);
   const firstText = f => { const s = arr(f.steps).find(x => x.text) || arr(f.steps)[0] || {}, p = s.kind === 'product' && S.products.find(x => x.id == s.product_id); return s.text || (p && p.name) || ''; };
@@ -2377,38 +2405,210 @@ async function showActivity() {
   load();
 }
 
+/* ----- Reading and writing spreadsheet files in the browser (Excel .xlsx and CSV), without any extra library ----- */
+function zipEntries(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf); let i = u8.length - 22;
+  while (i >= 0 && dv.getUint32(i, true) !== 0x06054b50) i--;
+  if (i < 0) throw new Error('not a zip file');
+  const n = dv.getUint16(i + 10, true), files = {}; let o = dv.getUint32(i + 16, true);
+  for (let k = 0; k < n; k++) {
+    const method = dv.getUint16(o + 10, true), size = dv.getUint32(o + 20, true), nl = dv.getUint16(o + 28, true), el = dv.getUint16(o + 30, true), cl = dv.getUint16(o + 32, true), lo = dv.getUint32(o + 42, true);
+    const start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+    files[new TextDecoder().decode(u8.subarray(o + 46, o + 46 + nl))] = { method, data: u8.subarray(start, start + size) }; o += 46 + nl + el + cl;
+  }
+  return files;
+}
+const zipText = async f => new TextDecoder().decode(f.method === 0 ? f.data : new Uint8Array(await new Response(new Blob([f.data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer()));
+/** The first sheet of an Excel file as rows of text cells. */
+async function readXlsx(buf) {
+  const z = zipEntries(buf), xml = t => new DOMParser().parseFromString(t, 'application/xml'), txt = n => [...n.getElementsByTagName('t')].map(t => t.textContent).join('');
+  const shared = z['xl/sharedStrings.xml'] ? [...xml(await zipText(z['xl/sharedStrings.xml'])).getElementsByTagName('si')].map(txt) : [];
+  const name = Object.keys(z).filter(k => /^xl\/worksheets\/sheet\d*\.xml$/.test(k)).sort((a, b) => (parseInt(a.replace(/\D/g, '')) || 0) - (parseInt(b.replace(/\D/g, '')) || 0))[0];
+  if (!name) throw new Error('no sheet');
+  const rows = [];
+  for (const r of xml(await zipText(z[name])).getElementsByTagName('row')) { const row = [];
+    for (const c of r.getElementsByTagName('c')) {
+      const col = (c.getAttribute('r') || '').replace(/\d/g, ''), idx = col ? [...col].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1 : row.length, t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+      let val = t === 's' ? shared[+(v ? v.textContent : -1)] || '' : t === 'inlineStr' ? txt(c) : v ? v.textContent : '';
+      if (!t && /^\d+(\.\d+)?E\+?\d+$/i.test(val)) val = String(Number(val)); // a phone number that Excel stored as 9.23E+11
+      row[idx] = val;
+    }
+    rows.push(Array.from(row, x => x == null ? '' : String(x)));
+  }
+  return rows;
+}
+/** CSV text as rows of cells: commas, semicolons or tabs, with "quoted, cells". */
+function readCsv(text) {
+  text = text.replace(/^﻿/, ''); const first = text.split(/\r?\n/)[0] || '', sep = first.includes('\t') ? '\t' : (first.split(';').length > first.split(',').length ? ';' : ',');
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) { const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"' && !cell) q = true; else if (ch === sep) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); cell = ''; if (row.some(x => x.trim())) rows.push(row); row = []; }
+    else cell += ch; }
+  row.push(cell); if (row.some(x => x.trim())) rows.push(row);
+  return rows;
+}
+/** Finds the name, phone, email and tags columns of a sheet and returns people as { name, phone, email, tags }. */
+function sheetPeople(rows) {
+  const clean = v => { v = String(v == null ? '' : v).trim(); return /^[—–-]+$/.test(v) ? '' : v; }, digits = v => String(v || '').replace(/\D/g, '');
+  const head = (rows[0] || []).map(h => String(h || '').trim().toLowerCase()), find = re => head.findIndex(h => re.test(h));
+  let ph = find(/mobile|phone|whatsapp|cell|contact ?(no|number)|^number$|^no\.?$/), nm = head.findIndex(h => /name/.test(h) && !/list|group|user ?name/.test(h)), em = find(/e-?mail/), tg = find(/tag|label/);
+  const hasHead = ph >= 0 && digits((rows[0] || [])[ph]).length < 7;
+  if (!hasHead) { ph = nm = em = tg = -1; }
+  const cols = hasHead ? [nm >= 0 && rows[0][nm], rows[0][ph], em >= 0 && rows[0][em], tg >= 0 && rows[0][tg]].filter(Boolean).map(x => String(x).trim()) : [];
+  const out = [];
+  for (const r of rows.slice(hasHead ? 1 : 0)) { const c = r.map(clean); let phone, name, email = '', tags = [];
+    if (hasHead) { phone = c[ph]; name = nm >= 0 ? c[nm] : ''; email = em >= 0 ? c[em] : ''; tags = tg >= 0 ? (c[tg] || '').split(/[,;|]/).map(x => x.trim()).filter(Boolean) : []; }
+    else { phone = c.find(x => digits(x).length >= 7 && !/@/.test(x)); name = c.find(x => x && x !== phone && !/@/.test(x) && digits(x).length < 7) || ''; email = c.find(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || ''; }
+    if (phone && digits(phone).length >= 7) out.push({ phone, name: name || '', email, tags }); }
+  return { people: out, cols, withTags: out.filter(p => p.tags.length).length };
+}
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+/** Builds a real Excel file (.xlsx) from rows of cells. Every cell is text, so phone numbers stay as typed. */
+function makeXlsx(rows, sheet = 'Contacts') {
+  const x = s => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const colName = i => { let s = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s; return s; };
+  const data = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((c, ci) => `<c r="${colName(ci)}${ri + 1}" t="inlineStr"${ri ? '' : ' s="1"'}><is><t xml:space="preserve">${x(c)}</t></is></c>`).join('')}</row>`).join('');
+  const H = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>', NS = 'http://schemas.openxmlformats.org/', O = NS + 'officeDocument/2006/relationships';
+  const files = {
+    '[Content_Types].xml': `${H}<Types xmlns="${NS}package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
+    '_rels/.rels': `${H}<Relationships xmlns="${NS}package/2006/relationships"><Relationship Id="rId1" Type="${O}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `${H}<workbook xmlns="${NS}spreadsheetml/2006/main" xmlns:r="${O}"><sheets><sheet name="${x(sheet)}" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `${H}<Relationships xmlns="${NS}package/2006/relationships"><Relationship Id="rId1" Type="${O}/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${O}/styles" Target="styles.xml"/></Relationships>`,
+    'xl/styles.xml': `${H}<styleSheet xmlns="${NS}spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf/><xf fontId="1" applyFont="1"/></cellXfs></styleSheet>`,
+    'xl/worksheets/sheet1.xml': `${H}<worksheet xmlns="${NS}spreadsheetml/2006/main"><cols>${(rows[0] || []).map((_, i) => `<col min="${i + 1}" max="${i + 1}" width="22" customWidth="1"/>`).join('')}</cols><sheetData>${data}</sheetData></worksheet>`
+  };
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [name, text] of Object.entries(files)) { const nb = enc.encode(name), db = enc.encode(text), crc = crc32(db);
+    const lh = new DataView(new ArrayBuffer(30)); lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint32(14, crc, true); lh.setUint32(18, db.length, true); lh.setUint32(22, db.length, true); lh.setUint16(26, nb.length, true);
+    const ch = new DataView(new ArrayBuffer(46)); ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint32(16, crc, true); ch.setUint32(20, db.length, true); ch.setUint32(24, db.length, true); ch.setUint16(28, nb.length, true); ch.setUint32(42, off, true);
+    parts.push(lh.buffer, nb, db); central.push(ch.buffer, nb); off += 30 + nb.length + db.length; }
+  const csize = central.reduce((n, b) => n + b.byteLength, 0), end = new DataView(new ArrayBuffer(22)), cnt = Object.keys(files).length;
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, cnt, true); end.setUint16(10, cnt, true); end.setUint32(12, csize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, end.buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+/* ---------- Contacts ---------- */
+const CT_SRC = { organic: 'WhatsApp', ad: 'Ad', import: 'Imported', manual: 'Added by hand', personal: 'Ignore list' };
+const agoTxt = t => { if (!t) return '—'; const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000)); return m < 1 ? 'Just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : m < 43200 ? `${Math.round(m / 1440)}d ago` : new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }); };
 async function showContacts() {
-  const sc = screen('Contacts', 'Everyone who has messaged you or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
-    `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="btn" data-open="m-imp">${ico('plus', 16)}Import contacts</button>`);
-  const [d, lists] = await Promise.all([api('/contacts'), api('/contacts/lists')]); if (d.error) return toast(d.error); if (S.nav !== 'ct') return;
-  sc.innerHTML = `<div class="stats">${kpi('users', d.total, 'Contacts')}${kpi('file', arr(lists).length, 'Lists', 'blue')}${kpi('userplus', arr(lists).reduce((n, l) => n + l.n, 0), 'People in lists', 'violet')}</div>
-  <div class="tbl"><div class="tbl-h"><div class="search">${ico('search', 16)}<input id="cq" placeholder="Search name or number"></div><select id="cl"><option value="">All lists</option>${arr(lists).map(l => `<option value="${esc(l.list_name)}">${esc(l.list_name)} (${l.n})</option>`).join('')}</select><span style="flex:1"></span><small class="mute" id="cn"></small></div><table id="ct"></table></div>
+  const sc = screen('Contacts', 'Everyone who has messaged you, was added or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
+    `<button class="ghost" data-open="m-ign">${ico('ban', 15)}Ignore numbers</button><button class="ghost" id="cimp">${ico('download', 15)}Import contacts</button><button class="btn" id="cadd">${ico('plus', 16)}Add contact</button>`);
+  const [d, lists, lb] = await Promise.all([api('/contacts?per=1'), api('/contacts/lists'), api('/labels')]); if (d.error) return toast(d.error); if (S.nav !== 'ct') return;
+  S.labels = arr(lb); const F = { page: 1, per: 50 }, sel = new Set(); let rows = [], file = null;
+  const today = new Date().toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+  sc.innerHTML = `<div class="stats" id="cst"></div>
+  <div class="tbl"><div class="tbl-h ctbar"><div class="search">${ico('search', 16)}<input id="cq" placeholder="Search name, number or email"></div>
+    <select id="cft" aria-label="Tag"><option value="">All tags</option>${S.labels.map(l => `<option value="${l.id}" data-notr>${esc(l.name)}</option>`).join('')}</select>
+    <select id="cfs" aria-label="Source"><option value="">All sources</option>${Object.entries(CT_SRC).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    <select id="cfo" aria-label="Opt status"><option value="">Opted in and out</option><option value="in">Opted in</option><option value="out">Opted out</option></select>
+    <select id="cl" aria-label="List"><option value="">All lists</option>${arr(lists).map(l => `<option value="${esc(l.list_name)}" data-notr>${esc(l.list_name)} (${l.n})</option>`).join('')}</select>
+    <span style="flex:1"></span><button class="ghost" id="cexp">${ico('download', 15)}Export</button></div>
+    <div class="ctsel" id="csel" hidden><b id="cseln"></b><button class="ghost" id="cselx">Clear</button><button class="ghost danger" id="cdel">${ico('trash', 15)}Delete</button></div>
+    <table id="ct" class="ctt keep"></table>
+    <div class="ctpg"><small class="mute" id="cn"></small><span style="flex:1"></span><button class="ghost" id="cpp">Previous</button><button class="ghost" id="cpn">Next</button></div></div>
   ${modal('m-imp', 'Import contacts', `<form id="imp"><p class="mute" style="margin-top:0">Only import people who agreed to receive WhatsApp messages from you. They can reply STOP at any time and are removed from future broadcasts.</p>
-  ${field('i1', 'List name, e.g. Webinar leads', '')}${field('i2', 'Country code for numbers that start with 0', '92')}
-  <label class="fld"><span>Paste one person per line: name, phone</span><textarea id="i3" rows="6" placeholder="Ali Khan, 0300 1234567"></textarea></label>
-  <label class="fld"><span>Or choose a CSV file</span><input type="file" id="i4" accept=".csv,.txt"></label>
-  <label class="ck"><input type="checkbox" id="i5"> These people agreed to receive messages from us on WhatsApp</label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Import</button></div></form>`, 1)}
+  <label class="fld"><span>Choose an Excel (.xlsx) or CSV file</span><input type="file" id="i4" accept=".xlsx,.csv,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></label>
+  <div class="ctfile" id="ifi" hidden></div>
+  <label class="fld" id="i3b"><span>Or paste one person per line: name, phone</span><textarea id="i3" rows="4" placeholder="Ali Khan, 0300 1234567"></textarea></label>
+  <div class="qtwo">${field('i1', 'List name, e.g. Webinar leads', '')}${field('i2', 'Country code for numbers that start with 0', '92')}</div>
+  <label class="ck" style="margin-top:12px"><input type="checkbox" id="i5"> These people agreed to receive messages from us on WhatsApp</label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn" id="ibtn">Import</button></div></form>`, 1)}
+  ${modal('m-ctc', 'Contact', `<form id="ccf"><div class="qtwo">${field('cc1', 'Name', '')}<label class="fld"><span>WhatsApp number with country code</span><input id="cc2" inputmode="tel" placeholder="923001234567"></label></div>
+  <div class="qtwo"><label class="fld"><span>Email (optional)</span><input id="cc3" type="email" maxlength="120"></label><label class="fld"><span>List (optional)</span><input id="cc4" maxlength="60" list="ccl"><datalist id="ccl">${arr(lists).map(l => `<option value="${esc(l.list_name)}">`).join('')}</datalist></label></div>
+  <div class="fld"><span>Tags</span><div class="cttags" id="cc5"></div></div>
+  <div id="cc6"><label class="qopt"><span>Opted out: no broadcasts or follow-ups go to this person</span><span class="tog"><input type="checkbox" id="cc7"><i></i></span></label>
+  <label class="qopt" style="margin-top:10px"><span>Ignore: not a client. The chat is deleted and the system never replies.</span><span class="tog"><input type="checkbox" id="cc8"><i></i></span></label></div>
+  <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`, 1)}
   ${modal('m-ign', 'Personal numbers to ignore', `<form id="igf"><p class="mute" style="margin-top:0">Friends, family and anyone who is not a client. The system never replies to them, never stores their messages, and keeps them out of broadcasts.</p>
   <label class="fld"><span>One number per line</span><textarea id="ig1" rows="5" placeholder="0300 1234567"></textarea></label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Ignore these numbers</button></div></form>`)}`;
+  const qs = () => new URLSearchParams({ q: $('#cq').value.trim(), tag: $('#cft').value, source: $('#cfs').value, opt: $('#cfo').value, list: $('#cl').value });
+  const tagChips = c => arr(c.tags).length ? arr(c.tags).slice(0, 3).map(t => `<span class="cttag" data-notr style="--c:${esc(t.color)}">${esc(t.name)}</span>`).join('') + (c.tags.length > 3 ? `<span class="kw more">+${c.tags.length - 3}</span>` : '') : '<span class="mute">—</span>';
+  const drawSel = () => { $('#csel').hidden = !sel.size; $('#cseln').textContent = `${sel.size} selected`; const all = $('#call'); if (all) all.checked = rows.length > 0 && rows.every(c => sel.has(c.id)); };
   const draw = async () => {
-    const r = await api('/contacts?' + new URLSearchParams({ q: $('#cq').value, list: $('#cl').value })); if (r.error || !$('#ct')) return;
-    $('#cn').textContent = `Showing ${r.rows.length} of ${r.total}`;
-    $('#ct').innerHTML = r.rows.length ? '<thead><tr><th>Contact</th><th>List</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>' + r.rows.map(c => `<tr><td>${userCell(c.name || '+' + c.wa_id, '+' + c.wa_id)}</td><td>${esc(c.list_name || '—')}</td><td>${esc(nice(c.source) || '—')}</td>
-      <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : c.opted_out ? '<em class="chip closed">Opted out</em>' : `<em class="chip${c.chat_status === 'open' ? ' ok' : ''}">${esc(c.chat_status === 'open' ? 'With ' + (c.agent || 'agent') : c.chat_status === 'bot' ? 'New' : c.chat_status || 'No chat')}</em>`}</td>
-      <td class="tdm"><button class="ghost" data-oo="${c.id}" data-v="${c.opted_out}">${c.opted_out ? 'Opt in' : 'Opt out'}</button> <button class="ghost" data-ig="${c.id}" data-v="${c.is_personal}">${c.is_personal ? 'Stop ignoring' : 'Ignore'}</button></td></tr>`).join('') + '</tbody>'
-      : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search, or import a list.')}</td></tr></tbody>`;
-    $('#ct').querySelectorAll('[data-oo]').forEach(b => b.onclick = async () => { await api('/contacts/' + b.dataset.oo, 'PATCH', { opted_out: b.dataset.v !== 'true' }); draw(); });
-    $('#ct').querySelectorAll('[data-ig]').forEach(b => b.onclick = async () => { if (b.dataset.v !== 'true' && !await sure('Ignore this number?', 'Their chat is deleted and the system will never reply to them.', { ok: 'Ignore', danger: 1 })) return; await api('/contacts/' + b.dataset.ig, 'PATCH', { is_personal: b.dataset.v !== 'true' }); draw(); });
+    if (!$('#cq')) return; // the page was left while a search was waiting
+    const p = qs(); p.set('page', F.page); p.set('per', F.per);
+    const r = await api('/contacts?' + p); if (r.error || !$('#ct')) return; rows = r.rows;
+    const st = r.stats; $('#cst').innerHTML = kpi('users', st.total.toLocaleString(), 'Total contacts') + kpi('chat', st.active.toLocaleString(), 'Active in 30 days', 'blue') + kpi('download', st.imported.toLocaleString(), 'Imported', 'violet') + kpi('ban', st.blocked.toLocaleString(), 'Opted out or ignored', 'red');
+    const from = r.found ? (r.page - 1) * r.per + 1 : 0, to = Math.min(r.found, r.page * r.per);
+    $('#cn').textContent = `Showing ${from} to ${to} of ${r.found}`; $('#cpp').disabled = r.page <= 1; $('#cpn').disabled = to >= r.found;
+    $('#ct').innerHTML = rows.length ? `<thead><tr><th class="ctc"><input type="checkbox" id="call" aria-label="Select all on this page"></th><th>Contact</th><th>Phone and email</th><th>Source</th><th>Tags</th><th>Opt status</th><th>Last seen</th><th>Added on</th><th>Status</th><th></th></tr></thead><tbody>` + rows.map(c => `<tr data-id="${c.id}">
+      <td class="ctc"><input type="checkbox" data-cs="${c.id}"${sel.has(c.id) ? ' checked' : ''} aria-label="Select"></td>
+      <td>${userCell(c.name || '+' + c.wa_id, c.list_name || '')}</td>
+      <td><div class="ctph"><b>+${esc(c.wa_id)}</b><small data-notr>${esc(c.email || '')}</small></div></td>
+      <td><em class="chip${c.source === 'ad' ? ' warn' : ''}">${CT_SRC[c.source] || esc(nice(c.source))}</em></td>
+      <td><div class="cttl">${tagChips(c)}</div></td>
+      <td>${c.opted_out ? '<em class="chip closed">Opted out</em>' : '<em class="chip ok">Opted in</em>'}</td>
+      <td class="alw">${agoTxt(c.last_seen)}</td>
+      <td class="alw">${new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+      <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : '<em class="chip ok">Active</em>'}</td>
+      <td class="tdm">${c.conversation_id ? `<button class="rowbtn" data-co="${c.conversation_id}" title="Open chat" aria-label="Open chat">${ico('chat', 16)}</button>` : ''}<button class="rowbtn" data-ce="${c.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn danger" data-cd="${c.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></td></tr>`).join('') + '</tbody>'
+      : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search or filter, add a contact, or import a list.')}</td></tr></tbody>`;
+    labelTables(); drawSel();
   };
-  $('#cq').oninput = debounce(draw, 300); $('#cl').onchange = draw; draw();
-  $('#i4').onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { $('#i3').value = rd.result; }; rd.readAsText(f); };
+  const again = () => { F.page = 1; draw(); };
+  $('#cq').oninput = debounce(again, 300); ['cft', 'cfs', 'cfo', 'cl'].forEach(id => $('#' + id).onchange = again);
+  $('#cpp').onclick = () => { F.page--; draw(); }; $('#cpn').onclick = () => { F.page++; draw(); };
+  const delMany = async ids => { const one = ids.length === 1 && rows.find(c => c.id === ids[0]);
+    if (!await sure(one ? 'Delete this contact?' : `Delete ${ids.length} contacts?`, 'Their chat, messages and notes are deleted too. This cannot be undone.', { ok: 'Delete', danger: 1 })) return;
+    const r = await api('/contacts/delete', 'POST', { ids }); if (r.error) return toast(r.error); ids.forEach(i => sel.delete(i)); toast(r.deleted === 1 ? 'Contact deleted' : `${r.deleted} contacts deleted`); draw(); };
+  $('#ct').onclick = e => { const c = s => e.target.closest(s);
+    if (c('#call')) { rows.forEach(x => c('#call').checked ? sel.add(x.id) : sel.delete(x.id)); $('#ct').querySelectorAll('[data-cs]').forEach(b => b.checked = sel.has(+b.dataset.cs)); return drawSel(); }
+    if (c('[data-cs]')) { const b = c('[data-cs]'); b.checked ? sel.add(+b.dataset.cs) : sel.delete(+b.dataset.cs); return drawSel(); }
+    if (c('[data-co]')) { const id = +c('[data-co]').dataset.co; goNav('inbox'); return openConv(id); }
+    if (c('[data-ce]')) return openC(rows.find(x => x.id == c('[data-ce]').dataset.ce));
+    if (c('[data-cd]')) return delMany([+c('[data-cd]').dataset.cd]); };
+  $('#cselx').onclick = () => { sel.clear(); $('#ct').querySelectorAll('[data-cs]').forEach(b => b.checked = false); drawSel(); };
+  $('#cdel').onclick = () => delMany([...sel]);
+  // add and edit
+  let E = null, tags = new Set();
+  const drawTags = () => { $('#cc5').innerHTML = S.labels.length ? S.labels.map(l => `<button type="button" class="cttag${tags.has(l.id) ? ' on' : ''}" data-tg="${l.id}" data-notr style="--c:${esc(l.color)}">${esc(l.name)}</button>`).join('') : '<small class="mute">No tags yet. Add them on the Tags page.</small>'; };
+  const openC = c => { E = c || null; tags = new Set(arr(c && c.tags).map(t => t.id));
+    $('#cc1').value = c ? c.name || '' : ''; $('#cc2').value = c ? c.wa_id : ''; $('#cc2').disabled = !!c; $('#cc3').value = c ? c.email || '' : ''; $('#cc4').value = c ? c.list_name || '' : '';
+    $('#cc6').hidden = !c; $('#cc7').checked = !!(c && c.opted_out); $('#cc8').checked = !!(c && c.is_personal);
+    $('#m-ctc .dlg-h b').textContent = c ? 'Edit contact' : 'Add contact'; drawTags(); $('#m-ctc').hidden = false; if (innerWidth > 760) $('#cc1').focus(); };
+  $('#cadd').onclick = () => openC(null);
+  $('#cc5').onclick = e => { const b = e.target.closest('[data-tg]'); if (!b) return; const id = +b.dataset.tg; tags.has(id) ? tags.delete(id) : tags.add(id); drawTags(); };
+  $('#ccf').onsubmit = async e => { e.preventDefault();
+    const b = { email: $('#cc3').value.trim(), list_name: $('#cc4').value.trim(), tags: [...tags] }; if ($('#cc1').value.trim() || !E) b.name = $('#cc1').value.trim();
+    if (E) { if ($('#cc7').checked !== !!E.opted_out) b.opted_out = $('#cc7').checked;
+      if ($('#cc8').checked !== !!E.is_personal) { if ($('#cc8').checked && !await sure('Ignore this number?', 'Their chat is deleted and the system will never reply to them.', { ok: 'Ignore', danger: 1 })) return; b.is_personal = $('#cc8').checked; } }
+    else { b.phone = $('#cc2').value; if (!b.name) delete b.name; }
+    const r = await api('/contacts' + (E ? '/' + E.id : ''), E ? 'PATCH' : 'POST', b); if (r.error) return toast(r.error);
+    $('#m-ctc').hidden = true; toast(E ? 'Contact updated' : 'Contact added'); draw(); };
+  // export what the search and filters show
+  $('#cexp').onclick = async () => { toast('Preparing the Excel file…'); const r = await api('/contacts/export?' + qs()); if (r.error) return toast(r.error);
+    const day = t => t ? new Date(t).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+    const out = [['Name', 'Mobile Number', 'Email', 'Tags', 'Opt Status', 'Source', 'List', 'Last Seen', 'Added On', 'Status']].concat(arr(r.rows).map(c => [c.name || '', c.wa_id, c.email || '', arr(c.tags).map(t => t.name).join(', '), c.opted_out ? 'Opted Out' : 'Opted In', CT_SRC[c.source] || c.source, c.list_name || '', day(c.last_seen), day(c.created_at), c.is_personal ? 'Ignored' : 'Active']));
+    const name = `contacts-${ymd(new Date())}.xlsx`; saveDoc(URL.createObjectURL(makeXlsx(out)), name); toast(`Saved ${name}`); };
+  // import
+  const showFile = () => { const b = $('#ifi'); b.hidden = !file; $('#i3b').hidden = !!file; if (!file) return;
+    b.innerHTML = `<span class="qmic">${ico('file', 18)}</span><div><b data-notr>${esc(file.name)}</b><small>${file.people.length.toLocaleString()} people found${file.withTags ? `, ${file.withTags.toLocaleString()} with tags` : ''}</small>${file.cols.length ? `<small>Columns used: <span data-notr>${esc(file.cols.join(', '))}</span></small>` : ''}
+      <small class="ctprev" data-notr>${file.people.slice(0, 3).map(p => esc((p.name || '—') + ' · ' + p.phone)).join('<br>')}</small></div><button type="button" class="rowbtn" id="ifx" title="Remove file" aria-label="Remove file">${ico('x', 16)}</button>`;
+    $('#ifx').onclick = () => { file = null; $('#i4').value = ''; showFile(); }; };
+  $('#cimp').onclick = () => { file = null; $('#imp').reset(); $('#i2').value = '92'; showFile(); $('#m-imp').hidden = false; };
+  $('#i4').onchange = async e => { const f = e.target.files[0]; if (!f) return;
+    try { const buf = await f.arrayBuffer(), u = new Uint8Array(buf.slice(0, 4)); let sheet;
+      if (u[0] === 0x50 && u[1] === 0x4B) sheet = await readXlsx(buf);
+      else if (u[0] === 0xD0 && u[1] === 0xCF) { e.target.value = ''; return toast('This is an old Excel file (.xls). Open it in Excel, choose Save As, pick .xlsx or CSV, then import that file.'); }
+      else sheet = readCsv(new TextDecoder().decode(buf));
+      const got = sheetPeople(sheet); if (!got.people.length) { e.target.value = ''; return toast('No phone numbers were found in this file'); }
+      file = { name: f.name, ...got }; if (!$('#i1').value.trim()) $('#i1').value = `Imported ${today}`; showFile();
+    } catch (err) { e.target.value = ''; toast('This file could not be read. Save it as .xlsx or CSV and try again.'); } };
   $('#igf').onsubmit = async e => { e.preventDefault(); const numbers = $('#ig1').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); if (!numbers.length) return toast('Add at least one number');
-    const r = await api('/contacts/ignore', 'POST', { numbers, country: $('#i2').value }); if (r.error) return toast(r.error); toast(`Ignoring ${r.ignored} numbers`); showContacts(); };
+    const r = await api('/contacts/ignore', 'POST', { numbers, country: '92' }); if (r.error) return toast(r.error); toast(`Ignoring ${r.ignored} numbers`); showContacts(); };
   $('#imp').onsubmit = async e => { e.preventDefault();
-    const rows = $('#i3').value.split(/\r?\n/).map(l => { const parts = l.split(/[,;\t]/).map(x => x.trim()).filter(Boolean); const phone = parts.find(x => x.replace(/\D/g, '').length >= 7); return phone ? { phone, name: parts.find(x => x !== phone) || '' } : null; }).filter(Boolean);
-    if (!rows.length) return toast('Add at least one phone number');
-    const r = await api('/contacts/import', 'POST', { list_name: $('#i1').value, country: $('#i2').value, consent: $('#i5').checked, rows }); if (r.error) return toast(r.error);
-    toast(`Added ${r.added}, updated ${r.updated}, skipped ${r.skipped} invalid`); showContacts(); };
+    const people = file ? file.people : sheetPeople(readCsv($('#i3').value)).people;
+    if (!people.length) return toast('Choose a file or paste at least one phone number');
+    if (!$('#i5').checked) return toast('Please confirm these people agreed to receive WhatsApp messages from you');
+    const tot = { added: 0, updated: 0, skipped: 0, tags_created: 0 }; $('#ibtn').disabled = true;
+    for (let i = 0; i < people.length; i += 2000) { // big files go up in parts
+      if (people.length > 2000) $('#ibtn').textContent = `${Math.min(people.length, i + 2000).toLocaleString()} / ${people.length.toLocaleString()}`;
+      const r = await api('/contacts/import', 'POST', { list_name: $('#i1').value, country: $('#i2').value, consent: true, rows: people.slice(i, i + 2000) });
+      if (r.error) { $('#ibtn').disabled = false; $('#ibtn').textContent = 'Import'; return toast(r.error); }
+      for (const k in tot) tot[k] += r[k] || 0; }
+    toast(`Added ${tot.added}, updated ${tot.updated}, skipped ${tot.skipped} invalid${tot.tags_created ? `, ${tot.tags_created} new tags` : ''}`); showContacts(); };
+  draw();
 }
 async function showBroadcasts() {
   const sc = screen('Bulk Broadcasting', 'Send an approved template to a chosen audience, now or on a schedule, and track the results.',

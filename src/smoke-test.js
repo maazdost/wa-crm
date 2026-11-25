@@ -156,6 +156,30 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   const push = require('./push'), at = (h) => new Date(`2026-01-10T${h}:00+05:00`);
   check('notification preferences are saved per person', np.data.message === false && np.data.assigned === true && np.data.quiet.on && (await j('/api/me/notifications', {}, a2.token)).data.message === true
     && (await push.allowed(a1.user.id, 'message')) === false && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('23:30')) && push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('06:59')) && !push.quietNow({ on: true, from: '23:00', to: '07:00' }, at('12:00')) && !push.quietNow({ on: false, from: '23:00', to: '07:00' }, at('23:30')));
+  // Contacts: add, edit, tags, import with tags and email, filters, export, delete
+  const cph = '9230030' + Date.now().toString().slice(-5), ctag = (await j('/api/labels', { method: 'POST', body: { name: 'VIP' + Date.now(), color: '#7c3aed' } }, admin)).data;
+  const cadd = await j('/api/contacts', { method: 'POST', body: { name: 'Hand Added', phone: '+' + cph, email: 'hand@added.co', tags: [ctag.id] } }, admin);
+  const cfind = async (q) => (await j('/api/contacts?q=' + encodeURIComponent(q), {}, admin)).data;
+  let cone = (await cfind(cph)).rows[0];
+  check('a contact can be added by hand with email and tag', cadd.status === 200 && cone && cone.name === 'Hand Added' && cone.email === 'hand@added.co' && cone.source === 'manual' && cone.tags.some(t => t.id === ctag.id)
+    && (await j('/api/contacts', { method: 'POST', body: { name: 'Twice', phone: cph } }, admin)).status === 409 && (await j('/api/contacts', { method: 'POST', body: { name: 'Bad', phone: '12' } }, admin)).status === 400);
+  await inbound(cph, { text: { body: 'hello there' } }); await sleep(400);
+  await j('/api/contacts/' + cone.id, { method: 'PATCH', body: { name: 'Renamed Client', email: '', tags: [] } }, admin);
+  await inbound(cph, { text: { body: 'second message' } }); await sleep(400);
+  cone = (await cfind(cph)).rows[0];
+  check('an edited name stays after the client writes again, and tags can be removed', cone.name === 'Renamed Client' && cone.email === null && cone.tags.length === 0 && cone.conversation_id && !!cone.last_seen
+    && (await j('/api/contacts/' + cone.id, { method: 'PATCH', body: { email: 'not-an-email' } }, admin)).status === 400);
+  const itag = 'Wati' + Date.now(), ibase = '92300400' + String(Date.now()).slice(-4), ip = (n) => ibase + n;
+  const imp = (await j('/api/contacts/import', { method: 'POST', body: { list_name: 'Wati export', consent: true, rows: [{ name: 'Imp One', phone: ip(1), email: 'one@imp.co', tags: [itag, 'vip' + ctag.name.slice(3)] }, { name: 'Imp Two', phone: ip(2), tags: itag.toUpperCase() }, { name: 'Bad', phone: '123' }] } }, admin)).data;
+  const byTag = (await j('/api/contacts?tag=' + ((await j('/api/labels', {}, admin)).data.find(l => l.name === itag) || {}).id, {}, admin)).data;
+  const iOne = (await cfind(ip(1))).rows[0];
+  check('import brings names, emails and tags, and creates missing tags once', imp.added === 2 && imp.skipped === 1 && imp.tags_created === 1 && byTag.found === 2 && iOne.email === 'one@imp.co' && iOne.source === 'import' && iOne.tags.some(t => t.id === ctag.id));
+  const cexp = (await j('/api/contacts/export?list=' + encodeURIComponent('Wati export'), {}, admin)).data, clist = (await j('/api/contacts?source=import&opt=in&per=10', {}, admin)).data;
+  check('filters, pages and export work', cexp.rows.length === 2 && clist.per === 10 && clist.rows.length <= 10 && clist.rows.every(c => c.source === 'import' && !c.opted_out) && clist.stats.total >= clist.found && clist.stats.imported >= 2 && (await j('/api/contacts', {}, a1.token)).status === 403);
+  const cdel = await j('/api/contacts/' + cone.id, { method: 'DELETE' }, admin), cbulk = (await j('/api/contacts/delete', { method: 'POST', body: { ids: cexp.rows.map(c => c.id).concat(999999) } }, admin)).data;
+  check('a contact is deleted with its chat, and several can be deleted at once', cdel.status === 200 && (await cfind(cph)).found === 0 && (await pool.query('SELECT 1 FROM conversations WHERE id=$1', [cone.conversation_id])).rows.length === 0 && cbulk.deleted === 2
+    && (await j('/api/contacts/' + cone.id, { method: 'DELETE' }, admin)).status === 404);
+  await j('/api/labels/' + ctag.id, { method: 'DELETE' }, admin); for (const l of (await j('/api/labels', {}, admin)).data.filter(l => l.name === itag)) await j('/api/labels/' + l.id, { method: 'DELETE' }, admin);
   // Chatbots: a flow with a message, buttons that branch, open questions, an action and the hand over
   const ftag = (await j('/api/labels', { method: 'POST', body: { name: 'Course lead' + Date.now(), color: '#128c7e' } }, admin)).data;
   const fsteps = [{ id: 's1', type: 'message', kind: 'text', text: 'Welcome {{first_name}}!', next: '' },
