@@ -140,6 +140,7 @@ mark{background:#fde68a;color:#111b21;border-radius:2px;padding:0 1px}.b.curhit 
 .kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;margin:0}.kv dt{color:var(--mute)}.kv dd{margin:0;overflow-wrap:anywhere}
 /* manager screens */
 .team{overflow-y:auto}
+.xdep{display:block;border:0;background:none;color:var(--brand);font-size:12px;padding:4px 0 0;cursor:pointer;text-align:left;max-width:200px}.xdep:hover{text-decoration:underline}
 .tbl{margin:0 16px 16px;background:var(--card);border-radius:10px;overflow-x:auto;box-shadow:var(--sh)}
 table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
 th{font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--mute);background:var(--thead)}tr:last-child td{border-bottom:0}tbody tr:hover td{background:var(--thead)}
@@ -1576,11 +1577,12 @@ async function showTeam() {
   const [st, us, ds] = await Promise.all([api('/stats'), api('/users'), api('/departments')]); if (st.error || us.error) return toast(st.error || us.error); if (S.nav !== 'tm') return;
   const dopt = v => arr(ds).map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join(''), dname = k => (arr(ds).find(d => d.key === k) || { name: k }).name;
   const t = st.totals, admin = S.user.role === 'admin', cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const extras = u => arr(u.extra_teams).filter(k => k !== u.team).map(dname).join(', '); // the other departments this person also gets chats from
   el.innerHTML = phead('Agents', 'Your team members, their departments and who receives new chats.', admin ? `<button class="btn" data-open="m-user">${ico('userplus', 16)}Add agent</button>` : '') + `
   <div class="stats">${kpi('users', us.filter(u => u.is_active).length, 'Active members')}${kpi('check', us.filter(u => u.is_active && u.is_online).length, 'Online now', 'blue')}${kpi('chat', t.open, 'Open chats', 'violet')}${kpi('hourglass', t.unassigned, 'Waiting for an agent', 'amber')}</div>
   <div class="tbl"><div class="tbl-h"><b>Members</b><div class="search">${ico('search', 16)}<input id="uq" placeholder="Search name or email"></div></div>
   <table><thead><tr><th>Member</th><th>Role</th><th>Department</th><th>Open chats</th><th>Status</th>${admin ? '<th>New chats</th><th></th>' : ''}</tr></thead><tbody id="utb">
-  ${us.map(u => `<tr><td>${userCell(u.name, u.email)}</td><td><em class="chip${u.role === 'admin' ? ' ok' : u.role === 'manager' ? ' warn' : ''}">${esc(cap(u.role))}</em></td><td>${admin ? `<select data-ut="${u.id}" style="min-width:130px">${dopt(u.team)}</select>` : esc(dname(u.team))}</td><td>${u.active_chats} <span class="mute">/ ${u.max_active_chats}</span></td>
+  ${us.map(u => `<tr><td>${userCell(u.name, u.email)}</td><td><em class="chip${u.role === 'admin' ? ' ok' : u.role === 'manager' ? ' warn' : ''}">${esc(cap(u.role))}</em></td><td>${admin ? `<select data-ut="${u.id}" style="min-width:130px">${dopt(u.team)}</select><button type="button" class="xdep" data-ux="${u.id}">${extras(u) ? '+ ' + esc(extras(u)) : '+ More departments'}</button>` : esc(dname(u.team)) + (extras(u) ? `<small class="mute" style="display:block">+ ${esc(extras(u))}</small>` : '')}</td><td>${u.active_chats} <span class="mute">/ ${u.max_active_chats}</span></td>
   <td style="white-space:nowrap"><span class="dot${u.is_active && u.is_online ? ' on' : ''}"></span>${u.is_active ? (u.is_online ? 'Online' : 'Offline') : 'Deactivated'}</td>${admin ? `<td>${u.is_active ? `<label class="ck"><span class="tog"><input type="checkbox" data-ur="${u.id}"${u.in_rotation ? ' checked' : ''}><i></i></span> In rotation</label>` : '<span class="mute">—</span>'}</td>
   <td class="tdm"><button class="rowbtn" data-um="${u.id}" aria-label="Actions for ${esc(u.name)}">${ico('more', 18)}</button></td>` : ''}</tr>`).join('')}</tbody></table></div>
   ${admin ? modal('m-user', 'Add a team member', `<form class="add" id="af"><label class="fld"><span>Full name</span><input id="an" required></label><label class="fld"><span>Email</span><input id="ae" type="email" required></label>
@@ -1589,7 +1591,8 @@ async function showTeam() {
     <div class="full dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Add member</button></div></form>`) : ''}`;
   $('#tb').onclick = showInbox;
   $('#uq').oninput = e => { const q = e.target.value.trim().toLowerCase(); $('#utb').querySelectorAll('tr').forEach(r => { r.hidden = !!q && !r.querySelector('.uc').textContent.toLowerCase().includes(q); }); };
-  el.querySelectorAll('[data-ut]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ut, 'PATCH', { team: x.value }); toast(r.error || 'Department changed'); });
+  el.querySelectorAll('[data-ut]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ut, 'PATCH', { team: x.value }); toast(r.error || 'Department changed'); if (!r.error) showTeam(); });
+  el.querySelectorAll('[data-ux]').forEach(x => x.onclick = () => pickDepartments(us.find(u => u.id === +x.dataset.ux), arr(ds)));
   el.querySelectorAll('[data-ur]').forEach(x => x.onchange = async () => { const r = await api('/users/' + x.dataset.ur, 'PATCH', { in_rotation: x.checked }); if (r.error) { x.checked = !x.checked; return toast(r.error); } toast(x.checked ? 'Now gets new chats' : 'Will not get new chats automatically'); });
   const changeEmail = async u => {
     const em = await ask('Change email', { note: `New email address for ${u.name}. They are signed out and can use "Forgot your password?" to set a new password.`, value: u.email, type: 'email' }); if (!em || em.trim().toLowerCase() === u.email) return;
@@ -1603,6 +1606,22 @@ async function showTeam() {
   if (admin) $('#af').onsubmit = async e => { e.preventDefault();
     const r = await api('/users', 'POST', { name:$('#an').value, email:$('#ae').value, password:$('#ap').value, team:$('#at').value, role:$('#ar').value, max_active_chats:+$('#am').value });
     if (r.error) return toast(r.error.includes('duplicate') ? 'That email is already used' : r.error); toast('Team member added'); showTeam(); loadAgents(); };
+}
+
+// Ticks the extra departments a person also gets new chats from, besides their main department.
+function pickDepartments(u, ds) {
+  const others = ds.filter(d => d.key !== u.team), main = (ds.find(d => d.key === u.team) || { name: u.team }).name, on = arr(u.extra_teams);
+  const bg = document.createElement('div'); bg.className = 'dlg-bg';
+  bg.innerHTML = `<form class="dlg" role="dialog" aria-label="More departments"><div class="dlg-h"><b>More departments</b><button type="button" class="ib" data-no aria-label="Close">${ico('x', 20)}</button></div><div class="dlg-b">
+    <p class="mute">${esc(u.name)} gets new chats of ${esc(main)}. Tick the other departments they should also get new chats from.</p>
+    ${others.length ? others.map(d => `<label class="ck" style="display:flex;margin:10px 0"><input type="checkbox" value="${esc(d.key)}"${on.includes(d.key) ? ' checked' : ''}> ${esc(d.name)}</label>`).join('') : '<p class="mute">There are no other departments yet. Add them in Settings.</p>'}
+    <div class="dlg-f"><button type="button" class="ghost" data-no>Cancel</button><button class="btn">Save</button></div></div></form>`;
+  bg.onclick = e => { if (e.target === bg || e.target.closest('[data-no]')) bg.remove(); };
+  bg.__cancel = () => bg.remove();
+  bg.querySelector('form').onsubmit = async e => { e.preventDefault();
+    const r = await api('/users/' + u.id, 'PATCH', { extra_teams: [...bg.querySelectorAll('input:checked')].map(x => x.value) });
+    if (r.error) return toast(r.error); bg.remove(); toast('Departments saved'); showTeam(); };
+  document.body.appendChild(bg); bg.querySelector('.btn').focus();
 }
 
 /* ---------- Labels + quick replies ---------- */
