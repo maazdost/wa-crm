@@ -507,6 +507,33 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
       && bad.status === 400 && (await j('/api/demo-settings', { method: 'PUT', body: { enabled: false } }, a3.token)).status === 403);
     await j('/api/demo-settings', { method: 'PUT', body: { enabled: false } }, admin);
   }
+  // Payments: a payment screenshot is caught, a manager confirms it, the client gets a numbered receipt
+  {
+    const pp = '9230070001' + Date.now().toString().slice(-4), q = '9230070002' + Date.now().toString().slice(-4);
+    await inbound(pp, { text: { body: 'Hi, fees kitni hai?' } }); await sleep(400);
+    await inbound(pp, { type: 'image', image: { id: 'payimg1' + Date.now(), mime_type: 'image/jpeg', caption: 'Payment bhej di JazzCash se' } }); await sleep(600);
+    await inbound(q, { text: { body: 'hello' } }); await sleep(300);
+    await inbound(q, { type: 'image', image: { id: 'payimg2' + Date.now(), mime_type: 'image/jpeg' } }); await sleep(600);
+    const cp = await convOf(pp), cq = await convOf(q);
+    const list = (await j('/api/payments', {}, admin)).data, pend = list.pending.find(x => x.conversation_id === cp.id);
+    const tagged = (await pool.query(`SELECT 1 FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=$1 AND l.name='Payment to check'`, [cp.id])).rows.length;
+    check('a photo sent with payment words waits on the Payments page and the chat is tagged', !!pend && pend.media_type === 'image' && tagged === 1 && !list.pending.some(x => x.conversation_id === cq.id));
+    const qm = (await pool.query(`SELECT id FROM messages WHERE conversation_id=$1 AND media_id IS NOT NULL ORDER BY id DESC LIMIT 1`, [cq.id])).rows[0];
+    const mark = await j(`/api/messages/${qm.id}/payment`, { method: 'POST' }, admin), again = await j(`/api/messages/${qm.id}/payment`, { method: 'POST' }, admin);
+    const agentNo = await j('/api/payments', {}, a1.token), agentConfirm = await j(`/api/payments/${pend.id}/confirm`, { method: 'POST', body: { amount: 15000 } }, a1.token);
+    check('the team can mark any photo as a payment once, and agents cannot open or confirm payments', mark.status === 200 && !!mark.data.payment && again.data.already === true && agentNo.status === 403 && agentConfirm.status === 403);
+    const bad = await j(`/api/payments/${pend.id}/confirm`, { method: 'POST', body: { amount: 0 } }, admin);
+    const ok = await j(`/api/payments/${pend.id}/confirm`, { method: 'POST', body: { amount: 15000, item: 'Forex Classes', method: 'JazzCash' } }, admin);
+    const twice = await j(`/api/payments/${pend.id}/confirm`, { method: 'POST', body: { amount: 15000 } }, admin);
+    const said = await botSaid(pp), last = said[said.length - 1] || '';
+    const labels = (await pool.query(`SELECT l.name FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=$1`, [cp.id])).rows.map(r => r.name);
+    check('confirming sends a numbered receipt, tags the chat Enrolled and cannot happen twice', bad.status === 400 && ok.status === 200 && /^RCPT-\d{4}$/.test(ok.data.payment.receipt) && ok.data.sent.sent
+      && last.includes(ok.data.payment.receipt) && last.includes('PKR 15,000') && last.includes('Forex Classes') && labels.includes('Enrolled') && !labels.includes('Payment to check') && twice.status === 409);
+    const rej = await j(`/api/payments/${mark.data.payment.id}/reject`, { method: 'POST', body: { notify: true } }, admin), saidQ = await botSaid(q);
+    const after = (await j('/api/payments', {}, admin)).data;
+    check('not received sends a polite message, and totals and the per course list add up', rej.status === 200 && rej.data.sent.sent && /could not find this payment/.test(saidQ[saidQ.length - 1] || '')
+      && after.totals.today >= 15000 && after.byItem.some(x => x.item === 'Forex Classes' && x.total >= 15000) && after.done.some(x => x.id === pend.id && x.receipt === ok.data.payment.receipt));
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

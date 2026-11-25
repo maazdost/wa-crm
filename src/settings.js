@@ -26,6 +26,13 @@ const DEFAULTS = {
     came: 'Thank you for joining the demo class, {{first_name}}! Would you like to join the full course? Reply here and we will send you the fees and joining steps.',
     missed: 'We missed you at the demo class, {{first_name}}. Would you like to book the next one?'
   },
+  // Payments page: payment screenshots to check, receipts. Words are looked for in the caption and the recent chat.
+  payments: {
+    enabled: true, prefix: 'RCPT', tz: 'Asia/Karachi', currency: 'PKR', methods: ['JazzCash', 'Easypaisa', 'Bank transfer', 'USDT', 'Cash'],
+    words: ['paid', 'payment', 'transfer', 'jazzcash', 'jazz cash', 'easypaisa', 'easy paisa', 'receipt', 'screenshot', 'deposit', 'usdt', 'fee', 'fees', 'bhej di', 'bhej diye', 'kar di', 'kar diye', 'bheji'],
+    receipt: '🧾 *Payment receipt {{receipt}}*\n{{company}}\n\nName: {{name}}\nFor: {{item}}\nAmount: {{amount}}\nMethod: {{method}}\nDate: {{date}}\n\nThank you, your payment is confirmed! ✅',
+    not_received: 'Thank you {{first_name}}. We could not find this payment in our account yet. Please check the details and send the screenshot again, or tell us the time and the account you paid from.'
+  },
   away: {
     enabled: false, message: 'Thanks for your message! Our team is offline right now and will reply as soon as we are back.',
     start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5, 6], tz: 'Asia/Karachi'
