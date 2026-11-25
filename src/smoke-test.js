@@ -534,6 +534,26 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     check('not received sends a polite message, and totals and the per course list add up', rej.status === 200 && rej.data.sent.sent && /could not find this payment/.test(saidQ[saidQ.length - 1] || '')
       && after.totals.today >= 15000 && after.byItem.some(x => x.item === 'Forex Classes' && x.total >= 15000) && after.done.some(x => x.id === pend.id && x.receipt === ok.data.payment.receipt));
   }
+  // Daily summary: one WhatsApp message with the day's numbers, as a message inside the 24 hour window or as the template outside it
+  {
+    const o1 = '9230060001' + Date.now().toString().slice(-4), o2 = '9230060002' + Date.now().toString().slice(-4);
+    await inbound(o1, { text: { body: 'owner here' } }); await sleep(400);
+    const bad = await j('/api/summary-settings', { method: 'PUT', body: { numbers: '12ab' } }, admin);
+    const tpl = await j('/api/summary-settings/template', { method: 'POST' }, admin);
+    const set = await j('/api/summary-settings', { method: 'PUT', body: { enabled: true, time: '00:00', numbers: `${o1}\n+${o2}` } }, admin);
+    check('the daily summary settings are saved, a wrong number is refused, and switching on late waits for tomorrow', bad.status === 400 && tpl.status === 200 && tpl.data.template.name === 'daily_summary'
+      && set.status === 200 && set.data.settings.numbers.join() === [o1, o2].join() && set.data.settings.last_day === set.data.today && /Daily summary/.test(set.data.preview)
+      && (await j('/api/summary-settings', {}, a1.token)).status === 403);
+    const now = await j('/api/summary-settings/send', { method: 'POST' }, admin), said = await botSaid(o1);
+    const r1 = (now.data.results || []).find(x => x.to === o1), r2 = (now.data.results || []).find(x => x.to === o2);
+    check('Send now: a number that wrote today gets the full message, another gets the template', now.status === 200 && r1 && r1.sent && r1.how === 'message' && r2 && r2.sent && r2.how === 'template'
+      && /Daily summary/.test(said[said.length - 1] || '') && /New leads: \*\d+\*/.test(said[said.length - 1]) && /Payments confirmed/.test(said[said.length - 1]));
+    await pool.query(`UPDATE settings SET value = value || '{"last_day":""}' WHERE key='summary'`); await sleep(2500);
+    const after = (await botSaid(o1)).filter(x => /Daily summary/.test(x)).length; await sleep(1500);
+    const later = (await botSaid(o1)).filter(x => /Daily summary/.test(x)).length;
+    check('the nightly summary goes out once a day at the set time', after === 2 && later === 2);
+    await j('/api/summary-settings', { method: 'PUT', body: { enabled: false } }, admin);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
