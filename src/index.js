@@ -56,6 +56,7 @@ if (MIN > 0) setInterval(async () => {
 }, 60000);
 
 const PORT = process.env.PORT || 3000;
-migrate().then(require('./bootstrap')).then(() => require('./numbers').importFromEnv()).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`); require('./broadcast').start(); require('./drip').start(); }))
+migrate().then(require('./bootstrap')).then(() => require('./numbers').importFromEnv()).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`);
+  { const cs = require('./routes/api').clientSites(); console.log(cs.length ? 'Sign-in also checks: ' + cs.join(', ') : (process.env.CLIENT_SITES ? 'CLIENT_SITES is set but holds no usable address' : 'CLIENT_SITES is not set: sign-in checks this site only')); } require('./broadcast').start(); require('./drip').start(); }))
   .catch(e => { console.error(e); process.exit(1); });
 module.exports = { app, server };
