@@ -589,3 +589,19 @@ CREATE TABLE IF NOT EXISTS ad_rules (
 );
 CREATE INDEX IF NOT EXISTS ad_rules_company ON ad_rules(company_id);
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ad_rule_id INT;
+
+-- Demo class bookings: a seat for one client at one free demo class (day + place). Status: booked, came, missed, joined, cancelled, moved.
+CREATE TABLE IF NOT EXISTS demo_bookings (
+  id SERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id), contact_id INT NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  conversation_id INT REFERENCES conversations(id) ON DELETE SET NULL, day DATE NOT NULL, place TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'booked', booked_by INT REFERENCES users(id) ON DELETE SET NULL,
+  morning_at TIMESTAMPTZ, hour_at TIMESTAMPTZ, remind_error TEXT, after_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS demo_bookings_company_day ON demo_bookings(company_id, day, place);
+CREATE INDEX IF NOT EXISTS demo_bookings_contact ON demo_bookings(contact_id);
+-- The joining link (for example Google Meet) of one class, which can change every time
+CREATE TABLE IF NOT EXISTS demo_sessions (
+  company_id INT NOT NULL REFERENCES companies(id), day DATE NOT NULL, place TEXT NOT NULL, link TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (company_id, day, place)
+);

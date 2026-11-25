@@ -11,6 +11,7 @@ const { maybeAway } = require('../away');
 const autoreply = require('../autoreply');
 const flows = require('../flows');
 const adroute = require('../adroute');
+const demo = require('../demo');
 const ai = require('../ai');
 const settings = require('../settings');
 const numbers = require('../numbers');
@@ -106,6 +107,9 @@ async function handleMessage(m, profileName, numId) {
   };
   const going = await flows.reply(conv, contact, msg, waId);
   if (going) return tellTeam(going);
+  // Demo class booking: a tap on a demo button, or a message asking for the demo
+  const dm = await demo.handle(conv, contact, msg).catch(e => { console.error('demo class', e.message); return null; });
+  if (dm) return tellTeam(dm);
   // Quick Message: the message matches one of the company's keywords (for example the ready-made first message of an ad).
   // Its saved messages are sent instead of the welcome bot, and the chat gets its tag and agent.
   const rule = await autoreply.find(conv, contact, msg).catch(e => { console.error('quick message', e.message); return null; });

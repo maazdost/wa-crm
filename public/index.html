@@ -569,6 +569,17 @@ td .ghost+.ghost{margin-inline-start:6px}
   td .ghost,td .ib{min-height:38px}
 }
 [dir=rtl] table:not(.keep):not(.alt) td[data-l]::before{letter-spacing:0}
+.dnote{display:flex;gap:10px;align-items:center;background:var(--warnbg);color:var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.dsess{margin-top:14px}.dsess .tbl-h{flex-wrap:wrap;gap:8px 14px}
+.dlink{display:flex;gap:6px;margin-left:auto;flex:1 1 280px;max-width:460px}.dlink input{flex:1;min-width:0}
+.dbtns{white-space:nowrap}.dbtns .ghost{margin-left:4px}
+.lnk{background:none;border:0;padding:0;color:var(--ink);cursor:pointer;text-align:left;font:inherit;font-weight:600}.lnk:hover{color:var(--brand);text-decoration:underline}
+.ddays{display:flex;flex-wrap:wrap;gap:8px}.chkp{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:14px}
+.dpl{grid-template-columns:2fr 1fr 1fr;margin-bottom:10px}.dpl .dwide{grid-column:1/-1}
+.drow{display:flex;align-items:center;justify-content:space-between;gap:10px}.drow select{flex:1;min-width:0}
+.dmsgs{margin:12px 0}.dmsgs summary{cursor:pointer;font-weight:600;margin-bottom:8px}
+#dsf .fld{margin-bottom:12px}#cpdemo p{margin:0 0 8px}
+@media(max-width:700px){.dpl{grid-template-columns:1fr 1fr}.dpl .fld:first-child{grid-column:1/-1}.dbtns{white-space:normal}.dbtns .ghost{margin:2px 0}}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -712,14 +723,14 @@ const ICONS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
-  check: '<polyline points="20 6 9 17 4 12"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
+  check: '<polyline points="20 6 9 17 4 12"/>', calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>', ban: '<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>'
 };
 const ico = (n, s = 20) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
 const hueOf = s => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return h; };
 const avatar = (name, size = 44) => `<span class="av" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .4)}px;background:hsl(${hueOf(name)} 42% 40%)">${esc(((String(name).replace(/[^\p{L}\p{N}]/gu, '')[0]) || '#').toUpperCase())}</span>`;
 const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a conversation</b><span>Pick a chat on the left to read it and reply. Every client stays with one team member from start to finish.</span>`;
 // key, label, icon, managers only, super admin only, menu group
-const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'], ['au', 'Audience', 'userplus', 1, 0, 'CRM'], ['pl', 'Pipeline', 'panel', 1, 0, 'CRM'],
+const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['dc', 'Demo Classes', 'calendar', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'], ['au', 'Audience', 'userplus', 1, 0, 'CRM'], ['pl', 'Pipeline', 'panel', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
@@ -727,14 +738,14 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -1154,6 +1165,7 @@ function buildPanel() {
     <div class="cp-top" id="cptop"></div>
     <div class="cp-sec"><h4>Assigned to</h4><div id="mgr">${isMgr() ? '' : esc(S.conv.assigned_to === S.user.id ? 'You' : S.conv.agent_name || 'Nobody yet')}</div></div>
     <div class="cp-sec"><h4>Tags</h4><div id="lbl"></div></div>
+    <div class="cp-sec" hidden><h4>Demo class</h4><div id="cpdemo"></div></div>
     <div class="cp-sec"><h4>Internal notes</h4><section id="notes" class="notes"></section></div>
     <div class="cp-sec"><h4>About this client</h4><dl class="kv" id="cpkv"></dl></div>
     <div class="cp-sec"><h4>Media, files and voice notes</h4><div id="mcount"><button class="ghost" id="mcb">Count shared files</button></div></div>`;
@@ -1168,6 +1180,7 @@ function fillPanel() {
   top.innerHTML = `${avatar(nm, 72)}<h2>${esc(nm)}</h2><span class="mute">+${esc(c.wa_id)}</span><em class="chip ${w.cls}">${w.open ? 'Reply window open · ' + w.txt : 'Reply window closed'}</em>`;
   $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', srcName(c)) + (safeUrl(c.ad_source_url) ? `<dt>Ad</dt><dd>${adLink(c, c.ad_headline ? esc(c.ad_headline) : 'Open ad')}</dd>` : '') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
     + kv('First contact', c.contact_since ? new Date(c.contact_since).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' }) : '') + kv('Chat status', c.bot_step === 'held' ? 'On hold' : c.status === 'closed' ? 'Closed' : 'Open') + kv('Marketing', c.opted_out ? 'Opted out' : 'Allowed');
+  fillDemoPanel();
 }
 async function exportChat(list) {
   const nm = S.conv.contact_name || '+' + S.conv.wa_id; if (!list) { toast('Preparing the export…'); await loadAll(); list = S.msgs; }
@@ -2044,6 +2057,89 @@ async function showAds() {
     const body = { name: $('#ar1').value, keywords: $('#ar2').value.split(','), team: $('#ar3').value, message: $('#ar4').value };
     const r = await api('/ad-rules' + (editing ? '/' + editing : ''), editing ? 'PATCH' : 'POST', body); if (r.error) return toast(r.error);
     toast('Ad rule saved'); $('#m-ar').hidden = true; showAds(); };
+}
+
+/* ---------- Demo Classes (free demo seats booked in the chat, reminders, Came / Didn't come) ---------- */
+const DDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], DMON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dDay = d => { const x = new Date(d + 'T00:00:00Z'); return `${DDAYS[x.getUTCDay()]} ${x.getUTCDate()} ${DMON[x.getUTCMonth()]}`; };
+const dTime = t => { const [h, m] = String(t || '0:0').split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+const DSTAT = { booked: ['Booked', ''], came: ['Came', 'ok'], missed: ["Didn't come", 'closed'], joined: ['Joined the course', 'ok'], cancelled: ['Cancelled', 'closed'] };
+async function showDemo() {
+  const mgr = isMgr();
+  const sc = screen('Demo Classes', 'Clients book a free demo seat in the chat by tapping a place and a day. They get a reminder on the morning of the class and shortly before it. After the class, mark who came: they get the right next message.',
+    mgr ? `<button class="btn" id="dset">${ico('sliders', 16)}Settings</button>` : '');
+  const d = await api('/demo'); if (d.error) return toast(d.error); if (S.nav !== 'dc') return;
+  const s = d.settings, st = d.stats, places = arr(s.places), pname = k => (places.find(p => p.key === k) || { name: k }).name, ptime = k => (places.find(p => p.key === k) || {}).time;
+  // one block per class: the open classes, and past ones with seats that still need marking
+  const groups = new Map(), key = (day, pl) => day + '|' + pl;
+  arr(d.sessions).forEach(x => groups.set(key(x.day, x.place), { day: x.day, place: x.place, seats: x.seats, link: x.link, rows: [] }));
+  arr(d.bookings).forEach(b => { const k = key(b.day, b.place); if (!groups.has(k)) groups.set(k, { day: b.day, place: b.place, seats: 0, link: '', rows: [], past: b.day < d.today }); groups.get(k).rows.push(b); });
+  const list = [...groups.values()].sort((a, b) => (a.day + ptime(a.place)).localeCompare(b.day + ptime(b.place)));
+  const rem = b => b.remind_error ? `<em class="chip warn" title="${esc(b.remind_error)}">${tr('Reminder not sent')}</em>` : b.hour_at ? `<span class="mute">${tr('Reminded')} ✓✓</span>` : b.morning_at ? `<span class="mute">${tr('Reminded')} ✓</span>` : '<span class="mute">—</span>';
+  const row = b => { const [t, c] = DSTAT[b.status] || [b.status, ''];
+    return `<tr><td><button class="lnk" data-dch="${b.conversation_id || ''}" data-notr>${esc(b.name)}</button><small style="display:block" class="mute">+${esc(b.wa_id)}</small></td><td>${esc(b.agent || '—')}</td><td>${rem(b)}</td><td><em class="chip ${c}">${tr(t)}</em></td>
+      <td class="tdm dbtns">${b.status === 'booked' ? `<button class="ghost" data-dm="${b.id}" data-s="came">${ico('check', 14)}${tr('Came')}</button><button class="ghost" data-dm="${b.id}" data-s="missed">${tr("Didn't come")}</button>` : ''}
+      ${b.status === 'came' ? `<button class="ghost" data-dm="${b.id}" data-s="joined">${tr('Joined the course')}</button>` : ''}
+      ${b.status === 'booked' ? `<button class="rowbtn" data-dm="${b.id}" data-s="cancelled" title="${tr('Cancel seat')}" aria-label="${tr('Cancel seat')}">${ico('x', 15)}</button>` : ''}</td></tr>`; };
+  const block = g => { const live = g.rows.filter(b => ['booked', 'came', 'joined'].includes(b.status)).length, past = g.day < d.today;
+    return `<div class="tbl dsess"><div class="tbl-h"><b>${esc(dDay(g.day))} · ${esc(pname(g.place))} · ${esc(dTime(ptime(g.place)))}</b>
+      <small class="mute">${past ? `<em class="chip warn">${tr('Mark who came')}</em>` : `${live}${g.seats ? ' / ' + g.seats : ''} ${tr(live === 1 && !g.seats ? 'seat booked' : 'seats booked')}`}</small>
+      ${mgr && !past ? `<span class="dlink"><input data-dl="${g.day}|${g.place}" value="${esc(g.link || '')}" placeholder="${tr('Joining link for this class, e.g. Google Meet')}"><button class="ghost" data-dls="${g.day}|${g.place}">${tr('Save link')}</button></span>` : g.link ? `<a href="${esc(g.link)}" target="_blank" rel="noopener">${tr('Joining link')}</a>` : ''}</div>
+      ${g.rows.length ? `<table><thead><tr><th>Client</th><th>Agent</th><th>Reminder</th><th>Status</th><th></th></tr></thead><tbody>${g.rows.map(row).join('')}</tbody></table>` : `<p class="mute" style="padding:12px 16px">${tr('No seats booked yet')}</p>`}</div>`; };
+  sc.innerHTML = `${s.enabled ? '' : `<div class="dnote">${ico('info', 18)}<span>${mgr ? tr('Demo bookings are switched off. Open Settings, check the days, places and messages, and switch them on.') : tr('Demo bookings are switched off by your manager.')}</span></div>`}
+    <div class="stats">${kpi('calendar', st.upcoming, 'Seats booked for coming classes')}${kpi('check', st.came, 'Came, last 30 days', 'blue')}${kpi('ban', st.missed, "Didn't come, last 30 days", st.missed ? 'amber' : 'violet')}${kpi('star', st.joined, 'Joined the course after the demo', 'violet')}</div>
+    ${list.length ? list.map(block).join('') : `<div class="tbl">${emptyState('calendar', 'No demo classes coming up', mgr ? 'Open Settings to choose the days and places of your free demo class.' : '')}</div>`}
+    <p class="mute" style="margin-top:12px">${tr('Clients book by sending a message with one of these words')}: <b data-notr>${esc(arr(s.words).join(', '))}</b></p>`;
+  sc.querySelectorAll('[data-dch]').forEach(b => b.onclick = () => { if (!+b.dataset.dch) return; goNav('inbox'); openConv(+b.dataset.dch); });
+  sc.querySelectorAll('[data-dm]').forEach(b => b.onclick = async () => {
+    const stt = b.dataset.s; if (stt === 'cancelled' && !await sure('Cancel this seat?', 'The client is not told. Write to them in the chat if needed.', { ok: 'Cancel seat', danger: 1 })) return;
+    b.disabled = true; const r = await api('/demo/bookings/' + b.dataset.dm, 'PATCH', { status: stt }); if (r.error) { b.disabled = false; return toast(r.error); }
+    toast(r.sent ? (r.sent.sent ? tr('Saved and the client was sent the next message') : tr('Saved. The message was not sent') + ': ' + tr(r.sent.why || '')) : tr('Saved')); showDemo(); });
+  sc.querySelectorAll('[data-dls]').forEach(b => b.onclick = async () => { const [day, place] = b.dataset.dls.split('|'), v = sc.querySelector(`[data-dl="${b.dataset.dls}"]`).value;
+    const r = await api('/demo-settings/link', 'PUT', { day, place, link: v }); if (r.error) return toast(r.error); toast('Link saved. It goes out with the reminder before the class.'); });
+  if (mgr) $('#dset').onclick = () => demoSettings(s);
+}
+async function demoSettings(s) {
+  const deps = arr(await api('/departments')), tpls = arr(S.templates).filter(t => t.status === 'APPROVED' || t.name === s.template), places = arr(s.places);
+  const pl = (p, i) => `<div class="qtwo dpl"><label class="fld"><span>${tr('Place')} ${i + 1}</span><input data-pn="${i}" value="${esc(p.name || '')}" placeholder="${i ? 'e.g. Online' : 'e.g. Khushab office'}" maxlength="40"></label>
+    <label class="fld"><span>${tr('Starts at')}</span><input type="time" data-pt="${i}" value="${esc(p.time || '19:00')}"></label><label class="fld"><span>${tr('Seats (0 = no limit)')}</span><input type="number" min="0" data-ps="${i}" value="${p.seats || 0}"></label>
+    <label class="fld dwide"><span>${tr('Address or how to join (goes in the reminder when the class has no link)')}</span><input data-pi="${i}" value="${esc(p.info || '')}" maxlength="300"></label><input type="hidden" data-pk="${i}" value="${esc(p.key || '')}"></div>`;
+  const ta = (k, label) => `<label class="fld"><span>${label}</span><textarea id="ds_${k}" rows="2" maxlength="1000">${esc(s[k] || '')}</textarea></label>`;
+  document.body.insertAdjacentHTML('beforeend', modal('m-ds', 'Demo class settings', `<form id="dsf">
+    <label class="fld drow"><span>${tr('Clients can book demo seats in the chat')}</span><label class="tog"><input type="checkbox" id="ds_on"${s.enabled ? ' checked' : ''} aria-label="Switched on"><i></i></label></label>
+    <div class="fld"><span>${tr('Class days')}</span><div class="ddays">${DDAYS.map((n, i) => `<label class="chkp"><input type="checkbox" data-dd="${i}"${arr(s.days).includes(i) ? ' checked' : ''}>${tr(n)}</label>`).join('')}</div></div>
+    <div id="dspl">${[0, 1, 2].map(i => pl(places[i] || {}, i)).join('')}</div><small class="mute">${tr('Leave a place name empty to remove it. Up to 3 places.')}</small>
+    <div class="qtwo"><label class="fld"><span>${tr('Send new clients who book to')}</span><select id="ds_team"><option value="">${tr('Keep their department')}</option>${deps.map(x => `<option value="${esc(x.key)}"${x.key === s.team ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+      <label class="fld"><span>${tr('Words that start booking, separated by commas')}</span><input id="ds_words" value="${esc(arr(s.words).join(', '))}"></label></div>
+    <div class="qtwo"><label class="fld"><span>${tr('Morning reminder at')}</span><input type="time" id="ds_morning" value="${esc(s.morning || '10:00')}"></label>
+      <label class="fld"><span>${tr('Second reminder, minutes before the class')}</span><input type="number" min="10" max="600" id="ds_before" value="${s.before || 60}"></label></div>
+    <label class="fld"><span>${tr('Template for clients who have not written in 24 hours ({{1}} name, {{2}} day, time and place, {{3}} link or address)')}</span><select id="ds_tpl"><option value="">${tr('None: only clients who wrote in the last 24 hours get reminders')}</option>${tpls.map(t => `<option${t.name === s.template ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></label>
+    <details class="dmsgs"><summary>${tr('Messages')} <small class="mute">{{first_name}} {{place}} {{date}} {{time}} {{info}}</small></summary>
+      ${ta('ask', 'Asking where to join')}${ta('pick_day', 'Asking which day')}${ta('booked', 'Seat booked')}${ta('remind_morning', 'Morning reminder')}${ta('remind_hour', 'Reminder before the class ({{info}} is the class link, or the address)')}
+      ${ta('came', 'After the class, to clients who came')}${ta('missed', "After the class, to clients who didn't come (booking buttons follow)")}${ta('full', 'Class is full')}${ta('none', 'No class open')}</details>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`, 1));
+  const m = $('#m-ds'); m.hidden = false; m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.remove());
+  $('#dsf').onsubmit = async e => { e.preventDefault();
+    const body = { enabled: $('#ds_on').checked, days: [...m.querySelectorAll('[data-dd]')].filter(x => x.checked).map(x => +x.dataset.dd),
+      places: [0, 1, 2].map(i => ({ key: m.querySelector(`[data-pk="${i}"]`).value || (i === 0 ? 'office' : i === 1 ? 'online' : 'place3'), name: m.querySelector(`[data-pn="${i}"]`).value.trim(), time: m.querySelector(`[data-pt="${i}"]`).value, seats: +m.querySelector(`[data-ps="${i}"]`).value, info: m.querySelector(`[data-pi="${i}"]`).value })).filter(p => p.name),
+      team: $('#ds_team').value, words: $('#ds_words').value, morning: $('#ds_morning').value, before: +$('#ds_before').value, template: $('#ds_tpl').value };
+    ['ask', 'pick_day', 'booked', 'remind_morning', 'remind_hour', 'came', 'missed', 'full', 'none'].forEach(k => body[k] = $('#ds_' + k).value);
+    const r = await api('/demo-settings', 'PUT', body); if (r.error) return toast(r.error);
+    toast(r.enabled ? 'Saved. Clients can book demo seats now.' : 'Saved'); m.remove(); showDemo(); };
+}
+// Contact details panel in Live Chat: the client's demo seat, or book one for them
+async function fillDemoPanel() {
+  const box = $('#cpdemo'), id = S.active; if (!box || !id) return;
+  const d = await api('/demo/chat/' + id); if (S.active !== id || !$('#cpdemo')) return;
+  const sec = box.closest('.cp-sec'); if (d.error || (!d.enabled && !d.booking)) { sec.hidden = true; return; } sec.hidden = false;
+  const pname = k => (arr(d.places).find(p => p.key === k) || { name: k }).name, ptime = k => (arr(d.places).find(p => p.key === k) || {}).time;
+  const b = d.booking, live = b && b.status === 'booked';
+  box.innerHTML = `${b ? `<p><b>${esc(dDay(b.day))} · ${esc(pname(b.place))} · ${esc(dTime(ptime(b.place)))}</b><br><em class="chip ${(DSTAT[b.status] || [])[1] || ''}">${tr((DSTAT[b.status] || [b.status])[0])}</em></p>` : ''}
+    ${d.enabled ? `<div class="drow"><select id="cpds" aria-label="Demo class">${arr(d.sessions).map(x => `<option value="${x.day}|${x.place}"${x.seats && !x.left ? ' disabled' : ''}>${esc(dDay(x.day))} · ${esc(x.name)} · ${esc(dTime(x.time))}${x.seats ? ` (${x.left} ${tr('left')})` : ''}</option>`).join('')}</select>
+    <button class="ghost" id="cpdb">${live ? tr('Move seat') : tr('Book seat')}</button></div>` : ''}`;
+  const btn = $('#cpdb'); if (btn) btn.onclick = async () => { const v = $('#cpds').value; if (!v) return; const [day, place] = v.split('|'); btn.disabled = true;
+    const r = await api('/demo/bookings', 'POST', { conversation_id: id, day, place }); btn.disabled = false; if (r.error) return toast(r.error);
+    toast(r.already ? tr('Already booked for this class') : r.sent && !r.sent.sent ? tr('Seat booked. The message was not sent') + ': ' + tr(r.sent.why || '') : tr('Seat booked and the client was told')); fillDemoPanel(); };
 }
 
 /* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */
@@ -3048,7 +3144,7 @@ async function showDashboard(days = S.dashDays || 14) {
   el.innerHTML = phead(`${hello}, ${esc(S.user.name.split(' ')[0])}`, `Here is how ${esc(S.user.company || 'your team')} is doing on WhatsApp.`,
     `<select id="dr">${[7, 14, 30, 90].map(n => `<option value="${n}"${n === d.days ? ' selected' : ''}>Last ${n} days</option>`).join('')}</select><button class="btn" id="dgo">${ico('chat', 16)}Open Live Chat</button>`) + `
   <div class="stats s4">${kpi('userplus', k.new_chats, 'New chats')}${kpi('chat', k.open, 'Open now', 'blue')}${kpi('hourglass', k.unassigned, 'Waiting for an agent', 'amber')}${kpi('bot', k.with_bot, 'Still with the bot', 'violet')}
-    ${kpi('clock', fmtDur(d.median_reply_sec), 'Median first reply')}${kpi('inbox', m.inbound, 'Messages received', 'blue')}${kpi('send', m.agent_out, 'Sent by agents', 'amber')}${kpi('clock', k.late || 0, 'Late replies', k.late ? 'red' : 'violet')}</div>
+    ${kpi('clock', fmtDur(d.median_reply_sec), 'Median first reply')}${kpi('inbox', m.inbound, 'Messages received', 'blue')}${kpi('calendar', k.demo || 0, 'Demo seats booked', 'amber')}${kpi('clock', k.late || 0, 'Late replies', k.late ? 'red' : 'violet')}</div>
   <div class="dgrid"><div class="panel"><h3>New chats per day</h3><p class="mute">${d.perDay.reduce((n, x) => n + x.chats, 0)} new chats in the last ${d.days} days</p><div class="chart${d.perDay.length > 16 ? ' dense' : ''}">${d.perDay.map(x => `<div class="col" title="${x.day}: ${x.chats}"><i style="height:${Math.round(x.chats / max * 140)}px"></i><small>${d.perDay.length > 31 ? '' : x.day.slice(8)}</small></div>`).join('')}</div></div>
     <div class="panel"><h3>WhatsApp numbers</h3><div id="dnum"><p class="mute">Checking…</p></div></div></div>
   <div class="two"><div class="panel"><h3>What clients asked for</h3>${hbars(d.intents)}</div><div class="panel"><h3>Where clients came from</h3>${hbars(d.sources)}</div></div>

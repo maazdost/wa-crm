@@ -654,7 +654,8 @@ router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => 
         COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done')::int AS unassigned,
         COUNT(*) FILTER (WHERE status='bot')::int AS with_bot,
         COUNT(*) FILTER (WHERE status='closed')::int AS closed,
-        (SELECT COUNT(*) FROM slow_replies WHERE company_id=${cid} AND created_at > ${since})::int AS late FROM conversations WHERE company_id=${cid}`, [d]),
+        (SELECT COUNT(*) FROM slow_replies WHERE company_id=${cid} AND created_at > ${since})::int AS late,
+        (SELECT COUNT(*) FROM demo_bookings WHERE company_id=${cid} AND created_at > ${since} AND status <> 'moved')::int AS demo FROM conversations WHERE company_id=${cid}`, [d]),
     query(`SELECT to_char(g,'YYYY-MM-DD') AS day, COALESCE(x.n,0)::int AS chats
         FROM generate_series(((now() AT TIME ZONE $2)::date - ($1::int - 1))::timestamp, (now() AT TIME ZONE $2)::date::timestamp, interval '1 day') g
         LEFT JOIN (SELECT (created_at AT TIME ZONE $2)::date AS dd, COUNT(*) AS n FROM conversations WHERE company_id=${cid} GROUP BY 1) x ON x.dd = g::date ORDER BY g`, [days, tz]),

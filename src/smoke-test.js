@@ -1,4 +1,4 @@
-// End-to-end check against a running server (WA_DRY_RUN=true, FLOW_SWEEP_MS=1000 SLOW_TICK_MS=1000 so the timed checks are quick). Usage: npm run seed && npm start & npm test
+// End-to-end check against a running server (WA_DRY_RUN=true, FLOW_SWEEP_MS=1000 SLOW_TICK_MS=1000 DEMO_TICK_MS=1000 so the timed checks are quick). Usage: npm run seed && npm start & npm test
 const B = process.env.BASE || 'http://localhost:3000';
 const j = async (path, opts = {}, token) => {
   const r = await fetch(B + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) }, body: opts.body && JSON.stringify(opts.body) });
@@ -471,6 +471,41 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     check('an ad no rule fits gets the usual welcome, and the Ad Manager lists each ad with its rule', nc.ad_rule_id === null && nc.team !== 'classes'
       && ad && ad.leads === 1 && ad.rule_id === rule.data.id && page.rules.find(r => r.id === rule.data.id).hits === 1 && (await j('/api/ad-rules', {}, a1.token)).status === 403);
     await j('/api/ad-rules/' + rule.data.id, { method: 'DELETE' }, admin);
+  }
+  // Demo class bookings: the client books in the chat, the class fills up, a reminder goes out, and the team marks who came
+  {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const set = await j('/api/demo-settings', { method: 'PUT', body: { enabled: true, days: [0, 1, 2, 3, 4, 5, 6], team: 'classes', words: 'demo, free class', morning: '00:00', before: 10,
+      places: [{ key: 'office', name: 'Khushab office', time: '23:59', seats: 1, info: 'Main Road, Khushab' }, { key: 'online', name: 'Online', time: '23:58', seats: 0 }] } }, admin);
+    const tap = (id) => ({ type: 'interactive', interactive: { type: 'button_reply', button_reply: { id, title: id } } });
+    const d1 = '9230090001' + Date.now().toString().slice(-4), d2 = '9230090002' + Date.now().toString().slice(-4);
+    await inbound(d1, { text: { body: 'Can I join the demo class?' } }); await sleep(500);
+    const asked = await botSaid(d1), c1 = await convOf(d1);
+    await inbound(d1, tap('demo:p:office')); await sleep(400);
+    await inbound(d1, tap(`demo:d:office:${today}`)); await sleep(500);
+    const said1 = await botSaid(d1);
+    const bk = (await pool.query(`SELECT * FROM demo_bookings WHERE conversation_id=$1`, [c1.id])).rows;
+    const tagged = (await pool.query(`SELECT 1 FROM conversation_labels cl JOIN labels l ON l.id=cl.label_id WHERE cl.conversation_id=$1 AND l.name='Demo booked'`, [c1.id])).rows.length;
+    check('a client asking for the demo gets place buttons, books a seat and is sent to Classes', set.status === 200 && asked.length === 1 && c1.team === 'classes' && c1.assigned_to === a3.user.id
+      && said1.length >= 3 && said1.some(x => /^Your seat is booked, WA: Khushab office, \w{3} \d+ \w{3} at 11:59 PM/.test(x)) && bk.length === 1 && bk[0].status === 'booked' && tagged === 1);
+    await inbound(d2, { text: { body: 'free class please' } }); await sleep(400);
+    await inbound(d2, tap(`demo:d:office:${today}`)); await sleep(500);
+    const said2 = await botSaid(d2), c2 = await convOf(d2);
+    check('a full class is not booked and the client is offered the other places', said2.some(x => /full/.test(x)) && !(await pool.query(`SELECT 1 FROM demo_bookings WHERE conversation_id=$1`, [c2.id])).rows.length);
+    await sleep(2500);
+    const rb = (await pool.query(`SELECT * FROM demo_bookings WHERE id=$1`, [bk[0].id])).rows[0], said3 = await botSaid(d1);
+    check('the reminder goes out once on the day of the class', !!rb.morning_at && said3.filter(x => /Good morning/.test(x)).length === 1);
+    const page = (await j('/api/demo', {}, a3.token)).data;
+    const deny = await j(`/api/demo/bookings/${bk[0].id}`, { method: 'PATCH', body: { status: 'came' } }, a1.token);
+    const came = await j(`/api/demo/bookings/${bk[0].id}`, { method: 'PATCH', body: { status: 'came' } }, a3.token);
+    const said4 = await botSaid(d1);
+    check('the team sees the seat list and marking Came sends the join message', page.bookings.some(b => b.id === bk[0].id) && page.sessions.some(x => x.place === 'office' && x.day === today && x.booked === 1)
+      && deny.status === 403 && came.status === 200 && came.data.sent && came.data.sent.sent && /join the full course/.test(said4[said4.length - 1]));
+    const byAgent = await j('/api/demo/bookings', { method: 'POST', body: { conversation_id: c2.id, day: today, place: 'online' } }, admin);
+    const bad = await j('/api/demo-settings', { method: 'PUT', body: { days: [] } }, admin);
+    check('a manager can book a seat from the chat, and bad settings are refused', byAgent.status === 200 && byAgent.data.booking.place === 'online' && byAgent.data.sent && byAgent.data.sent.sent
+      && bad.status === 400 && (await j('/api/demo-settings', { method: 'PUT', body: { enabled: false } }, a3.token)).status === 403);
+    await j('/api/demo-settings', { method: 'PUT', body: { enabled: false } }, admin);
   }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
