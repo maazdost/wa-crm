@@ -456,6 +456,22 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     check('once someone replies there is no alert', (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n === 2);
     await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: false } }, admin);
   }
+  // Ad routing: a client from an ad that a rule fits skips the welcome and goes straight to that department
+  {
+    const bad = await j('/api/ad-rules', { method: 'POST', body: { keywords: [], team: 'classes' } }, admin);
+    const rule = await j('/api/ad-rules', { method: 'POST', body: { name: 'Classes ad', keywords: 'classes, course', team: 'classes', message: 'Hi {{first_name}}, here are our class details.' } }, admin);
+    const ap = '9230080001' + Date.now().toString().slice(-4), np = '9230080002' + Date.now().toString().slice(-4);
+    const adMsg = (h) => ({ text: { body: 'Hello! Can I get more info on this?' }, referral: { source_url: 'https://fb.me/abc', source_type: 'ad', source_id: '1201', headline: h } });
+    await inbound(ap, adMsg('Join our Forex Classes today')); await sleep(600);
+    await inbound(np, adMsg('Big sale on shoes')); await sleep(600);
+    const ac = await convOf(ap), nc = await convOf(np), said = await botSaid(ap);
+    const page = (await j('/api/ad-rules', {}, admin)).data, ad = page.ads.find(x => x.headline === 'Join our Forex Classes today');
+    check('a client from a matching ad goes straight to that department with the ad message', bad.status === 400 && rule.status === 200 && ac.team === 'classes' && ac.assigned_to === a3.user.id
+      && ac.status === 'open' && said.length === 1 && said[0] === 'Hi WA, here are our class details.' && ac.ad_rule_id === rule.data.id);
+    check('an ad no rule fits gets the usual welcome, and the Ad Manager lists each ad with its rule', nc.ad_rule_id === null && nc.team !== 'classes'
+      && ad && ad.leads === 1 && ad.rule_id === rule.data.id && page.rules.find(r => r.id === rule.data.id).hits === 1 && (await j('/api/ad-rules', {}, a1.token)).status === 403);
+    await j('/api/ad-rules/' + rule.data.id, { method: 'DELETE' }, admin);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
