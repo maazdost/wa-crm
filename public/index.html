@@ -9,7 +9,10 @@
 :root{--ink:#111b21;--ink2:#3b4a54;--mute:#667781;--line:#e9edef;--line2:#d1d7db;--bg:#f0f2f5;--surface:#fff;--hover:#f5f6f6;--sel:#f0f2f5;--in:#fff;--out:#d9fdd3;--lav:#e8e6fb;--chat:#efeae2;--field:#f0f2f5;--inp:#fff;--pill:#f0f2f5;--pillon:#d9fdd3;--pillon-ink:#0a6e57;--icon:#54656f;--card:#fff;--tint:#e1f6ec;--tint-ink:#0a6e57;--tint-line:#cdebdd;--warnbg:#fff4cc;--warn:#8a5a00;--warn-line:#f0e3a5;--redbg:#fdecea;--red:#c0372b;--red-line:#f6cdc8;--notes:#fffbea;--notes-line:#f0e6b8;--rail:#f0f2f5;--railon:#d9dbdf;--menu:#fff;--toast:#111b21;--thead:#fafbfb;--quote:rgba(11,20,26,.06);--brand:#00a884;--brand-d:#008069;--pine2:#008069;--blue:#53bdeb;--ok:#25d366;--sh:0 1px .5px rgba(11,20,26,.13);--sh2:0 2px 5px rgba(11,20,26,.26),0 2px 10px rgba(11,20,26,.16);--tx:#fff;--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23b9b1a2' stroke-width='1.2' opacity='.26'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:light}
 [data-theme="dark"]{--ink:#e9edef;--ink2:#c8d0d4;--mute:#8696a0;--line:#222d34;--line2:#33424b;--bg:#202c33;--surface:#111b21;--hover:#182229;--sel:#2a3942;--in:#202c33;--out:#005c4b;--lav:#2f2c55;--chat:#0b141a;--field:#202c33;--inp:#2a3942;--pill:#202c33;--pillon:#103529;--pillon-ink:#25d366;--icon:#aebac1;--card:#1d282f;--tint:#103529;--tint-ink:#7be3be;--tint-line:#1a4a3d;--warnbg:#3a3014;--warn:#f0c14d;--warn-line:#54471b;--redbg:#3a1d1a;--red:#ff8a80;--red-line:#5a2b27;--notes:#2d2a14;--notes-line:#4a4420;--rail:#202c33;--railon:#374248;--menu:#233138;--toast:#2a3942;--thead:#1a252b;--quote:rgba(255,255,255,.07);--doodle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='.07'%3E%3Ccircle cx='22' cy='24' r='7'/%3E%3Cpath d='M70 18l8 8m0-8l-8 8'/%3E%3Cpath d='M96 66c4-6 10-6 14 0'/%3E%3Crect x='20' y='72' width='12' height='9' rx='2'/%3E%3Cpath d='M64 96l5-9 5 9z'/%3E%3C/g%3E%3C/svg%3E");color-scheme:dark}
 *{box-sizing:border-box}[hidden]{display:none!important}
-html,body{height:100%;margin:0;overflow:hidden}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+/* iPhone, installed on the home screen: iOS reports the screen as shorter than it is (by the height of the status bar), which left a band under the
+   bottom bar and let the whole app slide down. The script sets --apph to the real height; the transform makes pop ups and the bottom bar follow the body. */
+html.iosfix,html.iosfix body{height:var(--apph)}html.iosfix body{position:fixed;top:0;left:0;right:0;transform:translateZ(0)}html.iosfix .shell,html.iosfix .login{height:var(--apph)}
 body{font:14.2px/1.4 "Segoe UI","Helvetica Neue",Helvetica,"Lucida Grande",Arial,Ubuntu,Cantarell,"Fira Sans",sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -128,7 +131,7 @@ mark{background:#fde68a;color:#111b21;border-radius:2px;padding:0 1px}.b.curhit 
 .mi{max-width:min(280px,100%);max-height:280px;border-radius:6px;display:block;cursor:zoom-in;background:var(--bg);margin-bottom:3px}
 .b audio{width:240px;max-width:100%;display:block;margin-bottom:4px}.b video{max-width:100%;border-radius:6px}.b .ghost{margin-bottom:4px}
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:grid;place-items:center;z-index:110;cursor:zoom-out}.lb img{max-width:94vw;max-height:90vh}
-.dlg-bg{position:fixed;inset:0;background:rgba(11,20,26,.55);z-index:90;display:grid;place-items:center;padding:16px}
+.dlg-bg{position:fixed;inset:0;background:rgba(11,20,26,.55);z-index:90;display:grid;grid-template-rows:minmax(0,1fr);place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}.dlg-bg>.dlg{max-height:100%}
 .dlg{background:var(--menu);color:var(--ink);border-radius:12px;box-shadow:var(--sh2);width:min(460px,100%);max-height:90vh;display:flex;flex-direction:column}
 .dlg-h{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line)}.dlg-h b{flex:1;font-size:16px;font-weight:600}.dlg-b{padding:16px 18px 20px;overflow:auto}.dlg-b h4{margin:14px 0 8px;font-size:13px;color:var(--mute);font-weight:600}.dlg-b h4:first-child{margin-top:0}
 .seg{display:flex;gap:6px}.seg button{flex:1;border:1px solid var(--line2);background:var(--card);border-radius:8px;padding:9px 6px;font-weight:500;color:var(--ink2)}.seg button.on{background:var(--pillon);color:var(--pillon-ink);border-color:var(--brand)}
@@ -249,7 +252,7 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .numcard{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;line-height:1.75;color:var(--ink)}.stwrap>.panel,.stwrap>form.panel{max-width:860px;margin-left:0}
 .lrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.lrow:first-of-type{border-top:0}.lrow>div,.lrow>span{flex:1;min-width:0}
 /* pop-up forms */
-.modal{max-width:none!important;margin:0!important;position:fixed;inset:0;background:rgba(11,20,26,.55);z-index:90;display:grid;place-items:center;padding:16px}
+.modal{max-width:none!important;margin:0!important;position:fixed;inset:0;background:rgba(11,20,26,.55);z-index:90;display:grid;grid-template-rows:minmax(0,1fr);place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}.modal>.mcard{max-height:100%}
 .mcard{background:var(--menu);color:var(--ink);border-radius:16px;box-shadow:var(--sh2);width:min(540px,100%);max-height:92vh;display:flex;flex-direction:column}.mcard.wide{width:min(720px,100%)}
 .mb{padding:18px 20px 20px;overflow:auto}.mb .panel,.mb .add{margin:0;padding:0;border:0;background:none;border-radius:0}.mb .panel>h3,.mb .add>h3{display:none}
 .mb .add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mb .add .fld{margin:0}.mb .add .full{grid-column:1/-1}
@@ -351,7 +354,7 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 @media (min-width:761px) and (max-width:1500px){.ctt th:nth-child(8),.ctt td:nth-child(8){display:none}}
 @media (min-width:761px) and (max-width:1280px){.ctt th:nth-child(7),.ctt td:nth-child(7){display:none}}
 @media (max-width:760px){.ctbar select{flex:1 1 calc(50% - 8px);max-width:none}.ctbar .search{flex:1 1 100%;max-width:none}.ctbar>span{display:none}.ctbar #cexp{flex:1 1 100%;justify-content:center}
-  .ctt{display:block}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
+  .ctt{display:block;min-width:0}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
   .ctt tr[data-id]{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
   .ctt tr[data-id] td{display:block;padding:0;border:0;min-width:0}.ctt tr[data-id] td:nth-child(1){grid-area:1/1}.ctt tr[data-id] td:nth-child(2){grid-area:1/2}.ctt tr[data-id] td:last-child{grid-area:1/3}
   .ctt tr[data-id] td:nth-child(3){grid-area:2/2/3/4}.ctt tr[data-id] td:nth-child(5){grid-area:3/2}.ctt tr[data-id] td:nth-child(6){grid-area:3/3;justify-self:end}
@@ -602,6 +605,13 @@ function setLang(code) { try { localStorage.setItem('ti_lang', code); } catch {}
 /* ----- Install as an app ("Add to Home screen"). Not shown inside the Android app or once it is installed. ----- */
 const PWA = { evt: null, native: !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()), alone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true, ios: /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) };
 if ('serviceWorker' in navigator && !PWA.native) navigator.serviceWorker.register('/sw.js').catch(() => {});
+/* iPhone home screen app: see the note at html.iosfix in the styles */
+function iosHeight() { const r = document.documentElement; let on = false;
+  if (PWA.ios && PWA.alone && !PWA.native) { const tall = innerHeight >= innerWidth, full = tall ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height), gap = full - innerHeight;
+    if (gap > 0 && gap <= 70) { r.style.setProperty('--apph', full + 'px'); on = true; } }
+  r.classList.toggle('iosfix', on); if (PWA.ios && PWA.alone && (scrollY || scrollX)) scrollTo(0, 0); }
+iosHeight(); ['resize', 'orientationchange', 'pageshow'].forEach(ev => addEventListener(ev, () => setTimeout(iosHeight, 60)));
+document.addEventListener('visibilitychange', () => setTimeout(iosHeight, 60)); document.addEventListener('focusout', () => setTimeout(iosHeight, 120));
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); PWA.evt = e; pwaButton(); });
 window.addEventListener('appinstalled', () => { PWA.evt = null; PWA.alone = true; pwaButton(); });
 function pwaButton() { const b = $('#pwai'); if (!b) return; b.hidden = PWA.native || PWA.alone || !(PWA.evt || PWA.ios || innerWidth <= 760);
@@ -2891,7 +2901,7 @@ async function showDashboard(days = S.dashDays || 14) {
     `<select id="dr">${[7, 14, 30, 90].map(n => `<option value="${n}"${n === d.days ? ' selected' : ''}>Last ${n} days</option>`).join('')}</select><button class="btn" id="dgo">${ico('chat', 16)}Open Live Chat</button>`) + `
   <div class="stats s4">${kpi('userplus', k.new_chats, 'New chats')}${kpi('chat', k.open, 'Open now', 'blue')}${kpi('hourglass', k.unassigned, 'Waiting for an agent', 'amber')}${kpi('bot', k.with_bot, 'Still with the bot', 'violet')}
     ${kpi('clock', fmtDur(d.median_reply_sec), 'Median first reply')}${kpi('inbox', m.inbound, 'Messages received', 'blue')}${kpi('send', m.agent_out, 'Sent by agents', 'amber')}${kpi('zap', m.bot_out, 'Sent by the bot', 'violet')}</div>
-  <div class="dgrid"><div class="panel"><h3>New chats per day</h3><p class="mute">${d.perDay.reduce((n, x) => n + x.chats, 0)} new chats in the last ${d.days} days</p><div class="chart">${d.perDay.map(x => `<div class="col" title="${x.day}: ${x.chats}"><i style="height:${Math.round(x.chats / max * 140)}px"></i><small>${d.perDay.length > 31 ? '' : x.day.slice(8)}</small></div>`).join('')}</div></div>
+  <div class="dgrid"><div class="panel"><h3>New chats per day</h3><p class="mute">${d.perDay.reduce((n, x) => n + x.chats, 0)} new chats in the last ${d.days} days</p><div class="chart${d.perDay.length > 16 ? ' dense' : ''}">${d.perDay.map(x => `<div class="col" title="${x.day}: ${x.chats}"><i style="height:${Math.round(x.chats / max * 140)}px"></i><small>${d.perDay.length > 31 ? '' : x.day.slice(8)}</small></div>`).join('')}</div></div>
     <div class="panel"><h3>WhatsApp numbers</h3><div id="dnum"><p class="mute">Checking…</p></div></div></div>
   <div class="two"><div class="panel"><h3>What clients asked for</h3>${hbars(d.intents)}</div><div class="panel"><h3>Where clients came from</h3>${hbars(d.sources)}</div></div>
   <div class="tbl"><div class="tbl-h"><b>Agent performance</b><small class="mute">Last ${d.days} days</small></div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Unread</th></tr></thead><tbody>
