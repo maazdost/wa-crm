@@ -8,7 +8,7 @@ const DEFAULTS = {
     btnInfo: 'More info', btnTeam: 'Join our team', btnClasses: 'Join classes'
   },
   wa: { waba_id: '' },
-  assign: { mode: 'least', batch: 1 },
+  assign: { mode: 'least', batch: 1, slow_on: false, slow_min: 10 },
   routing: { info: 'sales', team: 'recruitment', classes: 'classes' }, // which department each bot button sends clients to
   gate: { mode: 'all', keywords: ['info', 'class', 'course', 'join', 'trading', 'price', 'fees', 'team', 'learn'] },
   away: {

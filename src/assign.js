@@ -12,7 +12,8 @@ const tenant = require('./tenant');
  *   turns  - agents take turns in a fixed order; each gets `batch` new chats (1 to 20) before the next one
  * Managers can always assign a chat by hand, which ignores all of this.
  */
-async function assignConversation(conversationId, team) {
+async function assignConversation(conversationId, team, opts = {}) {
+  const exclude = Number(opts.exclude) || 0; // someone who must not get it (the agent who did not reply in time)
   const cfg = await settings.get('assign'), cid = tenant.cid();
   const batch = Math.min(20, Math.max(1, Number(cfg.batch) || 1));
   const client = await pool.connect();
@@ -23,8 +24,8 @@ async function assignConversation(conversationId, team) {
       `SELECT u.id, u.is_online, u.max_active_chats,
               (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active
          FROM users u
-        WHERE u.company_id=$2 AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1 OR u.extra_teams ? $1)
-        ORDER BY u.id`, [teamFilter, cid])).rows;
+        WHERE u.company_id=$2 AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1 OR u.extra_teams ? $1) AND u.id <> $3
+        ORDER BY u.id`, [teamFilter, cid, exclude])).rows;
     const pickLeast = (rows) => rows.slice().sort((a, b) =>
       (a.active >= a.max_active_chats) - (b.active >= b.max_active_chats) || (b.is_online - a.is_online) || (a.active - b.active) || (a.id - b.id))[0];
     const pickTurn = async (rows, key) => {
