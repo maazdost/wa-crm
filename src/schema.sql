@@ -203,6 +203,10 @@ ALTER TABLE quick_replies ADD COLUMN IF NOT EXISTS buttons JSONB;
 -- Lets an admin end a person's sessions (after an email change, password reset or deactivation)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INT NOT NULL DEFAULT 0;
 
+-- A person can also take chats of more departments than their own (their main department stays in users.team).
+-- Starts empty for everyone, so nothing changes until an admin ticks more departments on the Agents page.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_teams JSONB NOT NULL DEFAULT '[]';
+
 -- ============================================================================
 -- Several companies on one system (sign-up). Every company only sees its own data.
 -- Everything that existed before this update belongs to company 1, so the current client keeps working unchanged.

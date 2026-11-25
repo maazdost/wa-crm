@@ -475,7 +475,7 @@ router.post('/devices/remove', required(), wrap(async (req, res) => {
 
 // ---- Departments (admin adds, renames and removes them) ----
 router.get('/departments', required(), wrap(async (req, res) => res.json((await query(
-  `SELECT d.id, d.key, d.name, (SELECT COUNT(*) FROM users u WHERE u.team=d.key AND u.company_id=d.company_id)::int AS members FROM departments d WHERE d.company_id=$1 ORDER BY d.name`, [C()])).rows)));
+  `SELECT d.id, d.key, d.name, (SELECT COUNT(*) FROM users u WHERE (u.team=d.key OR u.extra_teams ? d.key) AND u.company_id=d.company_id)::int AS members FROM departments d WHERE d.company_id=$1 ORDER BY d.name`, [C()])).rows)));
 router.post('/departments', required('admin'), wrap(async (req, res) => {
   const name = String(req.body.name || '').trim().slice(0, 40); if (!name) return res.status(400).json({ error: 'Give the department a name' });
   const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30); if (!key) return res.status(400).json({ error: 'Use letters or numbers in the name' });
@@ -493,13 +493,14 @@ router.delete('/departments/:id', required('admin'), wrap(async (req, res) => {
   const routing = await settings.get('routing');
   if (Object.values(routing).includes(d.key)) return res.status(409).json({ error: 'The bot sends clients to this department. Pick another one in "Chat assignment" first.' });
   if (used.u || used.c) return res.status(409).json({ error: `${used.u} team member(s) and ${used.c} open chat(s) use this department. Move them first.` });
+  await query('UPDATE users SET extra_teams = extra_teams - $1::text WHERE company_id=$2 AND extra_teams ? $1', [d.key, C()]); // people who only had it as an extra department
   await query('DELETE FROM departments WHERE id=$1 AND company_id=$2', [d.id, C()]); res.json({ ok: true });
 }));
 
 // ---- Admin: users, templates, stats ----
 router.get('/users', required('admin', 'manager'), wrap(async (req, res) => {
   const { rows } = await query(
-    `SELECT u.id,u.name,u.email,u.role,u.team,u.is_active,u.is_online,u.in_rotation,u.max_active_chats,
+    `SELECT u.id,u.name,u.email,u.role,u.team,u.extra_teams,u.is_active,u.is_online,u.in_rotation,u.max_active_chats,
             (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active_chats
        FROM users u WHERE u.company_id=$1 ORDER BY u.id`, [C()]);
   res.json(rows);
@@ -521,7 +522,7 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   const uid = Number(req.params.id), b = req.body;
-  const target = (await query('SELECT role, is_active FROM users WHERE id=$1 AND company_id=$2', [uid, C()])).rows[0];
+  const target = (await query('SELECT role, is_active, team FROM users WHERE id=$1 AND company_id=$2', [uid, C()])).rows[0];
   if (!target) return res.status(404).json({ error: 'Person not found' });
   if ('email' in b) {
     const em = String(b.email || '').trim().toLowerCase();
@@ -541,10 +542,16 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   }
   const f = ['name', 'email', 'role', 'team', 'is_active', 'max_active_chats', 'in_rotation'].filter(k => k in req.body);
   if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1 AND company_id=$2', [req.body.team, C()])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
+  if ('extra_teams' in b) { // more departments this person takes chats from, besides the main one
+    const keys = [...new Set((Array.isArray(b.extra_teams) ? b.extra_teams : []).map(String))].filter(k => k !== ('team' in b ? b.team : target.team));
+    const known = keys.length ? (await query('SELECT key FROM departments WHERE company_id=$1 AND key = ANY($2::text[])', [C(), keys])).rows.map(r => r.key) : [];
+    if (known.length !== keys.length) return res.status(400).json({ error: 'Unknown department' });
+    await query('UPDATE users SET extra_teams=$2::jsonb WHERE id=$1', [uid, JSON.stringify(keys)]);
+  }
   if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [uid, await bcrypt.hash(req.body.password, 10)]); }
   if ('in_rotation' in req.body) req.body.in_rotation = req.body.in_rotation === true;
-  if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')}${f.includes('in_rotation') ? ', rotation_changed_at=now()' : ''} WHERE id=$1`, [uid, ...f.map(k => req.body[k])]);
+  if (f.length) await query(`UPDATE users SET ${f.includes('team') ? 'extra_teams = extra_teams - $' + (f.indexOf('team') + 2) + '::text, ' : ''}${f.map((k, i) => `${k}=$${i + 2}`).join(',')}${f.includes('in_rotation') ? ', rotation_changed_at=now()' : ''} WHERE id=$1`, [uid, ...f.map(k => req.body[k])]);
   res.json({ ok: true });
 }));
 

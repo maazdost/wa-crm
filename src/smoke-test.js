@@ -375,6 +375,29 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { in_rotation: false, is_active: false } }, admin);
     await pool.query('UPDATE users SET in_rotation=true WHERE id = ANY($1::int[])', [before]);
   }
+  // A person can be in more than one department: rotation gives them chats of each department they are in
+  {
+    const em = `multi${Date.now()}@t.co`;
+    const made = await j('/api/users', { method: 'POST', body: { name: 'Multi Dept', email: em, password: 'pw123456', team: 'general' } }, admin);
+    const before = (await pool.query(`SELECT id FROM users WHERE company_id=1 AND in_rotation AND id<>$1`, [made.data.id])).rows.map(r => r.id);
+    await pool.query('UPDATE users SET in_rotation=false WHERE id = ANY($1::int[])', [before]);
+    const bad = await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { extra_teams: ['no-such-dept'] } }, admin);
+    const set = await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { extra_teams: ['sales', 'general', 'sales'] } }, admin);
+    const listed = (await j('/api/users', {}, admin)).data.find(u => u.id === made.data.id);
+    const sales = (await j('/api/departments', {}, admin)).data.find(d => d.key === 'sales');
+    check('extra departments are saved without the main one, unknown ones are refused', bad.status === 400 && set.status === 200 && JSON.stringify(listed.extra_teams) === '["sales"]' && sales.members >= 3);
+    const ph = '9230050001' + Date.now().toString().slice(-4);
+    await inbound(ph, { text: { body: 'hi' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'more info please' } }); await sleep(200);
+    await inbound(ph, { text: { body: 'Multi Client' } }); await sleep(400);
+    const mc = await convOf(ph);
+    check('a chat of an extra department goes to that person by rotation', mc && mc.team === 'sales' && mc.assigned_to === made.data.id);
+    await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { team: 'sales' } }, admin);
+    const after = (await pool.query('SELECT team, extra_teams FROM users WHERE id=$1', [made.data.id])).rows[0];
+    check('making an extra department the main one takes it off the extra list', after.team === 'sales' && after.extra_teams.length === 0);
+    await j(`/api/users/${made.data.id}`, { method: 'PATCH', body: { in_rotation: false, is_active: false } }, admin);
+    await pool.query('UPDATE users SET in_rotation=true WHERE id = ANY($1::int[])', [before]);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);
