@@ -22,7 +22,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.get('/health', (_req, res) => res.json({ ok: true }));
 // Each page of the app has its own address (/en/manage/reports); all of them open the same app file.
 // The short form (/reports) still works and the app corrects the address.
-const PAGES = ['dashboard', 'live-chat', 'contacts', 'audience', 'pipeline', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'catalogs', 'ad-manager', 'facebook-automation', 'instagram-automation', 'follow-ups', 'chatbots', 'ai-agent', 'bot', 'reports', 'health-audit', 'agents', 'permissions', 'notifications', 'activity-log', 'tags', 'settings', 'companies', 'admin-overview', 'requests'];
+const PAGES = ['dashboard', 'live-chat', 'contacts', 'audience', 'pipeline', 'templates', 'media-library', 'quick-replies', 'quick-message', 'broadcasts', 'catalogs', 'ad-manager', 'demo-classes', 'facebook-automation', 'instagram-automation', 'follow-ups', 'chatbots', 'ai-agent', 'bot', 'reports', 'health-audit', 'agents', 'permissions', 'notifications', 'activity-log', 'tags', 'settings', 'companies', 'admin-overview', 'requests'];
 app.get(new RegExp(`^/(?:[a-z]{2}/[a-z-]+/)?(?:${PAGES.join('|')})/?$`), (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
 app.use('/webhook', require('./routes/webhook'));
 app.use('/api', require('./access').gate); // permissions and the activity log, in front of every route
@@ -36,6 +36,7 @@ app.use('/api', require('./routes/catalog'));
 app.use('/api', require('./routes/social'));
 app.use('/api', require('./routes/flows'));
 app.use('/api', require('./routes/ads'));
+app.use('/api', require('./routes/demo'));
 app.use('/api', require('./routes/ai'));
 app.use('/api', require('./routes/reports'));
 app.use('/api', require('./routes/manage'));
@@ -59,6 +60,6 @@ if (MIN > 0) setInterval(async () => {
 
 const PORT = process.env.PORT || 3000;
 migrate().then(require('./bootstrap')).then(() => require('./numbers').importFromEnv()).then(() => server.listen(PORT, () => { console.log(`WA CRM listening on ${PORT}`);
-  { const cs = require('./routes/api').clientSites(); console.log(cs.length ? 'Sign-in also checks: ' + cs.join(', ') : (process.env.CLIENT_SITES ? 'CLIENT_SITES is set but holds no usable address' : 'CLIENT_SITES is not set: sign-in checks this site only')); } require('./broadcast').start(); require('./drip').start(); require('./flows').startSweep(); require('./slow').start(); }))
+  { const cs = require('./routes/api').clientSites(); console.log(cs.length ? 'Sign-in also checks: ' + cs.join(', ') : (process.env.CLIENT_SITES ? 'CLIENT_SITES is set but holds no usable address' : 'CLIENT_SITES is not set: sign-in checks this site only')); } require('./broadcast').start(); require('./drip').start(); require('./flows').startSweep(); require('./slow').start(); require('./demo').start(); }))
   .catch(e => { console.error(e); process.exit(1); });
 module.exports = { app, server };
