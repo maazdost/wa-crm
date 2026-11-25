@@ -11,7 +11,7 @@ const PERMS = {
     templates: { label: 'Templates', hint: 'Create, sync and delete message templates', on: true, rules: [['POST|DELETE', /^\/templates(\/|$)/]] },
     broadcasts: { label: 'Bulk Broadcasting', hint: 'Send a template to many contacts at once', on: true, rules: [['ANY', /^\/broadcasts(\/|$)/]] },
     contacts: { label: 'Contacts', hint: 'See the contact list, Audience and Pipeline, edit and import contacts', on: true, rules: [['ANY', /^\/contacts(?!\/lists)(\/|$)/]] },
-    automation: { label: 'Quick Message, Quick Replies and Follow-ups', hint: 'Create and change automatic messages and chatbots', on: true, rules: [['ANY', /^\/(auto-replies|drips|flows)(\/|$)/], ['POST|DELETE', /^\/quick-replies(\/|$)/]] },
+    automation: { label: 'Quick Message, Quick Replies and Follow-ups', hint: 'Create and change automatic messages, chatbots and the AI Agent', on: true, rules: [['ANY', /^\/(auto-replies|drips|flows|ai)(\/|$)/], ['POST|DELETE', /^\/quick-replies(\/|$)/]] },
     library: { label: 'Media Library', hint: 'Upload, rename and delete saved files', on: true, rules: [['POST|PATCH|DELETE', /^\/media-library(\/|$)/]] },
     catalog: { label: 'Catalogs', hint: 'Add, change and delete products', on: true, rules: [['POST|PATCH|DELETE', /^\/products(\/|$)/]] },
     social: { label: 'Facebook and Instagram Automation', hint: 'Create and change automatic replies to comments and messages', on: true, rules: [['ANY', /^\/social(\/|$)/]] },

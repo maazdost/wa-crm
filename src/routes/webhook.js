@@ -10,6 +10,7 @@ const push = require('../push');
 const { maybeAway } = require('../away');
 const autoreply = require('../autoreply');
 const flows = require('../flows');
+const ai = require('../ai');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
@@ -127,6 +128,8 @@ async function handleMessage(m, profileName, numId) {
     }
     if (conv.bot_step === 'held') conv = (await query(`UPDATE conversations SET status='bot', bot_step='new' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];
   }
+  // AI Agent, returning client: when the company chose it, the AI answers first and the chat goes back to its agent on hand over
+  conv = await ai.reopen(conv).catch(e => { console.error('ai agent', e.message); return conv; });
   // Returning client whose chat was closed: stay with the same agent (sticky), reassign only if agent is gone
   if (conv.status === 'closed') {
     const owner = conv.assigned_to && (await query('SELECT is_active FROM users WHERE id=$1', [conv.assigned_to])).rows[0];
@@ -140,6 +143,9 @@ async function handleMessage(m, profileName, numId) {
     if (wflow) return tellTeam(await flows.start(wflow, conv, contact, waId));
     if (conv.bot_step === 'flow') conv = (await query(`UPDATE conversations SET bot_step='new' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];
   }
+  // AI Agent: answers from the company's notes in place of the built-in welcome bot, and hands over when unsure
+  const aiOut = await ai.reply(conv, contact, msg, waId).catch(e => { console.error('ai agent', e.message); return null; });
+  if (aiOut) return tellTeam(aiOut);
   if (await bot.handle(conv, contact, msg)) {
     w.markRead(m.id);
     rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });

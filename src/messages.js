@@ -27,7 +27,10 @@ async function saveOutbound(conv, { senderType, senderId, body, type = 'text', t
     `UPDATE conversations SET last_message_at=now(),
        last_agent_reply_at = CASE WHEN $2='agent' THEN now() ELSE last_agent_reply_at END WHERE id=$1`,
     [conv.id, senderType]);
-  if (senderType === 'agent') await require('./flows').agentTookOver(conv.id).catch(e => console.error('chatbot stop', e.message)); // a person wrote: the chatbot steps back
+  if (senderType === 'agent') { // a person wrote: the chatbot and the AI step back
+    await require('./flows').agentTookOver(conv.id).catch(e => console.error('chatbot stop', e.message));
+    await require('./ai').stop(conv.id).catch(e => console.error('ai stop', e.message));
+  }
   const fresh = (await query('SELECT * FROM conversations WHERE id=$1', [conv.id])).rows[0];
   rt.toConversation(fresh, 'message:new', { conversationId: conv.id, message: rows[0] });
   return rows[0];

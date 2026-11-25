@@ -296,6 +296,64 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('the installed app gets notifications, respects each person\'s choices and forgets removed devices', typeof pkey === 'string' && pkey.length > 60 && psub.status === 200 && mine2.length === 1 && mine2[0].payload.title === 'Client name' && mine2[0].payload.conversationId === 7
     && mine2[0].sub.keys.auth === 'auth' + u && !sent2.some(x => x.payload.title === 'Muted') && (await pool.query('SELECT 1 FROM web_push_subs WHERE endpoint=$1', [ep])).rows.length === 0
     && (await j('/api/push/subscribe', { method: 'POST', body: { endpoint: 'http://not-secure', keys: {} } }, a2.token)).status === 400 && (await j('/api/push/key')).status === 401);
+
+  // ---- AI Agent (the server runs with AI_FAKE=true in tests, so no request leaves it) ----
+  const ai0 = (await j('/api/ai', {}, admin)).data;
+  if (!ai0.ready) console.log('SKIP AI Agent checks: start the server with AI_FAKE=true to run them');
+  else {
+    const wasOn = (await pool.query(`UPDATE bot_flows SET active=FALSE WHERE trigger='welcome' AND active RETURNING id`)).rows.map(r => r.id); // a welcome chatbot would greet new clients first
+    const NOTES = 'We are open 9am to 6pm, Monday to Saturday.\nThe course fee is Rs 5,000.';
+    const aiSet = (b) => j('/api/ai', { method: 'PUT', body: { name: 'Sana', notes: NOTES, tone: 'friendly', language: 'auto', returning: true, max_replies: 10, ...b } }, admin);
+    const lastLog = async (ph) => (await pool.query(`SELECT r.result FROM ai_replies r JOIN conversations c ON c.id=r.conversation_id JOIN contacts ct ON ct.id=c.contact_id WHERE ct.wa_id=$1 ORDER BY r.id DESC LIMIT 1`, [ph])).rows[0]?.result;
+    check('the AI Agent cannot be switched on without notes, and agents cannot open its page', (await aiSet({ enabled: true, notes: 'hi' })).status === 400 && (await j('/api/ai', {}, a1.token)).status === 403 && ai0.settings.enabled === false);
+    check('the AI Agent is saved and switched on', (await aiSet({ enabled: true })).status === 200 && (await j('/api/ai', {}, admin)).data.settings.name === 'Sana');
+    const tr1 = await j('/api/ai/try', { method: 'POST', body: { notes: NOTES, turns: [{ role: 'user', text: 'When are you open?' }] } }, admin);
+    check('Try it answers without sending anything', tr1.status === 200 && tr1.data.reply.includes('9am to 6pm') && tr1.data.handover === false);
+    const u4 = Date.now().toString().slice(-4), q1 = '9230030001' + u4, q2 = '9230030002' + u4, q3 = '9230030003' + u4, q4 = '9230030004' + u4;
+    await inbound(q1, { text: { body: 'What are your timings?' } }); await sleep(500);
+    let said = await botSaid(q1), qc = await convOf(q1);
+    const seen = (await j('/api/conversations?status=open', {}, admin)).data.some(c => c.wa_id === q1);
+    check('the AI answers a new client from the notes and the chat stays with it', said.length === 1 && said[0].includes('9am to 6pm') && qc.status === 'bot' && qc.bot_step === 'ai' && !qc.assigned_to && seen && await lastLog(q1) === 'answered');
+    await inbound(q1, { text: { body: 'I want to talk to a human' } }); await sleep(600);
+    said = await botSaid(q1); qc = await convOf(q1);
+    check('asking for a person hands the chat to an agent', said.length === 2 && /team member/.test(said[1]) && qc.bot_step === 'done' && qc.status === 'open' && !!qc.assigned_to && await lastLog(q1) === 'handover');
+    await inbound(q1, { text: { body: 'hello again' } }); await sleep(400);
+    check('after the hand over the AI stays quiet', (await botSaid(q1)).length === 2);
+    // a closed chat that comes back: the AI answers first and the same agent keeps the chat
+    const owner1 = qc.assigned_to;
+    await j(`/api/conversations/${qc.id}/status`, { method: 'POST', body: { status: 'closed' } }, admin);
+    await inbound(q1, { text: { body: 'What is the fee?' } }); await sleep(500);
+    qc = await convOf(q1);
+    const back = (await botSaid(q1)).length === 3 && qc.status === 'bot' && qc.bot_step === 'ai' && qc.assigned_to === owner1;
+    await inbound(q1, { text: { body: 'agent please' } }); await sleep(600);
+    qc = await convOf(q1);
+    check('a returning client is answered by the AI first and goes back to the same agent', back && qc.status === 'open' && qc.bot_step === 'done' && qc.assigned_to === owner1);
+    // a team member writes in a chat the AI is answering
+    await inbound(q2, { text: { body: 'Do you have courses?' } }); await sleep(500);
+    let c2 = await convOf(q2);
+    const wrote = await j(`/api/conversations/${c2.id}/messages`, { method: 'POST', body: { text: 'Hi, I will help you from here.' } }, admin);
+    await inbound(q2, { text: { body: 'ok thanks' } }); await sleep(400);
+    c2 = await convOf(q2);
+    check('when a team member writes, the AI steps back', wrote.status === 200 && c2.bot_step === 'done' && (await botSaid(q2)).length === 1);
+    // a photo, a failure and the plan limit all end with an agent, never with silence
+    await inbound(q3, { type: 'image', image: { id: 'media-ai-test', mime_type: 'image/jpeg' } }); await sleep(600);
+    let c3 = await convOf(q3);
+    check('a photo is handed to a person', c3.bot_step === 'done' && await lastLog(q3) === 'handover');
+    await inbound(q4, { text: { body: 'fail-now' } }); await sleep(600);
+    let c4 = await convOf(q4);
+    check('when the AI fails the client still reaches the team', c4.bot_step === 'done' && (await botSaid(q4)).length === 0 && await lastLog(q4) === 'error');
+    const q5 = '9230030005' + u4;
+    await pool.query(`UPDATE companies SET limits = limits || '{"ai_replies":0}'::jsonb WHERE id=1`);
+    await inbound(q5, { text: { body: 'What are your timings?' } }); await sleep(600);
+    const c5 = await convOf(q5), lim = (await j('/api/ai', {}, admin)).data;
+    await pool.query(`UPDATE companies SET limits = limits - 'ai_replies' WHERE id=1`);
+    check('at the plan limit the AI stops and the chat goes to the team', c5.bot_step === 'done' && (await botSaid(q5)).length === 0 && await lastLog(q5) === 'limit' && lim.limit === 0 && lim.used >= 4);
+    await aiSet({ enabled: false });
+    const q6 = '9230030006' + u4;
+    await inbound(q6, { text: { body: 'hi' } }); await sleep(400);
+    check('switched off, new clients get the welcome bot as before', (await convOf(q6)).bot_step === 'ask_intent');
+    if (wasOn.length) await pool.query('UPDATE bot_flows SET active=TRUE WHERE id = ANY($1::int[])', [wasOn]);
+  }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

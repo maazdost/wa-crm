@@ -368,6 +368,12 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 .flthree{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.flthree .fld{margin:0}
 .flcard{min-width:0;grid-template-columns:minmax(0,1fr)}.flcard header .rowbtn{flex:none}.flbar{display:flex;align-items:center;gap:8px;margin-top:-2px}.flpct{flex:1;min-width:40px;height:6px;background:var(--pill);border-radius:99px;overflow:hidden;align-self:center}.flpct i{display:block;height:100%;background:#25d366;border-radius:99px}.flpn{font-size:12px;color:var(--ink2)}
 #m-fl .mcard{width:min(720px,100%);min-width:0}#flf,#flsteps,.flstep,.flstep>*{min-width:0}
+.aigrid{display:grid;grid-template-columns:minmax(0,3fr) minmax(300px,2fr);gap:18px;align-items:start}.aigrid>.panel{margin-bottom:18px;min-width:0}.aigrid h3{margin:0 0 6px}.aigrid textarea{resize:vertical;min-height:220px;line-height:1.5}
+.aitry .flph{height:min(520px,70vh);margin-top:10px}.aiwarn{display:flex;gap:10px;align-items:flex-start;background:var(--warnbg);color:var(--ink);border-color:transparent}.aiwarn p{margin:0}.aiwarn svg{flex:none;color:var(--warn);margin-top:2px}
+.aiempty{padding:22px 18px;margin:0;text-align:center}.aibar{margin:-6px 0 18px}.aiof{font-size:13px;font-weight:500;color:var(--mute)}.airet{display:flex;gap:12px;align-items:flex-start;margin:4px 0 0}.airet>span:last-child{display:grid;gap:2px}.airet small{font-size:12.5px}
+.ainote{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line2);color:var(--mute);font-size:12px}.aihint{text-align:center;margin:auto;font-size:13px}.fb.aierr{background:var(--redbg);color:var(--red)}
+.ait .aiq{max-width:340px;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext}
+@media (max-width:1000px){.aigrid{grid-template-columns:minmax(0,1fr)}}
 #m-fltry .mcard{width:min(400px,100%)}#m-fltry .mb{padding:12px}
 .flph{border-radius:26px;overflow:hidden;border:8px solid #111b21;background:var(--chat);display:flex;flex-direction:column;height:min(580px,72vh)}
 .flph-h{background:#075e54;color:#fff;display:flex;align-items:center;gap:10px;padding:10px 12px}.flph-h>div{flex:1;min-width:0;display:grid}.flph-h b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.flph-h small{opacity:.85;font-size:11.5px}.flph-h .ib{color:#fff}
@@ -683,6 +689,7 @@ const ICONS = {
   mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
   chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   grid: '<rect width="7" height="9" x="3" y="3" rx="1.5"/><rect width="7" height="5" x="14" y="3" rx="1.5"/><rect width="7" height="9" x="14" y="12" rx="1.5"/><rect width="7" height="5" x="3" y="16" rx="1.5"/>',
+  spark: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 3v3"/><path d="M3.5 4.5h3"/>',
   flow: '<circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 7.5v9"/><path d="M18 10.5c0 4-4 4.5-9.5 7"/>',
   bot: '<rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/>',
   clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
@@ -710,18 +717,18 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
   ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
-  ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
+  ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['ai', 'AI Agent', 'spark', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', ads: 'ad-manager', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, ads: showAds, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -994,7 +1001,7 @@ function renderList(quiet) {
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
       <span class="r2"><span class="prev">${esc(snip(c.last_type, c.last_body))}</span><span class="rx">${c.pinned ? `<span class="pinic">${ico('pin', 15)}</span>` : ''}${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : c.marked_unread ? '<i class="ub dotb"></i>' : ''}<button class="rowx" data-x="${c.id}" aria-label="Chat options" tabindex="-1">${ico('chev', 18)}</button></span></span>
-      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
+      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${c.bot_step === 'ai' && c.status === 'bot' ? `<em class="chip ok">${tr('With the AI')}</em>` : ''}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
   el.scrollTop = top;
   el.querySelectorAll('.row').forEach(r => {
     r.onclick = e => { if (r.__lp) { r.__lp = false; return; } const x = e.target.closest('.rowx'); if (x) { e.stopPropagation(); const b = x.getBoundingClientRect(); return rowMenu(+x.dataset.x, b.left - 150, b.bottom + 4); } openConv(+r.dataset.id); };
@@ -1541,7 +1548,7 @@ async function showRequests() {
 }
 
 // The four things a plan limits, in the order they are shown.
-const PLAN_LIMITS = [['members', 'Team members'], ['numbers', 'WhatsApp numbers'], ['broadcast', 'Broadcast messages a month'], ['storage_mb', 'Media Library space (MB)']];
+const PLAN_LIMITS = [['members', 'Team members'], ['numbers', 'WhatsApp numbers'], ['broadcast', 'Broadcast messages a month'], ['storage_mb', 'Media Library space (MB)'], ['ai_replies', 'AI replies a month']];
 // "Plan and usage" card on the Settings page: the company's plan and a bar for each limit.
 async function drawPlanCard() {
   const box = $('#planp'); if (!box) return; const [p, rq] = await Promise.all([api('/plan'), api('/requests')]); if (p.error || !$('#planp')) return; const mine = arr(rq).slice(0, 5);
@@ -2154,6 +2161,55 @@ const FL_TYPES = { message: ['chat', 'Send a message'], buttons: ['select', 'Que
 const FL_KINDS = { text: ['chat', 'Text'], image: ['image', 'Photo'], video: ['play', 'Video'], file: ['file', 'File'], product: ['bag', 'Product'] };
 const flId = () => Math.random().toString(36).slice(2, 8);
 const flFill = (t, name) => String(t || '').replace(/\{\{\s*(name|first_name|whatsapp_name)\s*\}\}/gi, (_, k) => k.toLowerCase() === 'first_name' ? name.split(/\s+/)[0] : name);
+/* ----- AI Agent: answers clients from the company's notes and hands over to a person when unsure ----- */
+async function showAI() {
+  const sc = screen('AI Agent', 'An assistant that answers your clients on WhatsApp from your own notes, day and night, and hands the chat to an agent when it is not sure.');
+  const d = await api('/ai'); if (d.error) return toast(d.error); if (S.nav !== 'ai') return;
+  const s = d.settings, st = d.stats || {}, lim = d.limit, pct = lim == null ? 0 : lim === 0 ? 100 : Math.min(100, Math.round(d.used / lim * 100)), full = lim != null && d.used >= lim;
+  const RES = { answered: ['ok', 'Answered'], handover: ['warn', 'Handed to an agent'], error: ['closed', 'Could not answer'], limit: ['closed', 'Plan limit reached'] };
+  const opt = (v, l, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${l}</option>`;
+  const recent = arr(d.recent);
+  sc.innerHTML = `<div class="panel soc-c"><span class="qmic">${ico('spark', 22)}</span><div>
+      <h3>${s.enabled ? 'The AI Agent is answering your clients<em class="chip ok">On</em>' : 'The AI Agent is switched off<em class="chip closed">Off</em>'}</h3>
+      <p class="mute">${d.welcome_flow ? `Your welcome chatbot <b data-notr>${esc(d.welcome_flow)}</b> greets new clients first. The AI answers clients who come back after their chat was closed.` : 'It answers new clients in place of the welcome bot. When a team member writes in a chat, the AI stops in that chat.'}</p></div>
+      <label class="tog" title="Switch on or off"><input type="checkbox" id="aion"${s.enabled ? ' checked' : ''}${d.ready ? '' : ' disabled'} aria-label="Switched on"><i></i></label></div>
+    ${d.ready ? '' : `<div class="panel aiwarn">${ico('info', 18)}<p>The AI is not connected on the server yet, so it cannot be switched on. The person who runs your server sets <b data-notr>ANTHROPIC_API_KEY</b> on Render. You can already write your notes below.</p></div>`}
+    ${full ? `<div class="panel aiwarn">${ico('info', 18)}<p>Your ${esc(d.plan)} plan's AI replies for this month are used up, so clients go straight to your agents. Contact us to get more.</p></div>` : ''}
+    <div class="stats">${kpi('spark', d.used + (lim == null ? '' : ` <small class="aiof">${tr('of')} ${lim}</small>`), 'AI replies this month')}${kpi('check', st.answered || 0, 'Answered by the AI', 'blue')}${kpi('users', st.handed || 0, 'Handed to an agent', 'amber')}${kpi('chat', st.chats || 0, 'Chats it helped', 'violet')}</div>
+    ${lim == null ? '' : `<div class="ubar aibar"><i style="width:${pct}%"${pct > 85 ? ' class="hot"' : ''}></i></div>`}
+    <div class="aigrid"><form class="panel" id="aif"><h3>What the AI knows</h3>
+        <p class="mute">Write everything a new team member would need to answer clients: what you sell, prices, timings, address, how to order or pay, and your common questions with their answers. The AI answers only from these notes. Anything that is not here goes to an agent.</p>
+        <label class="fld"><span>Your business notes</span><textarea id="ain" rows="14" maxlength="${d.notes_max}" data-notr placeholder="${esc(tr('Example: We are open Monday to Saturday, 9am to 6pm. The Forex beginner course costs Rs 15,000 and runs for 4 weeks. Classes are online on Zoom. To join, send your name and we share the payment details.'))}">${esc(s.notes)}</textarea><small class="mute" id="aic"></small></label>
+        <div class="qtwo"><label class="fld"><span>Name of the assistant</span><input id="ainm" maxlength="40" data-notr value="${esc(s.name)}"></label>
+          <label class="fld"><span>How it sounds</span><select id="ait">${opt('friendly', 'Friendly', s.tone)}${opt('professional', 'Professional', s.tone)}${opt('short', 'Short and to the point', s.tone)}</select></label>
+          <label class="fld"><span>Language of its replies</span><select id="ail">${opt('auto', "Same as the client's message", s.language)}${opt('en', 'English', s.language)}${opt('ur', 'Urdu', s.language)}${opt('roman', 'Roman Urdu', s.language)}</select></label>
+          <label class="fld"><span>Most AI answers in one chat per day</span><input id="aim" type="number" min="1" max="50" step="1" value="${s.max_replies}"></label></div>
+        <label class="ck airet"><span class="tog"><input type="checkbox" id="air"${s.returning ? ' checked' : ''} aria-label="Returning clients"><i></i></span><span><b>Returning clients</b><small class="mute">When a client writes again after their chat was closed, the AI answers first. On hand over the chat goes back to the same agent.</small></span></label>
+        <div class="dlg-f"><button class="btn" id="ais">${ico('check', 16)}Save</button></div></form>
+      <div class="panel aitry"><h3>Try it</h3><p class="mute">Ask what a client would ask. It uses the notes as typed on the left, saved or not.</p>
+        <div class="flph"><div class="flph-h"><span class="flav">${ico('spark', 18)}</span><div><b data-notr id="aipn">${esc(s.name)}</b><small>Nothing is sent to anyone</small></div><button type="button" class="ib" id="aipr" title="Start again" aria-label="Start again">${ico('refresh', 18)}</button></div>
+          <div class="flph-c" id="aipc"></div><form class="flph-i" id="aipf"><input id="aipi" maxlength="500" placeholder="Type a message" autocomplete="off"><button class="ib" aria-label="Send">${ico('send', 18)}</button></form></div></div></div>
+    <div class="tbl"><div class="tbl-h"><b>What the AI answered lately</b></div>${recent.length ? `<table class="ait"><thead><tr><th>Client</th><th>Client wrote</th><th>AI answered</th><th>Result</th><th>When</th></tr></thead><tbody>
+      ${recent.map(r => `<tr><td data-notr><b>${esc(r.client || '')}</b></td><td data-notr class="aiq">${esc(r.question || '')}</td><td data-notr class="aiq">${r.result === 'error' || r.result === 'limit' ? '' : esc(r.answer || '')}</td><td><em class="chip ${(RES[r.result] || RES.error)[0]}">${(RES[r.result] || RES.error)[1]}</em></td><td class="mute">${fmtD(r.created_at)}</td></tr>`).join('')}</tbody></table>`
+      : `<p class="mute aiempty">Nothing yet. Once it is switched on, every question and answer shows here.</p>`}</div>`;
+  labelTables();
+  const form = () => ({ name: $('#ainm').value.trim(), notes: $('#ain').value, tone: $('#ait').value, language: $('#ail').value, returning: $('#air').checked, max_replies: Number($('#aim').value) || 10 });
+  const count = () => { $('#aic').textContent = `${$('#ain').value.length.toLocaleString()} / ${Number(d.notes_max).toLocaleString()}`; }; count(); $('#ain').oninput = count;
+  $('#ainm').oninput = () => { $('#aipn').textContent = $('#ainm').value.trim() || 'Assistant'; };
+  const save = async (enabled) => { const r = await api('/ai', 'PUT', { ...form(), enabled }); if (r.error) { toast(r.error); return false; } return true; };
+  $('#aif').onsubmit = async e => { e.preventDefault(); if (await save($('#aion').checked)) { toast('Saved'); showAI(); } };
+  $('#aion').onchange = async e => { const want = e.target.checked; if (await save(want)) { toast(want ? 'The AI Agent is on' : 'The AI Agent is off'); showAI(); } else e.target.checked = !want; };
+  // Try it: the test chat lives only on this page
+  let turns = [], busy = false; const pc = $('#aipc');
+  const bubble = (cls, text, extra = '') => { const b = document.createElement('div'); b.className = 'fb ' + cls; b.dataset.notr = ''; b.textContent = text; if (extra) { const n = document.createElement('small'); n.className = 'ainote'; n.textContent = tr(extra); b.appendChild(n); } pc.appendChild(b); pc.scrollTop = pc.scrollHeight; return b; };
+  const hello = () => { pc.innerHTML = ''; turns = []; const h = document.createElement('p'); h.className = 'mute aihint'; h.textContent = tr('Write the first message as a client would.'); pc.appendChild(h); };
+  hello(); $('#aipr').onclick = hello;
+  $('#aipf').onsubmit = async e => { e.preventDefault(); const t = $('#aipi').value.trim(); if (!t || busy) return; busy = true; $('#aipi').value = '';
+    const h = pc.querySelector('.aihint'); if (h) h.remove(); bubble('out', t); turns.push({ role: 'user', text: t });
+    const wait = bubble('in', '…'); const r = await api('/ai/try', 'POST', { ...form(), turns }); wait.remove(); busy = false;
+    if (r.error) { turns.pop(); const b = bubble('in', r.error); b.classList.add('aierr'); return; }
+    turns.push({ role: 'assistant', text: r.reply }); bubble('in', r.reply, r.handover ? 'The chat would now go to an agent.' : ''); if (S.nav === 'ai' && innerWidth > 760) $('#aipi').focus(); };
+}
 async function showFlows() {
   const sc = screen('Chatbots', 'Build a chatbot that greets new clients or answers a keyword: it sends messages, asks questions with buttons, saves the answers, then hands the chat to the right person.',
     `<button class="btn" id="fln">${ico('plus', 16)}New chatbot</button>`);
@@ -2406,7 +2462,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', au: 'contacts', pl: 'contacts', qm: 'automation', cb: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', au: 'contacts', pl: 'contacts', qm: 'automation', cb: 'automation', ai: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
