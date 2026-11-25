@@ -5,7 +5,7 @@ const tenant = require('./tenant');
 /**
  * Sticky assignment of a conversation to an agent, inside a transaction guarded by an advisory lock
  * so two simultaneous chats never pick the same slot. Order of preference: matching department, then any.
- * Only agents who are active, switched "in rotation" and below their chat limit are picked automatically
+ * Only people (agents, and any manager or admin who switched it on) who are active, switched "in rotation" and below their chat limit are picked automatically
  * (online ones first). Two ways of choosing, set by the admin in Settings:
  *   least  - the agent with the fewest open chats
  *   turns  - agents take turns in a fixed order; each gets `batch` new chats (1 to 20) before the next one
@@ -22,7 +22,7 @@ async function assignConversation(conversationId, team) {
       `SELECT u.id, u.is_online, u.max_active_chats,
               (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active
          FROM users u
-        WHERE u.company_id=$2 AND u.role='agent' AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1)
+        WHERE u.company_id=$2 AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1)
         ORDER BY u.id`, [teamFilter, cid])).rows;
     const pickLeast = (rows) => rows.slice().sort((a, b) =>
       (a.active >= a.max_active_chats) - (b.active >= b.max_active_chats) || (b.is_online - a.is_online) || (a.active - b.active) || (a.id - b.id))[0];

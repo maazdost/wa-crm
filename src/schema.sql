@@ -552,3 +552,13 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_headline TEXT;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_clicked_at TIMESTAMPTZ;
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS contacts_company_channel ON contacts(company_id, channel);
+
+-- Managers and admins can be put "In rotation" too, so they get new chats like agents.
+-- When this column is first added, every manager and admin starts OUT of the rotation (agents keep their switch),
+-- so nobody suddenly gets chats they did not ask for. Running this again changes nothing.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name='users' AND column_name='rotation_changed_at') THEN
+    ALTER TABLE users ADD COLUMN rotation_changed_at TIMESTAMPTZ;
+    UPDATE users SET in_rotation=false WHERE role <> 'agent';
+  END IF;
+END $$;

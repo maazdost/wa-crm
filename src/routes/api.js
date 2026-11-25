@@ -268,7 +268,8 @@ router.get('/conversations/counts', required(), wrap(async (req, res) => {
       COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false) AND COALESCE(f.favorite,false))::int AS fav,
       COUNT(*) FILTER (WHERE c.status<>'bot' AND c.bot_step<>'held' AND COALESCE(f.archived,false))::int AS archived,
       COUNT(*) FILTER (WHERE c.assigned_to IS NULL AND c.bot_step='done')::int AS unassigned,
-      COUNT(*) FILTER (WHERE c.bot_step='held')::int AS held
+      COUNT(*) FILTER (WHERE c.bot_step='held')::int AS held,
+      COUNT(*) FILTER (WHERE c.status='open' AND c.assigned_to=${me} AND c.bot_step<>'held' AND NOT COALESCE(f.archived,false))::int AS mine
     FROM conversations c LEFT JOIN chat_flags f ON f.conversation_id=c.id AND f.user_id=${me} WHERE TRUE ${own}`)).rows[0];
   if (isAgent(req.user)) { r.unassigned = 0; r.held = 0; }
   res.json(r);
@@ -289,6 +290,7 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   where.push(view === 'archived' ? 'COALESCE(f.archived,false)' : 'NOT COALESCE(f.archived,false)');
   if (view === 'unread') where.push('(c.unread_count>0 OR COALESCE(f.marked_unread,false))');
   if (view === 'fav') where.push('COALESCE(f.favorite,false)');
+  if (view === 'mine') where.push(`c.assigned_to=${me}`); // "Mine": the chats given to me (managers and admins in the rotation)
   if (req.query.label) { p.push(Number(req.query.label)); where.push(`EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id=c.id AND cl.label_id=$${p.length})`); }
   if (q) { p.push(`%${q}%`); where.push(`(ct.name ILIKE $${p.length} OR ct.profile_name ILIKE $${p.length} OR ct.wa_id ILIKE $${p.length})`); }
   const { rows } = await query(
@@ -513,8 +515,8 @@ router.post('/users', required('admin'), wrap(async (req, res) => {
   const over = await plan.check('members'); if (over) return res.status(402).json({ error: over });
   const hash = await bcrypt.hash(password, 10);
   const { rows } = await query(
-    `INSERT INTO users(company_id,name,email,password_hash,role,team,max_active_chats) VALUES($7,$1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,team`,
-    [String(name).trim(), em, hash, role, team, max_active_chats, C()]);
+    `INSERT INTO users(company_id,name,email,password_hash,role,team,max_active_chats,in_rotation) VALUES($7,$1,$2,$3,$4,$5,$6,$8) RETURNING id,name,email,role,team`,
+    [String(name).trim(), em, hash, role, team, max_active_chats, C(), role === 'agent']); // managers and admins join the rotation only when switched on
   res.json(rows[0]);
 }));
 router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
@@ -541,7 +543,8 @@ router.patch('/users/:id', required('admin'), wrap(async (req, res) => {
   if ('team' in req.body && !(await query('SELECT 1 FROM departments WHERE key=$1 AND company_id=$2', [req.body.team, C()])).rows[0]) return res.status(400).json({ error: 'Unknown department' });
   if (req.body.password && String(req.body.password).length < 8) return res.status(400).json({ error: 'The password must be at least 8 characters' });
   if (req.body.password) { await query('UPDATE users SET password_hash=$2 WHERE id=$1', [uid, await bcrypt.hash(req.body.password, 10)]); }
-  if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')} WHERE id=$1`, [uid, ...f.map(k => req.body[k])]);
+  if ('in_rotation' in req.body) req.body.in_rotation = req.body.in_rotation === true;
+  if (f.length) await query(`UPDATE users SET ${f.map((k, i) => `${k}=$${i + 2}`).join(',')}${f.includes('in_rotation') ? ', rotation_changed_at=now()' : ''} WHERE id=$1`, [uid, ...f.map(k => req.body[k])]);
   res.json({ ok: true });
 }));
 
@@ -558,7 +561,7 @@ router.get('/stats', required('admin', 'manager'), wrap(async (req, res) => {
   const agents = (await query(`SELECT u.id,u.name,u.team,u.is_online,
       COUNT(c.id) FILTER (WHERE c.status='open')::int AS open_chats,
       COALESCE(SUM(c.unread_count),0)::int AS unread
-      FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE u.role='agent' AND u.company_id=$1 GROUP BY u.id ORDER BY u.name`, [C()])).rows;
+      FROM users u LEFT JOIN conversations c ON c.assigned_to=u.id WHERE (u.role='agent' OR u.in_rotation) AND u.company_id=$1 GROUP BY u.id ORDER BY u.name`, [C()])).rows;
   res.json({ totals, agents });
 }));
 
@@ -653,7 +656,7 @@ router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => 
       FROM users u LEFT JOIN LATERAL (
         SELECT c2.id, c2.assigned_at, (SELECT MIN(m.created_at) FROM messages m WHERE m.conversation_id=c2.id AND m.sender_type='agent' AND m.created_at >= c2.assigned_at) AS first_reply
         FROM conversations c2 WHERE c2.assigned_to=u.id AND c2.assigned_at > ${since}) c ON TRUE
-      WHERE u.company_id=${cid} AND u.role='agent' AND u.is_active GROUP BY u.id ORDER BY assigned DESC, u.name`, [d]),
+      WHERE u.company_id=${cid} AND (u.role='agent' OR u.in_rotation) AND u.is_active GROUP BY u.id ORDER BY assigned DESC, u.name`, [d]),
     query(`SELECT COUNT(*) FILTER (WHERE m.direction='in')::int AS inbound, COUNT(*) FILTER (WHERE m.sender_type='agent')::int AS agent_out,
         COUNT(*) FILTER (WHERE m.sender_type='bot')::int AS bot_out FROM messages m JOIN conversations cv ON cv.id=m.conversation_id WHERE cv.company_id=${cid} AND m.created_at > ${since}`, [d]),
     query(`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (fr - assigned_at))) AS sec FROM (
