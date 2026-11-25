@@ -210,6 +210,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS extra_teams JSONB NOT NULL DEFAULT '[
 -- A follow-up can be for one department only (NULL = every client, as before)
 ALTER TABLE drips ADD COLUMN IF NOT EXISTS team TEXT;
 
+-- Slow-reply alert (Settings > Chat assignment): when the agent was told about this wait, and whether the chat was already moved once
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS slow_alerted_at TIMESTAMPTZ;
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS slow_moved BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- ============================================================================
 -- Several companies on one system (sign-up). Every company only sees its own data.
 -- Everything that existed before this update belongs to company 1, so the current client keeps working unchanged.
@@ -569,3 +573,10 @@ DO $$ BEGIN
     UPDATE users SET in_rotation=false WHERE role <> 'agent';
   END IF;
 END $$;
+
+-- Slow-reply alert log (one row per late reply; the dashboard counts them)
+CREATE TABLE IF NOT EXISTS slow_replies (
+  id BIGSERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id), conversation_id INT REFERENCES conversations(id) ON DELETE CASCADE,
+  agent_id INT REFERENCES users(id) ON DELETE SET NULL, moved_to INT REFERENCES users(id) ON DELETE SET NULL, minutes INT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS slow_replies_company_time ON slow_replies(company_id, created_at);

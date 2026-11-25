@@ -604,7 +604,10 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
     await settings.set('gate', { mode: b.mode === 'keywords' ? 'keywords' : 'all', keywords: kw });
   } else if (k === 'assign') {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
-    await settings.set('assign', { mode: b.mode === 'turns' ? 'turns' : 'least', batch: Math.min(20, Math.max(1, Math.round(Number(b.batch)) || 1)) });
+    const cur = await settings.get('assign');
+    await settings.set('assign', { mode: b.mode === 'turns' ? 'turns' : 'least', batch: Math.min(20, Math.max(1, Math.round(Number(b.batch)) || 1)),
+      slow_since: b.slow_on === true && !cur.slow_on ? new Date().toISOString() : cur.slow_since || null,
+      slow_on: 'slow_on' in b ? b.slow_on === true : cur.slow_on, slow_min: 'slow_min' in b ? Math.min(120, Math.max(2, Math.round(Number(b.slow_min)) || 10)) : cur.slow_min });
   } else if (k === 'routing') {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
     const keys = new Set((await query('SELECT key FROM departments WHERE company_id=$1', [C()])).rows.map(r => r.key)), v = {};
@@ -650,7 +653,8 @@ router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => 
         COUNT(*) FILTER (WHERE status='open')::int AS open,
         COUNT(*) FILTER (WHERE assigned_to IS NULL AND bot_step='done')::int AS unassigned,
         COUNT(*) FILTER (WHERE status='bot')::int AS with_bot,
-        COUNT(*) FILTER (WHERE status='closed')::int AS closed FROM conversations WHERE company_id=${cid}`, [d]),
+        COUNT(*) FILTER (WHERE status='closed')::int AS closed,
+        (SELECT COUNT(*) FROM slow_replies WHERE company_id=${cid} AND created_at > ${since})::int AS late FROM conversations WHERE company_id=${cid}`, [d]),
     query(`SELECT to_char(g,'YYYY-MM-DD') AS day, COALESCE(x.n,0)::int AS chats
         FROM generate_series(((now() AT TIME ZONE $2)::date - ($1::int - 1))::timestamp, (now() AT TIME ZONE $2)::date::timestamp, interval '1 day') g
         LEFT JOIN (SELECT (created_at AT TIME ZONE $2)::date AS dd, COUNT(*) AS n FROM conversations WHERE company_id=${cid} GROUP BY 1) x ON x.dd = g::date ORDER BY g`, [days, tz]),

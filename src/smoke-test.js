@@ -1,4 +1,4 @@
-// End-to-end check against a running server (WA_DRY_RUN=true, FLOW_SWEEP_MS=1000 so the chatbot wait check is quick). Usage: npm run seed && npm start & npm test
+// End-to-end check against a running server (WA_DRY_RUN=true, FLOW_SWEEP_MS=1000 SLOW_TICK_MS=1000 so the timed checks are quick). Usage: npm run seed && npm start & npm test
 const B = process.env.BASE || 'http://localhost:3000';
 const j = async (path, opts = {}, token) => {
   const r = await fetch(B + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) }, body: opts.body && JSON.stringify(opts.body) });
@@ -432,6 +432,29 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     check('a follow-up for one department only gets clients of that department', fc.status === 200 && fbad.status === 400 && listed.team === 'classes'
       && got.includes(fc.data.id) && !got.includes(fs2.data.id));
     for (const d of [fc.data, fs2.data]) await j('/api/drips/' + d.id, { method: 'DELETE' }, admin);
+  }
+  // Slow-reply alert: an agent who does not reply in time; managers are told and the chat moves once (server runs with SLOW_TICK_MS=1000)
+  {
+    const on = await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: true, slow_min: 2 } }, admin);
+    const sp = '9230070001' + Date.now().toString().slice(-4);
+    await inbound(sp, { text: { body: 'hi' } }); await sleep(200);
+    await inbound(sp, { text: { body: 'more info please' } }); await sleep(200);
+    await inbound(sp, { text: { body: 'Slow Client' } }); await sleep(400);
+    const s0 = await convOf(sp);
+    const back = async () => { await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes' WHERE id=$1`, [s0.id]);
+      await pool.query(`UPDATE settings SET value = jsonb_set(value, '{slow_since}', to_jsonb((now() - interval '1 hour')::text)) WHERE company_id=1 AND key='assign'`); };
+    await back();
+    let s1 = s0; for (let k = 0; k < 20 && s1.assigned_to === s0.assigned_to; k++) { await sleep(500); s1 = await convOf(sp); }
+    const log1 = (await pool.query('SELECT agent_id, moved_to FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows;
+    check('a slow agent: the chat moves once to another agent of the same department and it is logged', on.status === 200 && s0.team === 'sales' && s1.assigned_to && s1.assigned_to !== s0.assigned_to
+      && [a1.user.id, a2.user.id].includes(s1.assigned_to) && log1.length === 1 && log1[0].agent_id === s0.assigned_to && log1[0].moved_to === s1.assigned_to);
+    await back(); let n = 1; for (let k = 0; k < 20 && n < 2; k++) { await sleep(500); n = (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n; }
+    const s2 = await convOf(sp), an = (await j('/api/analytics?days=7', {}, admin)).data;
+    check('the second slow agent is only reported, the chat is not moved again, and the dashboard counts late replies', n === 2 && s2.assigned_to === s1.assigned_to && an.kpi.late >= 2);
+    await j(`/api/conversations/${s0.id}/messages`, { method: 'POST', body: { text: 'Sorry for the wait!' } }, admin);
+    await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes' WHERE id=$1`, [s0.id]); await sleep(2500);
+    check('once someone replies there is no alert', (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n === 2);
+    await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: false } }, admin);
   }
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
