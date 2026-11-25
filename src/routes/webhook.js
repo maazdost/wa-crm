@@ -15,6 +15,7 @@ const settings = require('../settings');
 const numbers = require('../numbers');
 const calls = require('../calls');
 const tenant = require('../tenant');
+const source = require('../source');
 const router = express.Router();
 
 // Meta webhook verification
@@ -53,10 +54,17 @@ async function handleMessage(m, profileName, numId) {
   const msg = extract(m);
   const waId = m.from;
   const cid = tenant.cid();
+  // Where they came from: a new person is from WhatsApp, or from the Facebook or Instagram ad or post they clicked.
+  const ref = source.fromReferral(m.referral);
   const contact = (await query(
-    `INSERT INTO contacts(company_id,wa_id,profile_name,source) VALUES($4,$1,$2,$3)
+    `INSERT INTO contacts(company_id,wa_id,profile_name,source,channel) VALUES($4,$1,$2,$3,$5)
      ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = CASE WHEN contacts.custom_name THEN contacts.profile_name ELSE COALESCE(EXCLUDED.profile_name, contacts.profile_name) END RETURNING *`,
-    [waId, profileName || null, m.referral ? 'ad' : 'organic', cid])).rows[0];
+    [waId, profileName || null, m.referral ? 'ad' : 'organic', cid, ref ? ref.channel : 'whatsapp'])).rows[0];
+  // The latest ad click is kept with its link. Someone who first wrote on WhatsApp by themselves and now comes through an ad
+  // counts as coming from that ad; a channel typed or imported earlier (Website, Referral...) stays.
+  if (ref) await query(`UPDATE contacts SET channel=CASE WHEN channel IS NULL OR channel='whatsapp' THEN COALESCE($2,channel) ELSE channel END,
+    source=CASE WHEN source='organic' THEN 'ad' ELSE source END, ad_source_url=COALESCE($3,ad_source_url), ad_source_type=$4, ad_source_id=COALESCE($5,ad_source_id), ad_headline=COALESCE($6,ad_headline), ad_clicked_at=now() WHERE id=$1`,
+    [contact.id, ref.channel, ref.url, ref.type, ref.id, ref.headline]).catch(e => console.error('ad source', e.message));
   if (contact.is_personal) return; // marked "not a client": nothing is stored and nothing is sent
   let conv = (await query(
     `INSERT INTO conversations(company_id, contact_id, wa_number_id) VALUES($3,$1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`,

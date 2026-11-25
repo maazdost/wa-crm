@@ -351,14 +351,14 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
   .augl.grid{grid-template-columns:minmax(0,1fr)}.auv{display:none}.plc{flex-basis:86vw;max-height:none}.plb{scroll-snap-type:x mandatory;margin:0 -12px;padding:0 12px 14px}.plc{scroll-snap-align:center}.npop{right:12px;left:12px;bottom:12px;width:auto}}
 .cfrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.cfrow>div{flex:1;min-width:0;display:grid}.cfrow small{color:var(--mute);overflow-wrap:anywhere}.cfrow .ck{margin:0;white-space:nowrap}.cfadd{margin-top:16px;display:grid;gap:10px}.cfnone{margin:0 0 4px}.c-cf{white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}#cc9:empty{display:none}
 @media (min-width:761px){.ctt th,.ctt td{padding-left:10px;padding-right:10px}.ctt th:last-child,.ctt td:last-child{position:sticky;right:0;background:var(--card);box-shadow:-10px 0 10px -10px rgba(0,0,0,.18)}.ctt th:last-child{background:var(--thead)}.ctt tbody tr:hover td:last-child{background:var(--thead)}[dir=rtl] .ctt th:last-child,[dir=rtl] .ctt td:last-child{right:auto;left:0}}
-@media (min-width:761px) and (max-width:1500px){.ctt th:nth-child(8),.ctt td:nth-child(8){display:none}}
-@media (min-width:761px) and (max-width:1280px){.ctt th:nth-child(7),.ctt td:nth-child(7){display:none}}
+@media (min-width:761px) and (max-width:1500px){.ctt th:nth-child(9),.ctt td:nth-child(9){display:none}}
+@media (min-width:761px) and (max-width:1280px){.ctt th:nth-child(6),.ctt td:nth-child(6){display:none}}
 @media (max-width:760px){.ctbar select{flex:1 1 calc(50% - 8px);max-width:none}.ctbar .search{flex:1 1 100%;max-width:none}.ctbar>span{display:none}.ctbar #cexp{flex:1 1 100%;justify-content:center}
   .ctt{display:block;min-width:0}.ctt thead{display:none}.ctt tbody{display:block}.ctt tr{display:block}
   .ctt tr[data-id]{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:6px 8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
   .ctt tr[data-id] td{display:block;padding:0;border:0;min-width:0}.ctt tr[data-id] td:nth-child(1){grid-area:1/1}.ctt tr[data-id] td:nth-child(2){grid-area:1/2}.ctt tr[data-id] td:last-child{grid-area:1/3}
-  .ctt tr[data-id] td:nth-child(3){grid-area:2/2/3/4}.ctt tr[data-id] td:nth-child(5){grid-area:3/2}.ctt tr[data-id] td:nth-child(6){grid-area:3/3;justify-self:end}
-  .ctt tr[data-id] td:nth-child(4),.ctt tr[data-id] td:nth-child(7),.ctt tr[data-id] td:nth-child(8),.ctt tr[data-id] td:nth-child(9),.ctt .cttl .mute,.ctt .c-cf{display:none!important}
+  .ctt tr[data-id] td:nth-child(3){grid-area:2/2/3/4}.ctt tr[data-id] td:nth-child(4){grid-area:3/2}.ctt tr[data-id] td:nth-child(5){grid-area:4/2/5/4}.ctt tr[data-id] td:nth-child(6){grid-area:3/3;justify-self:end}
+  .ctt tr[data-id] td:nth-child(7),.ctt tr[data-id] td:nth-child(8),.ctt tr[data-id] td:nth-child(9),.ctt .cttl .mute,.ctt .c-cf{display:none!important}
   .ctph{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}.ctpg{flex-wrap:wrap}
   .ph{flex-wrap:wrap}.pha{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px 2px}.pha::-webkit-scrollbar{display:none}.pha:empty{display:none}.pha>*{flex:none}
   .pha .btn,.pha .ghost{min-height:36px;padding:6px 12px;font-size:13px}}
@@ -453,6 +453,11 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 .alf .search{flex:1;min-width:200px}
 .alt td{vertical-align:middle}
 .alw{white-space:nowrap;color:var(--mute);font-size:13px}
+.ctsrc{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}.chip.srcc{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.chip.srcc .ic{flex:none}
+.chip.ch-whatsapp{background:var(--tint);color:var(--tint-ink)}.chip.ch-facebook{background:rgba(24,119,242,.13);color:#1565d8}.chip.ch-instagram{background:rgba(225,48,108,.12);color:#c2185b}
+.chip.srcc.ad:not(.ch-facebook):not(.ch-instagram){background:var(--warnbg);color:var(--warn)}
+[data-theme=dark] .chip.ch-facebook{background:rgba(24,119,242,.22);color:#7cb1ff}[data-theme=dark] .chip.ch-instagram{background:rgba(225,48,108,.22);color:#ff8cb8}
+.adlnk{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--tint-ink);text-decoration:none;white-space:nowrap;max-width:100%}.adlnk span{overflow:hidden;text-overflow:ellipsis}.adlnk:hover{text-decoration:underline}
 .chip.alc{display:inline-flex;align-items:center;gap:5px;margin:0;white-space:nowrap}
 .almore{padding:14px;text-align:center;border-top:1px solid var(--line)}
 @media (max-width:760px){
@@ -1159,7 +1164,7 @@ function fillPanel() {
   const c = S.conv, top = $('#cptop'); if (!c || !top) return;
   const nm = c.contact_name || '+' + c.wa_id, w = win(c), kv = (k, v) => v ? `<dt>${k}</dt><dd>${esc(v)}</dd>` : '';
   top.innerHTML = `${avatar(nm, 72)}<h2>${esc(nm)}</h2><span class="mute">+${esc(c.wa_id)}</span><em class="chip ${w.cls}">${w.open ? 'Reply window open · ' + w.txt : 'Reply window closed'}</em>`;
-  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', c.source === 'ad' ? 'An ad' : c.source === 'import' ? 'An imported list' : c.source === 'personal' ? 'Personal contact' : 'Organic') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
+  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', srcName(c)) + (safeUrl(c.ad_source_url) ? `<dt>Ad</dt><dd>${adLink(c, c.ad_headline ? esc(c.ad_headline) : 'Open ad')}</dd>` : '') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
     + kv('First contact', c.contact_since ? new Date(c.contact_since).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' }) : '') + kv('Chat status', c.bot_step === 'held' ? 'On hold' : c.status === 'closed' ? 'Closed' : 'Open') + kv('Marketing', c.opted_out ? 'Opted out' : 'Allowed');
 }
 async function exportChat(list) {
@@ -2589,19 +2594,34 @@ function readCsv(text) {
   return rows;
 }
 /** Finds the name, phone, email and tags columns of a sheet and returns people as { name, phone, email, tags }. */
+/** A date from a file, read in this computer's time zone: an Excel day number, 2026-11-25 10:30, 25/11/2026 3:15 PM or "25 Nov 2026". */
+function fileDate(v) {
+  const s = String(v == null ? '' : v).trim(); if (!s) return undefined; let d;
+  if (/^\d{5}(\.\d+)?$/.test(s)) { const n = Number(s), base = new Date(1899, 11, 30); d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + Math.floor(n), 0, 0, Math.round((n % 1) * 86400)); }
+  else { const m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i);
+    if (m) { let h = +(m[4] || 0); if (m[7]) h = h % 12 + (/pm/i.test(m[7]) ? 12 : 0); d = new Date(+m[3], +m[2] - 1, +m[1], h, +(m[5] || 0), +(m[6] || 0)); if (d.getMonth() !== +m[2] - 1) return undefined; }
+    else if (/^\d{4}-\d\d-\d\d[ T]\d/.test(s)) d = new Date(s.replace(' ', 'T'));
+    else d = new Date(s.replace(/(\d)(st|nd|rd|th)\b/, '$1').replace(/,\s*(\d{1,2}:\d\d)/, ' $1')); }
+  return d && !isNaN(d) ? d.toISOString() : undefined;
+}
 function sheetPeople(rows, fields = []) {
   const clean = v => { v = String(v == null ? '' : v).trim(); return /^[—–-]+$/.test(v) ? '' : v; }, digits = v => String(v || '').replace(/\D/g, '');
   const head = (rows[0] || []).map(h => String(h || '').trim().toLowerCase()), find = re => head.findIndex(h => re.test(h));
   let ph = find(/mobile|phone|whatsapp|cell|contact ?(no|number)|^number$|^no\.?$/), nm = head.findIndex(h => /name/.test(h) && !/list|group|user ?name/.test(h)), em = find(/e-?mail/), tg = find(/tag|label/);
+  // Where they came from and the dates, as in a WATI export: Source, ad_source_url, Last Seen, Added On
+  let ad = find(/ad.?source.?url|^ad.?(link|url)$|^source.?url$/), sr = find(/^(source|channel|lead source|came from)$/), ls = find(/^last.?(seen|active|message)/), ao = find(/^(added.?on|date added|created.?(on|at)?|joined)$/);
   const hasHead = ph >= 0 && digits((rows[0] || [])[ph]).length < 7;
-  if (!hasHead) { ph = nm = em = tg = -1; }
-  const fx = hasHead ? fields.map(f => [f.id, head.indexOf(f.name.toLowerCase())]).filter(x => x[1] >= 0 && ![ph, nm, em, tg].includes(x[1])) : []; // columns named like a custom field
-  const cols = hasHead ? [nm >= 0 && rows[0][nm], rows[0][ph], em >= 0 && rows[0][em], tg >= 0 && rows[0][tg], ...fx.map(x => rows[0][x[1]])].filter(Boolean).map(x => String(x).trim()) : [];
+  if (!hasHead) { ph = nm = em = tg = ad = sr = ls = ao = -1; }
+  const fx = hasHead ? fields.map(f => [f.id, head.indexOf(f.name.toLowerCase())]).filter(x => x[1] >= 0 && ![ph, nm, em, tg, ad, sr, ls, ao].includes(x[1])) : []; // columns named like a custom field
+  const cols = hasHead ? [nm >= 0 && rows[0][nm], rows[0][ph], em >= 0 && rows[0][em], tg >= 0 && rows[0][tg], sr >= 0 && rows[0][sr], ad >= 0 && rows[0][ad], ls >= 0 && rows[0][ls], ao >= 0 && rows[0][ao], ...fx.map(x => rows[0][x[1]])].filter(Boolean).map(x => String(x).trim()) : [];
+  const at = (c, i) => i >= 0 && c[i] ? c[i] : undefined;
   const out = [];
   for (const r of rows.slice(hasHead ? 1 : 0)) { const c = r.map(clean); let phone, name, email = '', tags = [];
     if (hasHead) { phone = c[ph]; name = nm >= 0 ? c[nm] : ''; email = em >= 0 ? c[em] : ''; tags = tg >= 0 ? (c[tg] || '').split(/[,;|]/).map(x => x.trim()).filter(Boolean) : []; }
     else { phone = c.find(x => digits(x).length >= 7 && !/@/.test(x)); name = c.find(x => x && x !== phone && !/@/.test(x) && digits(x).length < 7) || ''; email = c.find(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)) || ''; }
-    if (phone && digits(phone).length >= 7) out.push({ phone, name: name || '', email, tags, ...(fx.length ? { fields: Object.fromEntries(fx.map(([id, i]) => [id, c[i]]).filter(x => x[1])) } : {}) }); }
+    const extra = hasHead ? { source: at(c, sr), ad_source_url: at(c, ad), last_seen: fileDate(at(c, ls)), added_on: fileDate(at(c, ao)) } : {};
+    Object.keys(extra).forEach(k => extra[k] === undefined && delete extra[k]);
+    if (phone && digits(phone).length >= 7) out.push({ phone, name: name || '', email, tags, ...extra, ...(fx.length ? { fields: Object.fromEntries(fx.map(([id, i]) => [id, c[i]]).filter(x => x[1])) } : {}) }); }
   return { people: out, cols, withTags: out.filter(p => p.tags.length).length };
 }
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -2732,6 +2752,16 @@ async function showPipeline() {
 }
 
 const CT_SRC = { organic: 'WhatsApp', ad: 'Ad', import: 'Imported', manual: 'Added by hand', personal: 'Ignore list' };
+// Where a contact came from: the channel (WhatsApp, Facebook, Instagram...) and, for an ad or post they clicked, its link.
+const CH_NAME = { whatsapp: 'WhatsApp', facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', google: 'Google', youtube: 'YouTube', website: 'Website', referral: 'Referral', walkin: 'Walk-in', other: 'Other' };
+const CH_ICO = { whatsapp: 'chat', facebook: 'thumb', instagram: 'camera', website: 'globe', google: 'globe', referral: 'users', walkin: 'building' };
+const srcAd = c => c.source === 'ad' || !!c.ad_source_url;
+const srcName = c => { const ch = c.channel && (CH_NAME[c.channel] || c.channel);
+  if (ch && srcAd(c) && (c.channel === 'facebook' || c.channel === 'instagram')) return `${ch} ${c.ad_source_type === 'post' ? 'post' : 'ad'}`;
+  return ch || CT_SRC[c.source] || nice(c.source) || 'WhatsApp'; };
+const srcChip = c => `<em class="chip srcc${c.channel ? ' ch-' + esc(c.channel.replace(/[^a-z]/g, '')) : ''}${srcAd(c) ? ' ad' : ''}"${c.channel && !CH_NAME[c.channel] ? ' data-notr' : ''}>${ico(srcAd(c) && !CH_ICO[c.channel] ? 'megaphone' : CH_ICO[c.channel] || (c.source === 'import' ? 'download' : c.source === 'manual' ? 'userplus' : 'tag'), 12)}${esc(srcName(c))}</em>`;
+const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';
+const adLink = (c, txt = 'Open ad') => safeUrl(c.ad_source_url) ? `<a class="adlnk" href="${esc(c.ad_source_url)}" target="_blank" rel="noopener noreferrer" title="${esc(c.ad_source_url)}">${ico('target', 12)}<span>${txt}</span></a>` : '';
 const agoTxt = t => { if (!t) return '—'; const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000)); return m < 1 ? 'Just now' : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : m < 43200 ? `${Math.round(m / 1440)}d ago` : new Date(t).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' }); };
 async function showContacts() {
   const sc = screen('Contacts', 'Everyone who has messaged you, was added or was imported. Imported people must have agreed to receive WhatsApp messages from you.',
@@ -2744,7 +2774,9 @@ async function showContacts() {
   sc.innerHTML = `<div class="stats" id="cst"></div>
   <div class="tbl"><div class="tbl-h ctbar"><div class="search">${ico('search', 16)}<input id="cq" placeholder="Search name, number or email"></div>
     <select id="cft" aria-label="Tag"><option value="">All tags</option>${S.labels.map(l => `<option value="${l.id}" data-notr>${esc(l.name)}</option>`).join('')}</select>
-    <select id="cfs" aria-label="Source"><option value="">All sources</option>${Object.entries(CT_SRC).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+    <select id="cfs" aria-label="Source"><option value="">All sources</option><option value="ad">From ads</option>${['whatsapp', 'facebook', 'instagram', 'website', 'referral'].map(k => `<option value="ch:${k}">${CH_NAME[k]}</option>`).join('')}<option value="import">Imported</option><option value="manual">Added by hand</option><option value="unknown">Source not known</option><option value="personal">Ignore list</option></select>
+    <select id="cfa" aria-label="Added on"><option value="">Added any time</option><option value="1">Added today</option><option value="7">Added in the last 7 days</option><option value="30">Added in the last 30 days</option><option value="90">Added in the last 90 days</option><option value="365">Added in the last year</option></select>
+    <select id="cfz" aria-label="Last seen"><option value="">Last seen any time</option><option value="7">Seen in the last 7 days</option><option value="30">Seen in the last 30 days</option><option value="old">Not seen for 30 days</option><option value="never">Never wrote to us</option></select>
     <select id="cfo" aria-label="Opt status"><option value="">Opted in and out</option><option value="in">Opted in</option><option value="out">Opted out</option></select>
     <select id="cl" aria-label="List"><option value="">All lists</option>${arr(lists).map(l => `<option value="${esc(l.list_name)}" data-notr>${esc(l.list_name)} (${l.n})</option>`).join('')}</select>
     <span style="flex:1"></span><button class="ghost" id="cexp">${ico('download', 15)}Export</button></div>
@@ -2759,6 +2791,7 @@ async function showContacts() {
   <label class="ck" style="margin-top:12px"><input type="checkbox" id="i5"> These people agreed to receive messages from us on WhatsApp</label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn" id="ibtn">Import</button></div></form>`, 1)}
   ${modal('m-ctc', 'Contact', `<form id="ccf"><div class="qtwo">${field('cc1', 'Name', '')}<label class="fld"><span>WhatsApp number with country code</span><input id="cc2" inputmode="tel" placeholder="923001234567"></label></div>
   <div class="qtwo"><label class="fld"><span>Email (optional)</span><input id="cc3" type="email" maxlength="120"></label><label class="fld"><span>List (optional)</span><input id="cc4" maxlength="60" list="ccl"><datalist id="ccl">${arr(lists).map(l => `<option value="${esc(l.list_name)}">`).join('')}</datalist></label></div>
+  <div class="qtwo"><label class="fld"><span>Came from</span><select id="cca"></select></label><label class="fld"><span>Ad or post link (optional)</span><input id="ccb" type="url" inputmode="url" maxlength="1000" placeholder="https://fb.me/..." data-notr></label></div>
   <div class="fld"><span>Tags</span><div class="cttags" id="cc5"></div></div>
   <div class="qtwo" id="cc9"></div>
   <div id="cc6"><label class="qopt"><span>Opted out: no broadcasts or follow-ups go to this person</span><span class="tog"><input type="checkbox" id="cc7"><i></i></span></label>
@@ -2772,7 +2805,7 @@ async function showContacts() {
   <div class="dlg-f"><button type="button" class="ghost" data-close>Close</button><button class="btn">${ico('plus', 16)}Add field</button></div></form>`, 1)}
   ${modal('m-ign', 'Personal numbers to ignore', `<form id="igf"><p class="mute" style="margin-top:0">Friends, family and anyone who is not a client. The system never replies to them, never stores their messages, and keeps them out of broadcasts.</p>
   <label class="fld"><span>One number per line</span><textarea id="ig1" rows="5" placeholder="0300 1234567"></textarea></label><div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Ignore these numbers</button></div></form>`)}`;
-  const qs = () => new URLSearchParams({ q: $('#cq').value.trim(), tag: $('#cft').value, source: $('#cfs').value, opt: $('#cfo').value, list: $('#cl').value });
+  const qs = () => new URLSearchParams({ q: $('#cq').value.trim(), tag: $('#cft').value, source: $('#cfs').value, added: $('#cfa').value, seen: $('#cfz').value, opt: $('#cfo').value, list: $('#cl').value });
   const tagChips = c => arr(c.tags).length ? arr(c.tags).slice(0, 3).map(t => `<span class="cttag" data-notr style="--c:${esc(t.color)}">${esc(t.name)}</span>`).join('') + (c.tags.length > 3 ? `<span class="kw more">+${c.tags.length - 3}</span>` : '') : '<span class="mute">—</span>';
   const drawSel = () => { $('#csel').hidden = !sel.size; $('#cseln').textContent = `${sel.size} selected`; const all = $('#call'); if (all) all.checked = rows.length > 0 && rows.every(c => sel.has(c.id)); };
   const draw = async () => {
@@ -2786,18 +2819,18 @@ async function showContacts() {
       <td class="ctc"><input type="checkbox" data-cs="${c.id}"${sel.has(c.id) ? ' checked' : ''} aria-label="Select"></td>
       <td>${userCell(c.name || '+' + c.wa_id, c.list_name || '')}</td>
       <td><div class="ctph"><b>+${esc(c.wa_id)}</b><small data-notr>${esc(c.email || '')}</small></div></td>
-      <td><em class="chip${c.source === 'ad' ? ' warn' : ''}">${CT_SRC[c.source] || esc(nice(c.source))}</em></td>
+      <td><div class="ctsrc">${srcChip(c)}${adLink(c)}</div></td>
       <td><div class="cttl">${tagChips(c)}</div></td>
       <td>${c.opted_out ? '<em class="chip closed">Opted out</em>' : '<em class="chip ok">Opted in</em>'}</td>
-      <td class="alw">${agoTxt(c.last_seen)}</td>
-      <td class="alw">${new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+      <td class="alw"${c.last_seen ? ` title="${esc(new Date(c.last_seen).toLocaleString())}"` : ''}>${agoTxt(c.last_seen)}</td>
+      <td class="alw" title="${esc(new Date(c.created_at).toLocaleString())}">${new Date(c.created_at).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' })}</td>
       <td>${c.is_personal ? '<em class="chip closed">Ignored</em>' : '<em class="chip ok">Active</em>'}</td>${CF.filter(f => f.in_list).map(f => `<td class="c-cf" data-notr>${cfShow(f, (c.fields || {})[f.id])}</td>`).join('')}
       <td class="tdm">${c.conversation_id ? `<button class="rowbtn" data-co="${c.conversation_id}" title="Open chat" aria-label="Open chat">${ico('chat', 16)}</button>` : ''}<button class="rowbtn" data-ce="${c.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn danger" data-cd="${c.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></td></tr>`).join('') + '</tbody>'
       : `<tbody><tr><td>${emptyState('users', 'No contacts found', 'Try another search or filter, add a contact, or import a list.')}</td></tr></tbody>`;
     labelTables(); drawSel();
   };
   const again = () => { F.page = 1; draw(); };
-  $('#cq').oninput = debounce(again, 300); ['cft', 'cfs', 'cfo', 'cl'].forEach(id => $('#' + id).onchange = again);
+  $('#cq').oninput = debounce(again, 300); ['cft', 'cfs', 'cfa', 'cfz', 'cfo', 'cl'].forEach(id => $('#' + id).onchange = again);
   $('#cpp').onclick = () => { F.page--; draw(); }; $('#cpn').onclick = () => { F.page++; draw(); };
   const delMany = async ids => { const one = ids.length === 1 && rows.find(c => c.id === ids[0]);
     if (!await sure(one ? 'Delete this contact?' : `Delete ${ids.length} contacts?`, 'Their chat, messages and notes are deleted too. This cannot be undone.', { ok: 'Delete', danger: 1 })) return;
@@ -2815,6 +2848,9 @@ async function showContacts() {
   const drawTags = () => { $('#cc5').innerHTML = S.labels.length ? S.labels.map(l => `<button type="button" class="cttag${tags.has(l.id) ? ' on' : ''}" data-tg="${l.id}" data-notr style="--c:${esc(l.color)}">${esc(l.name)}</button>`).join('') : '<small class="mute">No tags yet. Add them on the Tags page.</small>'; };
   const openC = c => { E = c || null; tags = new Set(arr(c && c.tags).map(t => t.id));
     $('#cc1').value = c ? c.name || '' : ''; $('#cc2').value = c ? c.wa_id : ''; $('#cc2').disabled = !!c; $('#cc3').value = c ? c.email || '' : ''; $('#cc4').value = c ? c.list_name || '' : '';
+    const ch = c && c.channel || '';
+    $('#cca').innerHTML = `<option value="">Not known</option>${Object.entries(CH_NAME).map(([k, v]) => `<option value="${k}"${k === ch ? ' selected' : ''}>${v}</option>`).join('')}${ch && !CH_NAME[ch] ? `<option value="${esc(ch)}" selected data-notr>${esc(ch)}</option>` : ''}`;
+    $('#ccb').value = c ? c.ad_source_url || '' : '';
     $('#cc6').hidden = !c; $('#cc7').checked = !!(c && c.opted_out); $('#cc8').checked = !!(c && c.is_personal);
     $('#cc9').innerHTML = CF.map(f => { const v = (c && c.fields || {})[f.id] || '';
       return `<label class="fld"><span data-notr>${esc(f.name)}</span>${f.kind === 'list' ? `<select data-cf="${f.id}"><option value=""></option>${arr(f.options).map(o => `<option${o === v ? ' selected' : ''} data-notr>${esc(o)}</option>`).join('')}</select>` : `<input data-cf="${f.id}" ${f.kind === 'date' ? 'type="date"' : f.kind === 'number' ? 'inputmode="decimal"' : 'maxlength="200"'} value="${esc(v)}">`}</label>`; }).join('');
@@ -2822,7 +2858,7 @@ async function showContacts() {
   $('#cadd').onclick = () => openC(null);
   $('#cc5').onclick = e => { const b = e.target.closest('[data-tg]'); if (!b) return; const id = +b.dataset.tg; tags.has(id) ? tags.delete(id) : tags.add(id); drawTags(); };
   $('#ccf').onsubmit = async e => { e.preventDefault();
-    const b = { email: $('#cc3').value.trim(), list_name: $('#cc4').value.trim(), tags: [...tags] }; if ($('#cc1').value.trim() || !E) b.name = $('#cc1').value.trim();
+    const b = { email: $('#cc3').value.trim(), list_name: $('#cc4').value.trim(), tags: [...tags], channel: $('#cca').value, ad_source_url: $('#ccb').value.trim() }; if ($('#cc1').value.trim() || !E) b.name = $('#cc1').value.trim();
     if (CF.length) b.fields = Object.fromEntries([...$('#cc9').querySelectorAll('[data-cf]')].map(i => [i.dataset.cf, i.value.trim()]));
     if (E) { if ($('#cc7').checked !== !!E.opted_out) b.opted_out = $('#cc7').checked;
       if ($('#cc8').checked !== !!E.is_personal) { if ($('#cc8').checked && !await sure('Ignore this number?', 'Their chat is deleted and the system will never reply to them.', { ok: 'Ignore', danger: 1 })) return; b.is_personal = $('#cc8').checked; } }
@@ -2849,7 +2885,7 @@ async function showContacts() {
   // export what the search and filters show
   $('#cexp').onclick = async () => { toast('Preparing the Excel file…'); const r = await api('/contacts/export?' + qs()); if (r.error) return toast(r.error);
     const day = t => t ? new Date(t).toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-    const out = [['Name', 'Mobile Number', 'Email', 'Tags', 'Opt Status', 'Source', 'List', 'Last Seen', 'Added On', 'Status', ...CF.map(f => f.name)]].concat(arr(r.rows).map(c => [c.name || '', c.wa_id, c.email || '', arr(c.tags).map(t => t.name).join(', '), c.opted_out ? 'Opted Out' : 'Opted In', CT_SRC[c.source] || c.source, c.list_name || '', day(c.last_seen), day(c.created_at), c.is_personal ? 'Ignored' : 'Active', ...CF.map(f => (c.fields || {})[f.id] || '')]));
+    const out = [['Name', 'Mobile Number', 'Email', 'Tags', 'Opt Status', 'Source', 'ad_source_url', 'List', 'Last Seen', 'Added On', 'Status', ...CF.map(f => f.name)]].concat(arr(r.rows).map(c => [c.name || '', c.wa_id, c.email || '', arr(c.tags).map(t => t.name).join(', '), c.opted_out ? 'Opted Out' : 'Opted In', srcName(c), c.ad_source_url || '', c.list_name || '', day(c.last_seen), day(c.created_at), c.is_personal ? 'Ignored' : 'Active', ...CF.map(f => (c.fields || {})[f.id] || '')]));
     const name = `contacts-${ymd(new Date())}.xlsx`; saveDoc(URL.createObjectURL(makeXlsx(out)), name); toast(`Saved ${name}`); };
   // import
   const showFile = () => { const b = $('#ifi'); b.hidden = !file; $('#i3b').hidden = !!file; if (!file) return;
