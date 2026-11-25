@@ -5,7 +5,8 @@
        appId: 'com.horizon.teaminbox',
        appName: 'Team Inbox',
        webDir: 'www',
-       ...(url ? { server: { url, cleartext: url.startsWith('http://') } } : {}),
+       // allowNavigation keeps a client's own copy (name.teaminboxpro.com) inside the app instead of opening the phone's browser
+       ...(url ? { server: { url, cleartext: url.startsWith('http://'), allowNavigation: ['*.teaminboxpro.com'] } } : {}),
        android: { appendUserAgent: process.env.HAS_FIREBASE === '1' ? 'TeamInboxFCM' : '' },
        plugins: { PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] } }
      };
