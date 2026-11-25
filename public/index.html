@@ -2005,14 +2005,45 @@ async function sendProducts(ids) {
   if (d.error) { toast(d.error); if (d.code === 'WINDOW_CLOSED' && S.conv) { S.conv.window_expires_at = null; renderHead(); renderComposer(); } }
   loadList();
 }
-/* ---------- Ad Manager (opens after Meta business verification) ---------- */
-function showAds() {
-  const sc = screen('Ad Manager', 'Your Click to WhatsApp ads next to the chats they bring.');
-  sc.innerHTML = `<div class="tbl">${emptyState('target', 'Ad Manager opens after Meta verification', 'Meta shares ad data only with verified businesses. When your business verification is approved, your Click to WhatsApp ads, what they cost and the chats each ad brought will show here.', '')}</div>
-  <div class="two"><div class="panel"><h3>Answer your ads now</h3><p class="mute">Quick Message already replies to the ready-made first message of each ad, day or night.</p><button class="ghost" id="adq">${ico('reply', 16)}Open Quick Message</button></div>
-  <div class="panel"><h3>See what your ads bring</h3><p class="mute">Reports already shows how many chats came from ads and how they were answered.</p><button class="ghost" id="adr">${ico('chart', 16)}Open Reports</button></div></div>`;
-  $('#adq').onclick = () => goNav('qm'); $('#adr').onclick = () => goNav('rp');
-  ['qm', 'rp'].forEach((k, i) => { if (!document.querySelector(`[data-nav="${k}"]`)) sc.querySelectorAll('.two .panel')[i].hidden = true; });
+/* ---------- Ad Manager: send ad clients straight to a department, and see what each ad brings ---------- */
+async function showAds() {
+  const sc = screen('Ad Manager', 'Clients from a Click to WhatsApp ad skip the welcome menu and go straight to the right department. Below are the ads your clients came from.',
+    `<button class="btn" id="arn">${ico('plus', 16)}New ad rule</button>`);
+  const [d, ds] = await Promise.all([api('/ad-rules'), api('/departments')]); if (d.error) return toast(d.error); if (S.nav !== 'ads') return;
+  const rules = arr(d.rules), ads = arr(d.ads), deps = arr(ds), dname = k => (deps.find(x => x.key === k) || { name: k }).name;
+  const leads = ads.reduce((n, a) => n + a.leads, 0), answered = ads.reduce((n, a) => n + a.answered, 0);
+  const card = r => { const kw = arr(r.keywords);
+    return `<div class="qcard qmcard${r.active ? '' : ' off'}"><header><span class="qmic">${ico('target', 18)}</span><b data-notr title="${esc(r.name)}">${esc(r.name)}</b>
+      <label class="tog" title="Switch on or off"><input type="checkbox" data-at="${r.id}"${r.active ? ' checked' : ''} aria-label="Switched on"><i></i></label>
+      <button class="rowbtn" data-ae="${r.id}" title="Edit" aria-label="Edit">${ico('edit', 16)}</button><button class="rowbtn" data-ad="${r.id}" title="Delete" aria-label="Delete">${ico('trash', 16)}</button></header>
+      <div class="qmtr"><small>${tr('Ad contains')}</small><span class="kw" data-notr title="${esc(kw.join(', '))}">${esc(kw[0] || '')}</span>${kw.length > 1 ? `<span class="kw more">+${kw.length - 1}</span>` : ''}</div>
+      <p data-notr>${r.message ? esc(r.message) : `<span class="mute">${tr('No message, the agent writes first')}</span>`}</p>
+      <footer><span>${ico('users', 14)}${esc(dname(r.team))}</span><span>${ico('send', 14)}${tr('Clients sent')} ${r.hits}</span></footer></div>`; };
+  const adName = a => a.headline || a.url || (a.id ? 'Ad ' + a.id : 'Ad');
+  sc.innerHTML = `<div class="stats">${kpi('target', rules.filter(r => r.active).length, 'Ad rules switched on')}${kpi('userplus', leads, 'Clients from ads', 'blue')}${kpi('check', answered, 'Answered by your team', 'violet')}${kpi('hourglass', leads - answered, 'Not answered yet', leads - answered ? 'amber' : '')}</div>
+  ${rules.length ? `<div class="cards">${rules.map(card).join('')}</div>` : `<div class="tbl">${emptyState('target', 'No ad rules yet', 'Add a word from your ad, for example classes, and choose the department. Clients from that ad then skip the welcome menu.', `<button class="btn" id="arn2">${ico('plus', 16)}New ad rule</button>`)}</div>`}
+  <div class="tbl" style="margin-top:18px"><div class="tbl-h"><b>Your ads</b><small class="mute">${tr('Filled in when a client writes after clicking an ad')}</small></div>
+  ${ads.length ? `<table><thead><tr><th>Ad</th><th>From</th><th>Clients</th><th>Answered</th><th>Goes to</th><th>Last client</th><th></th></tr></thead><tbody>${ads.map((a, i) => { const r = rules.find(x => x.id === a.rule_id);
+    return `<tr><td><b data-notr>${esc(adName(a))}</b>${safeUrl(a.url) ? `<small style="display:block"><a href="${esc(a.url)}" target="_blank" rel="noopener">${tr('Open ad')}</a></small>` : ''}</td><td>${esc(nice(a.channel || 'facebook'))}</td><td>${a.leads}</td><td>${a.answered}/${a.leads}</td>
+    <td>${r ? `<em class="chip ok">${esc(dname(r.team))}</em>` : `<span class="mute">${tr('Welcome menu')}</span>`}</td><td>${a.last_at ? esc(new Date(a.last_at).toLocaleString()) : '—'}</td><td class="tdm">${r ? '' : `<button class="ghost" data-am="${i}">${tr('Make rule')}</button>`}</td></tr>`; }).join('')}</tbody></table>`
+    : emptyState('chart', 'No ad clients yet', 'When someone writes to you after clicking a Click to WhatsApp ad, the ad shows here with the clients it brought.')}</div>
+  <p class="mute" style="margin-top:14px">${tr('Ad spend and reach will show here after Meta business verification.')}</p>
+  ${modal('m-ar', 'Ad rule', `<form id="arf">${field('ar1', 'Name (only your team sees it)', '')}
+    <label class="fld"><span>Words from the ad, separated by commas. The rule fits when one of them is in the ad's headline, link or ad ID.</span><input id="ar2" placeholder="e.g. classes, course, seekho"></label>
+    <label class="fld"><span>Send these clients to</span><select id="ar3">${deps.map(x => `<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select></label>
+    <label class="fld"><span>First message to the client (optional). {{first_name}} is replaced with their name.</span><textarea id="ar4" rows="4" maxlength="1000"></textarea></label>
+    <div class="dlg-f"><button type="button" class="ghost" data-close>Cancel</button><button class="btn">Save</button></div></form>`)}`;
+  let editing = null;
+  const open = (r, pre) => { editing = r ? r.id : null; $('#ar1').value = r ? r.name : (pre || ''); $('#ar2').value = r ? arr(r.keywords).join(', ') : (pre || ''); $('#ar3').value = r ? r.team : (deps[0] || {}).key || ''; $('#ar4').value = r ? r.message : ''; $('#m-ar').hidden = false; $('#ar2').focus(); };
+  [$('#arn'), $('#arn2')].forEach(b => b && (b.onclick = () => open(null)));
+  sc.querySelectorAll('[data-ae]').forEach(b => b.onclick = () => open(rules.find(r => r.id === +b.dataset.ae)));
+  sc.querySelectorAll('[data-am]').forEach(b => b.onclick = () => { const a = ads[+b.dataset.am]; open(null, a.headline || a.id || ''); });
+  sc.querySelectorAll('[data-at]').forEach(x => x.onchange = async () => { const r = await api('/ad-rules/' + x.dataset.at, 'PATCH', { active: x.checked }); if (r.error) { x.checked = !x.checked; return toast(r.error); } toast(x.checked ? 'Switched on' : 'Switched off'); showAds(); });
+  sc.querySelectorAll('[data-ad]').forEach(b => b.onclick = async () => { if (!await sure('Delete this ad rule?', 'Clients from this ad will get the welcome menu again.', { ok: 'Delete', danger: 1 })) return; await api('/ad-rules/' + b.dataset.ad, 'DELETE'); showAds(); });
+  $('#arf').onsubmit = async e => { e.preventDefault();
+    const body = { name: $('#ar1').value, keywords: $('#ar2').value.split(','), team: $('#ar3').value, message: $('#ar4').value };
+    const r = await api('/ad-rules' + (editing ? '/' + editing : ''), editing ? 'PATCH' : 'POST', body); if (r.error) return toast(r.error);
+    toast('Ad rule saved'); $('#m-ar').hidden = true; showAds(); };
 }
 
 /* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */

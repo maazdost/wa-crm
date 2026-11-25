@@ -35,6 +35,7 @@ app.use('/api', require('./routes/library'));
 app.use('/api', require('./routes/catalog'));
 app.use('/api', require('./routes/social'));
 app.use('/api', require('./routes/flows'));
+app.use('/api', require('./routes/ads'));
 app.use('/api', require('./routes/ai'));
 app.use('/api', require('./routes/reports'));
 app.use('/api', require('./routes/manage'));

@@ -580,3 +580,12 @@ CREATE TABLE IF NOT EXISTS slow_replies (
   agent_id INT REFERENCES users(id) ON DELETE SET NULL, moved_to INT REFERENCES users(id) ON DELETE SET NULL, minutes INT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS slow_replies_company_time ON slow_replies(company_id, created_at);
+
+-- Ad routing: clients from a Click-to-WhatsApp ad go straight to the department set for that ad
+CREATE TABLE IF NOT EXISTS ad_rules (
+  id SERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id), name TEXT NOT NULL, keywords JSONB NOT NULL DEFAULT '[]',
+  team TEXT NOT NULL, message TEXT NOT NULL DEFAULT '', active BOOLEAN NOT NULL DEFAULT TRUE, hits INT NOT NULL DEFAULT 0,
+  last_hit_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ad_rules_company ON ad_rules(company_id);
+ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ad_rule_id INT;

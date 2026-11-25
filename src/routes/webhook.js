@@ -10,6 +10,7 @@ const push = require('../push');
 const { maybeAway } = require('../away');
 const autoreply = require('../autoreply');
 const flows = require('../flows');
+const adroute = require('../adroute');
 const ai = require('../ai');
 const settings = require('../settings');
 const numbers = require('../numbers');
@@ -145,6 +146,11 @@ async function handleMessage(m, profileName, numId) {
     else conv = (await assignConversation(conv.id, conv.team)) || conv;
   }
 
+  // Ad routing: a new client from an ad that one of the company's ad rules fits skips the welcome menu and goes to that department.
+  if (ref && conv.status === 'bot' && conv.bot_step === 'new') {
+    const arule = await adroute.find(ref).catch(e => { console.error('ad routing', e.message); return null; });
+    if (arule) return tellTeam(await adroute.run(arule, conv, contact, waId));
+  }
   // A switched-on welcome chatbot takes the place of the built-in welcome bot. Without one, nothing changes.
   if (conv.status === 'bot' && ['new', 'flow'].includes(conv.bot_step)) {
     const wflow = await flows.welcome();
