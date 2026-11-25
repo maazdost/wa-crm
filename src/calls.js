@@ -24,7 +24,7 @@ async function incoming(ev, value, numId) {
   const name = value.contacts && value.contacts[0] && value.contacts[0].profile && value.contacts[0].profile.name;
   const cid = tenant.cid();
   const contact = (await query(
-    `INSERT INTO contacts(company_id,wa_id,profile_name,source) VALUES($3,$1,$2,'organic') ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = CASE WHEN contacts.custom_name THEN contacts.profile_name ELSE COALESCE(EXCLUDED.profile_name, contacts.profile_name) END RETURNING *`, [waId, name || null, cid])).rows[0];
+    `INSERT INTO contacts(company_id,wa_id,profile_name,source,channel) VALUES($3,$1,$2,'organic','whatsapp') ON CONFLICT (company_id,wa_id) DO UPDATE SET profile_name = CASE WHEN contacts.custom_name THEN contacts.profile_name ELSE COALESCE(EXCLUDED.profile_name, contacts.profile_name) END RETURNING *`, [waId, name || null, cid])).rows[0];
   if (contact.is_personal) return;
   const conv = (await query(
     `INSERT INTO conversations(company_id, contact_id, wa_number_id) VALUES($3,$1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`, [contact.id, nid, cid])).rows[0];

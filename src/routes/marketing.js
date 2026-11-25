@@ -7,6 +7,7 @@ const { markPersonal } = require('../personal');
 const settings = require('../settings');
 const numbers = require('../numbers');
 const tenant = require('../tenant');
+const source = require('../source');
 const C = () => tenant.cid(); // the signed-in person's company; every query below is limited to it
 const envToken = () => C() === 1 ? process.env.WA_ACCESS_TOKEN : null; // the server's own token belongs to company 1 only
 const router = express.Router();
@@ -151,15 +152,28 @@ const cleanEmail = (e) => { e = String(e || '').trim().slice(0, 120); return /^[
 const TAGS_SQL = `COALESCE((SELECT json_agg(json_build_object('id', l.id, 'name', l.name, 'color', l.color) ORDER BY l.name) FROM labels l
   WHERE l.id IN (SELECT label_id FROM contact_labels WHERE contact_id=ct.id UNION SELECT label_id FROM conversation_labels WHERE conversation_id=c.id)), '[]') AS tags`;
 const CONTACT_COLS = `ct.id, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS name, ct.email, COALESCE(ct.source,'organic') AS source, ct.list_name, ct.opted_out, ct.is_personal, ct.created_at, ct.fields,
-  c.id AS conversation_id, c.status AS chat_status, c.last_customer_message_at AS last_seen, u.name AS agent, ${TAGS_SQL}`;
+  ct.channel, ct.ad_source_url, ct.ad_source_type, ct.ad_headline, ct.ad_clicked_at,
+  c.id AS conversation_id, c.status AS chat_status, GREATEST(c.last_customer_message_at, ct.last_seen_at) AS last_seen, u.name AS agent, ${TAGS_SQL}`;
 const CONTACT_FROM = 'FROM contacts ct LEFT JOIN conversations c ON c.contact_id=ct.id LEFT JOIN users u ON u.id=c.assigned_to';
 // The search box and the filters of the Contacts page, shared by the list and the export.
 function contactFilter(qs) {
   const w = ['ct.company_id=$1'], p = [C()];
   const add = (sql, v) => { p.push(v); w.push(sql.replace(/\?/g, '$' + p.length)); };
-  if (qs.q) add('(ct.name ILIKE ? OR ct.profile_name ILIKE ? OR ct.wa_id ILIKE ? OR ct.email ILIKE ? OR EXISTS (SELECT 1 FROM jsonb_each_text(ct.fields) f WHERE f.value ILIKE ?))', `%${String(qs.q).replace(/^\+/, '')}%`);
+  if (qs.q) add('(ct.name ILIKE ? OR ct.profile_name ILIKE ? OR ct.wa_id ILIKE ? OR ct.email ILIKE ? OR ct.ad_source_url ILIKE ? OR EXISTS (SELECT 1 FROM jsonb_each_text(ct.fields) f WHERE f.value ILIKE ?))', `%${String(qs.q).replace(/^\+/, '')}%`);
   if (qs.list) add('ct.list_name=?', String(qs.list));
-  if (qs.source) add("COALESCE(ct.source,'organic')=?", String(qs.source));
+  // Source: a channel (Facebook, Instagram, WhatsApp...), "ad" for everyone who came through an ad, or how they were added (imported, by hand)
+  const src = String(qs.source || '');
+  if (src === 'ad') w.push("(ct.source='ad' OR ct.ad_source_url IS NOT NULL)");
+  else if (src.startsWith('ch:')) add('ct.channel=?', src.slice(3));
+  else if (src === 'unknown') w.push('ct.channel IS NULL');
+  else if (src) add("COALESCE(ct.source,'organic')=?", src);
+  // Added on and last seen: within the last N days, or (last seen) more than 30 days ago or never
+  const days = n => Math.min(3650, Math.max(1, Number(n) || 0));
+  if (Number(qs.added)) add("ct.created_at > now() - make_interval(days => ?)", days(qs.added));
+  const seen = "GREATEST(c.last_customer_message_at, ct.last_seen_at)";
+  if (qs.seen === 'never') w.push(`${seen} IS NULL`);
+  else if (qs.seen === 'old') w.push(`${seen} <= now() - interval '30 days'`);
+  else if (Number(qs.seen)) add(`${seen} > now() - make_interval(days => ?)`, days(qs.seen));
   if (Number(qs.tag)) add('(EXISTS (SELECT 1 FROM contact_labels x WHERE x.contact_id=ct.id AND x.label_id=?) OR EXISTS (SELECT 1 FROM conversation_labels y WHERE y.conversation_id=c.id AND y.label_id=?))', Number(qs.tag));
   if (qs.opt === 'in') w.push('NOT ct.opted_out'); else if (qs.opt === 'out') w.push('ct.opted_out');
   if (qs.status === 'active') w.push('NOT ct.is_personal'); else if (qs.status === 'ignored') w.push('ct.is_personal');
@@ -283,9 +297,11 @@ router.post('/contacts', mgr, wrap(async (req, res) => {
   if (!wa) return res.status(400).json({ error: 'Type a valid phone number with the country code, for example 923001234567' });
   if (b.email && !cleanEmail(b.email)) return res.status(400).json({ error: 'This email address does not look right' });
   const name = String(b.name || '').trim().slice(0, 60) || null;
+  if (b.ad_source_url && !source.cleanUrl(b.ad_source_url)) return res.status(400).json({ error: 'The ad link does not look right. Paste the full link, starting with https://' });
   if ((await query('SELECT 1 FROM contacts WHERE company_id=$1 AND wa_id=$2', [C(), wa])).rows[0]) return res.status(409).json({ error: 'A contact with this number already exists' });
-  const c = (await query(`INSERT INTO contacts(company_id,wa_id,name,profile_name,custom_name,email,source,list_name,opt_in_source) VALUES($1,$2,$3,$3,$4,$5,'manual',$6,$7) RETURNING id`,
-    [C(), wa, name, !!name, cleanEmail(b.email), String(b.list_name || '').trim().slice(0, 60) || null, `added by ${req.user.name}`])).rows[0];
+  const adUrl = source.cleanUrl(b.ad_source_url);
+  const c = (await query(`INSERT INTO contacts(company_id,wa_id,name,profile_name,custom_name,email,source,list_name,opt_in_source,channel,ad_source_url) VALUES($1,$2,$3,$3,$4,$5,'manual',$6,$7,$8,$9) RETURNING id`,
+    [C(), wa, name, !!name, cleanEmail(b.email), String(b.list_name || '').trim().slice(0, 60) || null, `added by ${req.user.name}`, source.normChannel(b.channel, adUrl), adUrl])).rows[0];
   await setTags(c.id, b.tags);
   const bad = await saveFields(c.id, b.fields);
   res.json({ id: c.id, ...(bad.length ? { warning: 'Not saved, the answer does not fit: ' + bad.join(', ') } : {}) });
@@ -294,6 +310,7 @@ router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
   const id = Number(req.params.id) || 0, b = req.body || {};
   if (!(await query('SELECT 1 FROM contacts WHERE id=$1 AND company_id=$2', [id, C()])).rows[0]) return res.status(404).json({ error: 'Contact not found' });
   if ('email' in b && b.email && !cleanEmail(b.email)) return res.status(400).json({ error: 'This email address does not look right' });
+  if ('ad_source_url' in b && b.ad_source_url && !source.cleanUrl(b.ad_source_url)) return res.status(400).json({ error: 'The ad link does not look right. Paste the full link, starting with https://' });
   if ('is_personal' in b) { if (b.is_personal) await markPersonal(id); else await query('UPDATE contacts SET is_personal=FALSE WHERE id=$1 AND company_id=$2', [id, C()]); }
   if ('opted_out' in b) await query('UPDATE contacts SET opted_out=$2 WHERE id=$1 AND company_id=$3', [id, !!b.opted_out, C()]);
   if ('name' in b) { // a name typed here stays, even when the person's WhatsApp profile name is different
@@ -303,6 +320,8 @@ router.patch('/contacts/:id', mgr, wrap(async (req, res) => {
   }
   if ('email' in b) await query('UPDATE contacts SET email=$2 WHERE id=$1 AND company_id=$3', [id, cleanEmail(b.email), C()]);
   if ('list_name' in b) await query('UPDATE contacts SET list_name=$2 WHERE id=$1 AND company_id=$3', [id, String(b.list_name || '').trim().slice(0, 60) || null, C()]);
+  if ('channel' in b) await query('UPDATE contacts SET channel=$2 WHERE id=$1 AND company_id=$3', [id, source.normChannel(b.channel), C()]);
+  if ('ad_source_url' in b) await query('UPDATE contacts SET ad_source_url=$2 WHERE id=$1 AND company_id=$3', [id, source.cleanUrl(b.ad_source_url), C()]);
   if ('fields' in b) { const bad = await saveFields(id, b.fields); if (bad.length) return res.status(400).json({ error: 'The answer does not fit: ' + bad.join(', ') }); }
   if ('tags' in b) await setTags(id, b.tags);
   res.json({ ok: true });
@@ -335,15 +354,23 @@ router.post('/contacts/import', mgr, wrap(async (req, res) => {
   for (const r of (Array.isArray(rows) ? rows : []).slice(0, 20000)) {
     const d = normPhone(r && r.phone, cc);
     if (!d) { bad++; continue; }
+    const adUrl = source.cleanUrl(r.ad_source_url);
     if (!seen.has(d)) seen.set(d, { name: String(r.name || '').trim().slice(0, 60) || null, email: cleanEmail(r.email), fields: JSON.stringify(fitFields(defs, r.fields).set),
+      channel: source.normChannel(r.source, adUrl), ad: adUrl, seen: source.cleanDate(r.last_seen), added: source.cleanDate(r.added_on),
       tags: (Array.isArray(r.tags) ? r.tags : String(r.tags || '').split(/[,;|]/)).map(t => String(t).trim().slice(0, 30)).filter(Boolean).slice(0, 10) });
   }
   if (!seen.size) return res.status(400).json({ error: 'No valid phone numbers found' });
   const vals = [...seen.values()];
   const out = await query(
-    `INSERT INTO contacts(company_id,wa_id,name,email,source,list_name,opt_in_source,fields) SELECT $5, x.w, x.n, x.e, 'import', $3, $4, x.f::jsonb FROM unnest($1::text[], $2::text[], $6::text[], $7::text[]) AS x(w, n, e, f)
-     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name), email=COALESCE(EXCLUDED.email, contacts.email), fields=contacts.fields || EXCLUDED.fields RETURNING id, wa_id, (xmax = 0) AS inserted`,
-    [[...seen.keys()], vals.map(v => v.name), String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C(), vals.map(v => v.email), vals.map(v => v.fields)]);
+    `INSERT INTO contacts(company_id,wa_id,name,email,source,list_name,opt_in_source,fields,channel,ad_source_url,last_seen_at,created_at)
+     SELECT $5, x.w, x.n, x.e, 'import', $3, $4, x.f::jsonb, x.ch, x.ad, x.ls, COALESCE(x.ao, now())
+       FROM unnest($1::text[], $2::text[], $6::text[], $7::text[], $8::text[], $9::text[], $10::timestamptz[], $11::timestamptz[]) AS x(w, n, e, f, ch, ad, ls, ao)
+     ON CONFLICT (company_id,wa_id) DO UPDATE SET list_name=EXCLUDED.list_name, name=COALESCE(contacts.name, EXCLUDED.name), email=COALESCE(EXCLUDED.email, contacts.email), fields=contacts.fields || EXCLUDED.fields,
+       channel=COALESCE(contacts.channel, EXCLUDED.channel), ad_source_url=COALESCE(contacts.ad_source_url, EXCLUDED.ad_source_url),
+       last_seen_at=GREATEST(contacts.last_seen_at, EXCLUDED.last_seen_at), created_at=LEAST(contacts.created_at, EXCLUDED.created_at)
+     RETURNING id, wa_id, (xmax = 0) AS inserted`,
+    [[...seen.keys()], vals.map(v => v.name), String(list_name).trim().slice(0, 60), `import by ${req.user.name}`, C(), vals.map(v => v.email), vals.map(v => v.fields),
+     vals.map(v => v.channel), vals.map(v => v.ad), vals.map(v => v.seen), vals.map(v => v.added)]);
   // Tags from the file: a tag that does not exist yet is created (same name in other letter case counts as the same tag).
   const have = new Map((await query('SELECT id, name FROM labels WHERE company_id=$1', [C()])).rows.map(l => [l.name.toLowerCase(), l.id]));
   let made = 0;

@@ -535,3 +535,20 @@ DO $$ BEGIN
     UPDATE plans SET ai_replies = CASE key WHEN 'free' THEN 100 WHEN 'starter' THEN 1000 WHEN 'pro' THEN 10000 END;
   END IF;
 END $$;
+
+-- Where each contact came from (WhatsApp, Facebook, Instagram, a website...), the ad they clicked, and dates kept from an imported file.
+-- channel: whatsapp, facebook, instagram, tiktok, google, website, referral, walkin, other, or the text of an imported file.
+-- People who wrote on WhatsApp without an ad get 'whatsapp' once, when the column is first added.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name='contacts' AND column_name='channel') THEN
+    ALTER TABLE contacts ADD COLUMN channel TEXT;
+    UPDATE contacts SET channel='whatsapp' WHERE source='organic';
+  END IF;
+END $$;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_source_url TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_source_type TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_source_id TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_headline TEXT;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ad_clicked_at TIMESTAMPTZ;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS contacts_company_channel ON contacts(company_id, channel);

@@ -254,7 +254,7 @@ router.get('/me', required(), wrap(async (req, res) => {
 // ---- Conversations: agents only ever see their own ----
 async function loadConversation(req, res) {
   const c = (await query(
-    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, COALESCE((SELECT n.calls_enabled FROM wa_numbers n WHERE n.id = COALESCE(c.wa_number_id, (SELECT id FROM wa_numbers WHERE is_default AND company_id=c.company_id LIMIT 1))), false) AS calls_enabled, ${NUMBER_LABEL_SQL}, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1 AND c.company_id=$2`,
+    `SELECT c.*, ct.wa_id, COALESCE(ct.profile_name, ct.name) AS contact_name, COALESCE((SELECT n.calls_enabled FROM wa_numbers n WHERE n.id = COALESCE(c.wa_number_id, (SELECT id FROM wa_numbers WHERE is_default AND company_id=c.company_id LIMIT 1))), false) AS calls_enabled, ${NUMBER_LABEL_SQL}, ${LABELS_SQL}, ct.profile_name, ct.name AS given_name, ct.source, ct.channel, ct.ad_source_url, ct.ad_headline, ct.list_name, ct.opted_out, ct.created_at AS contact_since, (SELECT name FROM users WHERE id=c.assigned_to) AS agent_name FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE c.id=$1 AND c.company_id=$2`,
     [Number(req.params.id) || 0, C()])).rows[0];
   if (!c) { res.status(404).json({ error: 'not found' }); return null; }
   if (isAgent(req.user) && c.assigned_to !== req.user.id) { res.status(403).json({ error: 'not your conversation' }); return null; }
