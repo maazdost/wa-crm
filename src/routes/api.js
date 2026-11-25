@@ -30,30 +30,35 @@ const attempts = new Map(); // "ip|email" -> { n, since }
 // One sign-in for every copy. CLIENT_SITES lists the separate copies that clients run on (comma separated, for example
 // https://wof.teaminboxpro.com). When an email is not known here, the same email and password are tried on each copy,
 // and on a match the person is sent to their own copy, already signed in. Data stays where it is, nothing is copied.
-const clientSites = () => (process.env.CLIENT_SITES || '').split(',').map(s => s.trim().replace(/\/+$/, '')).filter(s => /^https:\/\/[a-z0-9.-]+$/i.test(s) || /^http:\/\/localhost(:\d+)?$/.test(s));
+// CLIENT_SITES is typed by hand on Render, so it is read forgivingly: quotes, spaces, a missing https:// or a trailing path do not break it.
+const clientSites = () => [...new Set(String(process.env.CLIENT_SITES || '').split(/[\s,;]+/).map(s => s.replace(/["'`]/g, '').replace(/^client_sites=/i, '').trim()).filter(Boolean).map(s => {
+  const local = s.match(/^(?:http:\/\/)?(localhost(?::\d+)?)(?:\/.*)?$/i); if (local) return 'http://' + local[1].toLowerCase();
+  const m = s.match(/^(?:https?:\/\/)?([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?:\/.*)?$/i); return m ? 'https://' + m[1].toLowerCase() : null; }).filter(Boolean))];
 async function signInElsewhere(email, password) {
   for (const site of clientSites()) {
     try {
       const r = await fetch(site + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Sign-In-From': 'main' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(8000) });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.token) return { go: site + '/#signin=' + Buffer.from(JSON.stringify({ token: d.token, user: d.user })).toString('base64url') };
+      console.log('sign-in check on', site, 'answered', r.status);
       if (r.status === 403 && d.error) return { status: 403, error: d.error }; // right password, but that company is waiting or paused
     } catch (e) { console.error('sign-in check on', site, e.message); }
   }
   return null;
 }
 router.post('/auth/login', wrap(async (req, res) => {
-  const { email, password } = req.body;
-  const key = `${req.ip}|${String(email || '').toLowerCase()}`, rec = attempts.get(key);
+  const password = req.body.password, email = String(req.body.email || '').trim().toLowerCase();
+  const key = `${req.ip}|${email}`, rec = attempts.get(key);
   if (rec && Date.now() - rec.since > 15 * 60000) attempts.delete(key);
   if ((attempts.get(key)?.n || 0) >= 8) return res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
-  const u = (await query('SELECT u.*, co.status AS company_status, co.name AS company_name FROM users u JOIN companies co ON co.id=u.company_id WHERE u.email=$1 AND u.is_active', [String(email || '').toLowerCase()])).rows[0];
+  const u = (await query('SELECT u.*, co.status AS company_status, co.name AS company_name FROM users u JOIN companies co ON co.id=u.company_id WHERE u.email=$1 AND u.is_active', [email])).rows[0];
   if (!u || !(await bcrypt.compare(password || '', u.password_hash))) {
-    // not known here: maybe the account lives on a client's own copy (a request that already came from another copy is never passed on)
-    if (!u && email && password && !req.headers['x-sign-in-from']) {
-      const other = await signInElsewhere(String(email).toLowerCase(), String(password));
+    // not right here: maybe the account lives on a client's own copy, also when the same email exists here with another password
+    // (a request that already came from another copy is never passed on)
+    if (email && password && !req.headers['x-sign-in-from']) {
+      const other = await signInElsewhere(email, String(password));
       if (other && other.go) { attempts.delete(key); return res.json({ go: other.go }); }
-      if (other) return res.status(other.status).json({ error: other.error });
+      if (other && !u) return res.status(other.status).json({ error: other.error });
     }
     const r = attempts.get(key) || { n: 0, since: Date.now() }; r.n++; attempts.set(key, r);
     return res.status(401).json({ error: 'Invalid email or password' });
@@ -658,3 +663,4 @@ router.get('/analytics', required('admin', 'manager'), wrap(async (req, res) => 
 }));
 
 module.exports = router;
+module.exports.clientSites = clientSites;
