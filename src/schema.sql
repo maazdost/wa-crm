@@ -512,3 +512,26 @@ CREATE TABLE IF NOT EXISTS web_push_subs (
 );
 -- Keys this server makes for itself on first start (the key pair that signs web notifications)
 CREATE TABLE IF NOT EXISTS server_keys (key TEXT PRIMARY KEY, value JSONB NOT NULL);
+
+-- AI Agent: one row of settings per company, and a line for every message the AI dealt with (also counts the plan's monthly AI replies)
+CREATE TABLE IF NOT EXISTS ai_agent (
+  company_id INT PRIMARY KEY REFERENCES companies(id) ON DELETE CASCADE,
+  enabled BOOLEAN NOT NULL DEFAULT FALSE, name TEXT NOT NULL DEFAULT 'Assistant', notes TEXT NOT NULL DEFAULT '',
+  tone TEXT NOT NULL DEFAULT 'friendly', language TEXT NOT NULL DEFAULT 'auto', returning_clients BOOLEAN NOT NULL DEFAULT TRUE,
+  max_replies INT NOT NULL DEFAULT 10, updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS ai_replies (
+  id BIGSERIAL PRIMARY KEY, company_id INT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  conversation_id INT REFERENCES conversations(id) ON DELETE CASCADE,
+  question TEXT, answer TEXT, result TEXT NOT NULL, tokens_in INT, tokens_out INT, created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ai_replies_company ON ai_replies(company_id, created_at);
+CREATE INDEX IF NOT EXISTS ai_replies_chat ON ai_replies(conversation_id, created_at);
+-- AI replies a month for each plan. The starting numbers are written only once, when the column is first added,
+-- so a limit the super admin changes later (or empties) is never overwritten.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name='plans' AND column_name='ai_replies') THEN
+    ALTER TABLE plans ADD COLUMN ai_replies INT;
+    UPDATE plans SET ai_replies = CASE key WHEN 'free' THEN 100 WHEN 'starter' THEN 1000 WHEN 'pro' THEN 10000 END;
+  END IF;
+END $$;

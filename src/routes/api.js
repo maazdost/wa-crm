@@ -144,7 +144,7 @@ router.get('/super/companies', required('super'), wrap(async (req, res) => res.j
 router.get('/super/plans', required('super'), wrap(async (req, res) => res.json(await plan.plans())));
 router.put('/super/plans/:key', required('super'), wrap(async (req, res) => {
   const l = plan.cleanLimits(req.body), name = String(req.body.name || '').trim().slice(0, 30);
-  const r = (await query(`UPDATE plans SET members=$2, numbers=$3, broadcast=$4, storage_mb=$5, name=COALESCE(NULLIF($6,''), name) WHERE key=$1 RETURNING key`, [req.params.key, l.members, l.numbers, l.broadcast, l.storage_mb, name])).rows[0];
+  const r = (await query(`UPDATE plans SET members=$2, numbers=$3, broadcast=$4, storage_mb=$5, name=COALESCE(NULLIF($6,''), name), ai_replies=$7 WHERE key=$1 RETURNING key`, [req.params.key, l.members, l.numbers, l.broadcast, l.storage_mb, name, l.ai_replies])).rows[0];
   r ? res.json({ ok: true }) : res.status(404).json({ error: 'Plan not found' });
 }));
 // The signed-in company's own plan and how much of it is used
@@ -281,9 +281,10 @@ router.get('/conversations', required(), wrap(async (req, res) => {
   else if (assigned_to) { p.push(assigned_to); where.push(`c.assigned_to=$${p.length}`); }
   if (unassigned === 'true') where.push(`c.assigned_to IS NULL AND c.bot_step='done'`);
   // "All" also shows clients who finished the bot but got no agent (for example when the company has no agents yet), so nobody is missed.
-  if (status === 'open') where.push("(c.status='open' OR (c.status='bot' AND c.bot_step='done' AND c.assigned_to IS NULL))");
+  // Chats the AI Agent is answering (bot_step 'ai') are listed too, so the team can watch and step in.
+  if (status === 'open') where.push("(c.status='open' OR (c.status='bot' AND (c.bot_step='ai' OR (c.bot_step='done' AND c.assigned_to IS NULL))))");
   else if (status) { p.push(status); where.push(`c.status=$${p.length}`); }
-  else if (!unassigned) where.push(`c.status <> 'bot'`);
+  else if (!unassigned) where.push(`(c.status <> 'bot' OR c.bot_step='ai')`);
   where.push(req.query.held === 'true' ? "c.bot_step='held'" : "c.bot_step <> 'held'");
   where.push(view === 'archived' ? 'COALESCE(f.archived,false)' : 'NOT COALESCE(f.archived,false)');
   if (view === 'unread') where.push('(c.unread_count>0 OR COALESCE(f.marked_unread,false))');
@@ -396,7 +397,7 @@ router.post('/conversations/:id/status', required(), wrap(async (req, res) => {
   const c = await loadConversation(req, res); if (!c) return;
   if (!['open', 'closed'].includes(req.body.status)) return res.status(400).json({ error: 'bad status' });
   await query('UPDATE conversations SET status=$2 WHERE id=$1', [c.id, req.body.status]);
-  if (req.body.status === 'closed') await require('../flows').agentTookOver(c.id); // a closed chat is no longer in a chatbot
+  if (req.body.status === 'closed') { await require('../flows').agentTookOver(c.id); await require('../ai').stop(c.id); } // a closed chat is no longer in a chatbot or with the AI
   res.json({ ok: true });
 }));
 

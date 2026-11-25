@@ -26,6 +26,9 @@ services:
       # Main site only: the clients' own copies, comma separated (https://wof.teaminboxpro.com). Their people can then sign in on the main site and app.
       - key: CLIENT_SITES
         sync: false
+      # AI Agent: the key of your Anthropic (Claude) account. Without it the AI Agent page says it is not connected.
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: META_APP_ID
         sync: false
       - key: META_CONFIG_ID
