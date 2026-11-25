@@ -67,7 +67,7 @@ async function handleMessage(m, profileName, numId) {
   query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
   if (msg.mediaId) mediaStore.ensure(msg.mediaId, w).catch(e => console.error('media download', e.message));
-  if (msg.callPermission) { rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message }); return; } // answer to "May we call you?": not a chat message for the bot
+  if (msg.callPermission) { rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null }); return; } // answer to "May we call you?": not a chat message for the bot
 
   // Opt-out / opt-in keywords (WhatsApp expects businesses to honour these)
   const word = (msg.type === 'text' ? (msg.body || '') : '').trim().toLowerCase();
@@ -78,14 +78,14 @@ async function handleMessage(m, profileName, numId) {
     const sent = await w.sendText(waId, t);
     await saveOutbound(conv, { senderType: 'bot', body: t, waMessageId: sent.messages?.[0]?.id });
     w.markRead(m.id);
-    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });
     return;
   }
   // Chatbot: the client is answering a question of a flow, so the flow goes on from there.
   const tellTeam = (out) => {
     conv = out.conversation;
     w.markRead(m.id);
-    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });
     if (!out.finished) return;
     const who = contact.name || contact.profile_name || '+' + waId;
     if (conv.assigned_to) {
@@ -103,7 +103,7 @@ async function handleMessage(m, profileName, numId) {
     const out = await autoreply.run(rule, conv, contact, waId);
     conv = out.conversation;
     w.markRead(m.id);
-    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });
     if (conv.assigned_to) {
       const who = contact.profile_name || contact.name || '+' + waId;
       if (out.newlyAssigned) { push.notifyUser(conv.assigned_to, 'New client assigned', `${who}: ${rule.name}`, { conversationId: conv.id }, 'assigned'); rt.toUser(conv.assigned_to, 'conversation:assigned', { conversationId: conv.id, name: who }); }
@@ -142,7 +142,7 @@ async function handleMessage(m, profileName, numId) {
   }
   if (await bot.handle(conv, contact, msg)) {
     w.markRead(m.id);
-    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+    rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });
     return;
   }
   // Agent-owned chat: if the owner was deactivated, hand to someone else
@@ -150,8 +150,9 @@ async function handleMessage(m, profileName, numId) {
     const owner = (await query('SELECT is_active FROM users WHERE id=$1', [conv.assigned_to])).rows[0];
     if (owner && !owner.is_active) conv = (await assignConversation(conv.id, conv.team)) || conv;
   }
-  rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message });
+  rt.toConversation(conv, 'message:new', { conversationId: conv.id, message: saved.message, from: { name: contact.profile_name || contact.name || '', wa_id: waId }, assignedTo: conv.assigned_to || null });
   if (conv.assigned_to) push.notifyUser(conv.assigned_to, contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id }, 'message');
+  else push.notifyManagers(conv.company_id || tenant.cid(), contact.profile_name || contact.name || '+' + waId, msg.body || '', { conversationId: conv.id }, 'message');
   await maybeAway(conv, waId).catch(e => console.error('away message', e.message));
 }
 

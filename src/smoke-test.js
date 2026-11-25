@@ -245,6 +245,57 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await inbound(wp3, { text: { body: 'hi' } }); await sleep(400);
   check('after deleting the chatbots the built-in welcome bot answers again', (await botSaid(wp3))[0].startsWith(greet) && (await j('/api/flows', {}, admin)).data.flows.length === 0);
   await j('/api/labels/' + ftag.id, { method: 'DELETE' }, admin); await j('/api/media-library/' + wfile.id, { method: 'DELETE' }, admin);
+  // Custom fields, Audience, Pipeline and notifications for the installed app
+  const u = Date.now().toString().slice(-6), fpost = (b) => j('/api/contacts/fields', { method: 'POST', body: b }, admin);
+  const fCity = (await fpost({ name: 'City ' + u, kind: 'text', in_list: true })).data, fBud = (await fpost({ name: 'Budget ' + u, kind: 'number' })).data, fDob = (await fpost({ name: 'Birthday ' + u, kind: 'date' })).data,
+    fLvl = (await fpost({ name: 'Level ' + u, kind: 'list', options: 'Beginner\nPro' })).data;
+  check('custom fields are created, and wrong ones are refused', fCity.id && fCity.in_list === true && fBud.kind === 'number' && fLvl.options.length === 2 && (await fpost({ name: 'city ' + u })).status === 409 && (await fpost({ name: '' })).status === 400
+    && (await fpost({ name: 'One choice ' + u, kind: 'list', options: ['A'] })).status === 400 && (await j('/api/contacts/fields', {}, a1.token)).status === 403 && (await j('/api/contacts/fields', {}, admin)).data.some(f => f.id === fDob.id));
+  const fph = '9230050' + Date.now().toString().slice(-5), fct = (await j('/api/contacts', { method: 'POST', body: { name: 'Field Person', phone: fph, fields: { [fCity.id]: 'Lahore' + u, [fBud.id]: '1,500', [fDob.id]: '25/12/1990', [fLvl.id]: 'pro' } } }, admin)).data;
+  let fone = (await cfind('Lahore' + u)).rows[0];
+  check('a contact keeps its custom field answers and is found by them', fct.id && fone && fone.id === fct.id && fone.fields[fCity.id] === 'Lahore' + u && fone.fields[fBud.id] === '1500' && fone.fields[fDob.id] === '1990-12-25' && fone.fields[fLvl.id] === 'Pro'
+    && (await j('/api/contacts/' + fct.id, { method: 'PATCH', body: { fields: { [fBud.id]: 'a lot' } } }, admin)).status === 400 && (await j('/api/contacts/' + fct.id, { method: 'PATCH', body: { fields: { [fCity.id]: '', [fBud.id]: '20' } } }, admin)).status === 200
+    && (fone = (await cfind(fph)).rows[0]) && !(fCity.id in fone.fields) && fone.fields[fBud.id] === '20' && fone.fields[fLvl.id] === 'Pro');
+  const fimp = (await j('/api/contacts/import', { method: 'POST', body: { list_name: 'Fields ' + u, consent: true, rows: [{ name: 'F Imp', phone: fph, fields: { [fCity.id]: 'Karachi', [fBud.id]: 'x', 999999: 'no' } }] } }, admin)).data;
+  fone = (await cfind(fph)).rows[0];
+  check('an import fills custom fields and keeps the other answers', fimp.updated === 1 && fone.fields[fCity.id] === 'Karachi' && fone.fields[fBud.id] === '20' && !('999999' in fone.fields));
+  await j('/api/contacts/fields/' + fLvl.id, { method: 'PATCH', body: { name: 'Stage of learning ' + u, in_list: true } }, admin);
+  check('a field is renamed and deleted, and deleting removes its answers', (await j('/api/contacts/fields', {}, admin)).data.find(f => f.id === fLvl.id).name === 'Stage of learning ' + u && (await j('/api/contacts/fields/' + fCity.id, { method: 'DELETE' }, admin)).status === 200
+    && !(fCity.id in (await cfind(fph)).rows[0].fields) && (await j('/api/contacts/fields/' + fCity.id, { method: 'DELETE' }, admin)).status === 404);
+  const pget = async (q = '') => (await j('/api/contacts/pipeline' + q, {}, admin)).data;
+  let pl = await pget();
+  check('the pipeline starts with four stages', pl.stages.length >= 4 && ['New Lead', 'Contacted', 'Interested', 'Follow-up'].every(n => pl.stages.some(s => s.name.toLowerCase().replace(/[^a-z]/g, '') === n.toLowerCase().replace(/[^a-z]/g, ''))) && pl.total > 0 && pl.unassigned.count > 0);
+  const sNew = (await j('/api/contacts/pipeline/stages', { method: 'POST', body: { name: 'Won ' + u, color: '#10b981' } }, admin)).data, s0 = pl.stages[0];
+  const mv = (from, to) => j('/api/contacts/pipeline/move', { method: 'POST', body: { contact_id: fct.id, from, to } }, admin);
+  await mv(0, s0.id); pl = await pget('?q=' + fph);
+  const in0 = pl.stages.find(s => s.id === s0.id), tagsOf = async () => (await cfind(fph)).rows[0].tags.map(t => t.id);
+  check('a card moved into a stage gets the tag of that stage', sNew.id && in0.count === 1 && in0.cards[0].id === fct.id && pl.unassigned.count === 0 && (await tagsOf()).includes(s0.label_id)
+    && (await j('/api/contacts/pipeline/stages', { method: 'POST', body: { name: 'won ' + u } }, admin)).status === 409);
+  await mv(s0.id, sNew.id); pl = await pget('?q=' + fph);
+  const wonTag = pl.stages.find(s => s.id === sNew.id).label_id;
+  check('moving to another stage swaps the tag', pl.stages.find(s => s.id === s0.id).count === 0 && pl.stages.find(s => s.id === sNew.id).count === 1 && (await tagsOf()).includes(wonTag) && !(await tagsOf()).includes(s0.label_id)
+    && (await j('/api/contacts/pipeline/cards?stage=' + sNew.id, {}, admin)).data.rows.some(c => c.id === fct.id) && (await mv(sNew.id, 999999)).status === 404 && (await j('/api/contacts/pipeline', {}, a1.token)).status === 403);
+  const aud = (await j('/api/contacts/audience?q=' + fph, {}, admin)).data, audAll = (await j('/api/contacts/audience', {}, admin)).data;
+  check('the audience groups people by tag', aud.groups.length === 1 && aud.groups[0].id === wonTag && aud.groups[0].people[0].id === fct.id && audAll.stats.total >= audAll.stats.untagged && audAll.stats.tags > 0 && audAll.groups.some(g => g.id === 0)
+    && (await j('/api/contacts/audience/people?tag=' + wonTag, {}, admin)).data.rows.some(p => p.id === fct.id) && (await j('/api/contacts/audience', {}, a1.token)).status === 403);
+  await j('/api/contacts/pipeline/stages/' + sNew.id, { method: 'PATCH', body: { name: 'Customer ' + u, move: -1 } }, admin); pl = await pget();
+  const moved = pl.stages.findIndex(s => s.id === sNew.id);
+  check('a stage is renamed, moved and removed, and the tag stays', pl.stages[moved].name === 'Customer ' + u && moved === pl.stages.length - 2 && (await j('/api/contacts/pipeline/stages/' + sNew.id, { method: 'DELETE' }, admin)).status === 200
+    && !(await pget()).stages.some(s => s.id === sNew.id) && (await tagsOf()).includes(wonTag) && (await j('/api/labels', {}, admin)).data.some(l => l.id === wonTag && l.name === 'Customer ' + u));
+  await j('/api/contacts/' + fct.id, { method: 'DELETE' }, admin); await j('/api/labels/' + wonTag, { method: 'DELETE' }, admin);
+  for (const f of [fBud, fDob, fLvl]) await j('/api/contacts/fields/' + f.id, { method: 'DELETE' }, admin);
+  // notifications for the installed app: the test catches what would be sent, nothing leaves this machine
+  const pkey = (await j('/api/push/key', {}, a2.token)).data.key, ep = 'https://push.example.com/send/' + u, sent2 = [];
+  const psub = await j('/api/push/subscribe', { method: 'POST', body: { endpoint: ep, keys: { p256dh: 'BKey' + u, auth: 'auth' + u } } }, a2.token);
+  push.out.send = async (sub, payload) => { sent2.push({ sub, payload: JSON.parse(payload) }); };
+  await push.notifyUser(a2.user.id, 'Client name', 'Hello', { conversationId: 7 }, 'message');
+  await push.notifyUser(a1.user.id, 'Muted', 'Hello', {}, 'message'); // a1 switched message alerts off above
+  const mine2 = sent2.filter(x => x.sub.endpoint === ep);
+  push.out.send = async () => { const e = new Error('gone'); e.statusCode = 410; throw e; };
+  await push.notifyUser(a2.user.id, 'Again', 'Hello', {}, 'message');
+  check('the installed app gets notifications, respects each person\'s choices and forgets removed devices', typeof pkey === 'string' && pkey.length > 60 && psub.status === 200 && mine2.length === 1 && mine2[0].payload.title === 'Client name' && mine2[0].payload.conversationId === 7
+    && mine2[0].sub.keys.auth === 'auth' + u && !sent2.some(x => x.payload.title === 'Muted') && (await pool.query('SELECT 1 FROM web_push_subs WHERE endpoint=$1', [ep])).rows.length === 0
+    && (await j('/api/push/subscribe', { method: 'POST', body: { endpoint: 'http://not-secure', keys: {} } }, a2.token)).status === 400 && (await j('/api/push/key')).status === 401);
   check('agent cannot open admin endpoints', (await j('/api/users', {}, a1.token)).status === 403);
   await pool.end();
   console.log(fails ? `\n${fails} FAILED` : '\nALL PASSED'); process.exit(fails ? 1 : 0);

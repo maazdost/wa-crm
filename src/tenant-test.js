@@ -62,6 +62,13 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   check('company 2 cannot change a company 1 number', !aNums[0] || (await j('/api/whatsapp/numbers/' + aNums[0].id, { method: 'PATCH', body: { label: 'x' } }, Bt)).status === 404);
   check('contacts are separate', (await j('/api/contacts', {}, Bt)).data.total === 1);
   const aCt = (await j('/api/contacts', {}, A.token)).data.rows[0];
+  const aField = (await j('/api/contacts/fields', { method: 'POST', body: { name: 'Secret ' + tag } }, A.token)).data, aStage = (await j('/api/contacts/pipeline', {}, A.token)).data.stages[0];
+  const bPipe = (await j('/api/contacts/pipeline', {}, Bt)).data, bAud = (await j('/api/contacts/audience', {}, Bt)).data;
+  check('custom fields, audience and pipeline are separate', aField.id && !(await j('/api/contacts/fields', {}, Bt)).data.some(f => f.id === aField.id) && (await j('/api/contacts/fields/' + aField.id, { method: 'PATCH', body: { name: 'Hacked' } }, Bt)).status === 404
+    && (await j('/api/contacts/fields/' + aField.id, { method: 'DELETE' }, Bt)).status === 404 && bPipe.total === 1 && bPipe.stages.every(s => s.id !== aStage.id) && bAud.stats.total === 1
+    && (await j('/api/contacts/pipeline/move', { method: 'POST', body: { contact_id: aCt.id, from: 0, to: bPipe.stages[0].id } }, Bt)).status === 404 && (await j('/api/contacts/pipeline/stages/' + aStage.id, { method: 'DELETE' }, Bt)).status === 404
+    && (await j('/api/contacts/pipeline/cards?stage=' + aStage.id, {}, Bt)).status === 404 && (await j('/api/contacts/' + aCt.id, { method: 'PATCH', body: { fields: { [aField.id]: 'x' } } }, Bt)).status === 404);
+  await j('/api/contacts/fields/' + aField.id, { method: 'DELETE' }, A.token);
   check('other company cannot edit, delete or export a contact', (await j('/api/contacts/' + aCt.id, { method: 'PATCH', body: { name: 'Hacked' } }, Bt)).status === 404 && (await j('/api/contacts/' + aCt.id, { method: 'DELETE' }, Bt)).status === 404
     && (await j('/api/contacts/delete', { method: 'POST', body: { ids: [aCt.id] } }, Bt)).data.deleted === 0 && (await j('/api/contacts/export', {}, Bt)).data.rows.every(c => c.id !== aCt.id) && (await j('/api/contacts', {}, A.token)).data.rows.some(c => c.id === aCt.id && c.name === aCt.name));
   check('templates are separate', (await j('/api/templates', {}, Bt)).data.length === 0);
