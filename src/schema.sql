@@ -617,3 +617,6 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS payments_company_status ON payments(company_id, status, created_at);
 CREATE UNIQUE INDEX IF NOT EXISTS payments_receipt_no ON payments(company_id, receipt_no) WHERE receipt_no IS NOT NULL;
+-- Reply windows were set to 72h for ad chats; WhatsApp only allows free-form replies for 24h after the client's last message
+UPDATE conversations SET window_expires_at = last_customer_message_at + interval '24 hours'
+  WHERE last_customer_message_at IS NOT NULL AND window_expires_at > last_customer_message_at + interval '24 hours';

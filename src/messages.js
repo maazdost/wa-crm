@@ -8,8 +8,9 @@ async function saveInbound(conv, { waMessageId, type, body, mediaId, mime, filen
      ON CONFLICT (wa_message_id) DO NOTHING RETURNING *`,
     [conv.id, waMessageId, type, body, mediaId || null, mime || null, filename || null, replyTo || null]);
   if (!ins.rows[0]) return null; // duplicate webhook delivery
-  // Click-to-WhatsApp ads give a free 72h window, otherwise the standard 24h
-  const hours = referral ? 72 : 24;
+  // Free-form replies are allowed for 24h after the client's last message. Click-to-WhatsApp ads make messages
+  // free for 72h, but they do not keep the reply window open longer, so the window is always 24h.
+  const hours = 24;
   const { rows } = await query(
     `UPDATE conversations SET last_customer_message_at=now(), last_message_at=now(),
        window_expires_at = GREATEST(COALESCE(window_expires_at, now()), now() + ($2 || ' hours')::interval),
