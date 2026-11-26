@@ -278,6 +278,7 @@ td .ghost{padding:5px 10px;font-size:12.5px}
   .msgs{padding:12px 3%}.b{max-width:84%}.stats,.stats.s4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bx{display:grid}
 }
 .ringbox{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 24px));background:#0b3d36;color:#fff;border-radius:16px;padding:14px 16px;z-index:150;box-shadow:0 8px 30px #0006;display:grid;gap:12px}
+.nbar{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(520px,calc(100% - 20px));background:#0b3d36;color:#fff;border-radius:14px;padding:10px 8px 10px 14px;z-index:140;box-shadow:0 8px 30px #0005;display:flex;align-items:center;gap:12px}.nbar>div{flex:1;min-width:0;display:grid;gap:2px}.nbar small{color:#bfe6dc;font-size:12.5px;line-height:1.35}.nbar .btn{flex:none;padding:8px 16px}.nbar .ib{color:#fff;flex:none}
 .ringbox small{color:#bfe6dc}.ringbox .acts{display:flex;gap:10px}.ringbox button{flex:1;border:0;border-radius:999px;padding:11px;font-weight:700;color:#fff;cursor:pointer}.ringbox .ok{background:#12a150}.ringbox .no{background:#d93a3a}
 .callbar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:150;background:#0b3d36;color:#fff;border-radius:999px;padding:8px 10px 8px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px #0006;max-width:calc(100% - 20px)}
 .callbar small{color:#bfe6dc}.callbar button{border:0;border-radius:999px;padding:9px 14px;font-weight:700;color:#fff;cursor:pointer;background:#ffffff26}.callbar .end{background:#d93a3a}
@@ -1030,7 +1031,7 @@ async function boot() {
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${bar.map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${({ inbox: 'Chats', bc: 'Broadcasts' })[k] || n[1]}</span>${badge(k)}</button>`; }).join('')}</nav>` : ''}
-    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwai" hidden>${ico('download', 18)}<span>Install app</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
+    <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ` · <span id="accteam">${esc(S.user.team)}</span>` : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwai" hidden>${ico('download', 18)}<span>Install app</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
     <div class="drawer" id="drawer" hidden><div class="dwp" role="dialog" aria-label="Menu"><div class="dwh">${avatar(S.user.name, 40)}<div><b>${esc(S.user.name)}</b><small>${esc(S.user.company || 'TeamInbox Pro')}</small></div><button class="ib" data-dwx aria-label="Close menu">${ico('x', 22)}</button></div>
       <div class="dwsc">${groups.map(g => { const l = g[1].filter(n => n[0] !== 'st'); return l.length ? `<div class="dwg">${g[0]}</div>` + l.map(n => `<button class="dwi" data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('') : ''; }).join('')}</div>
       <div class="dwf">${items.some(n => n[0] === 'st') ? `<button class="dwi" data-nav="st">${ico('sliders', 20)}<span>Settings</span></button>` : ''}<button class="dwi" id="dwmode">${ico('moon', 20)}<span>Dark mode</span><span class="tog"><input type="checkbox" tabindex="-1"${effTheme() === 'dark' ? ' checked' : ''}><i></i></span></button><button class="dwi danger" id="dwout">${ico('logout', 20)}<span>Sign out</span></button></div></div></div></div>`;
@@ -1059,12 +1060,16 @@ async function boot() {
   try { if (localStorage.getItem('ti_filt') === '1') $('#filt').hidden = false; } catch {}
   if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; fdot(); loadList(); }; loadAgents(); }
   S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib(); loadProducts();
-  await loadList(); connect(); initPush(); webPush();
-  document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Promise.resolve(Notification.requestPermission()).then(webPush).catch(() => {}), { once:true });
+  await loadDepts(); const acc = $('#accteam'); if (acc) acc.textContent = deptName(S.user.team);
+  await loadList(); connect(); initPush(); webPush(); notifNudge();
+  document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Promise.resolve(Notification.requestPermission()).then(() => { webPush(); notifNudge(); }).catch(() => {}), { once:true });
   const chat = +new URLSearchParams(location.search).get('chat'); if (chat) { history.replaceState(null, '', location.pathname); goNav('inbox'); openConv(chat); } // opened from a notification
   setInterval(tick, 30000);
 }
 function debounce(f, ms) { let t; return () => { clearTimeout(t); t = setTimeout(f, ms); }; }
+// Departments are stored by a short key (WOF: Copying = 'sales', Scaling = 'recruitment'); people always see the name.
+const deptName = k => k ? ((S.deptList || []).find(d => d.key === k) || { name: nice(k) }).name : '';
+async function loadDepts() { const d = await api('/departments'); if (!d.error) S.deptList = arr(d); return S.deptList || []; }
 async function loadAgents() {
   const us = await api('/users'); if (us.error) return;
   S.agents = us.filter(u => u.is_active); // agents, and managers or admins, can all be given chats
@@ -1300,7 +1305,7 @@ function fillPanel() {
   const c = S.conv, top = $('#cptop'); if (!c || !top) return;
   const nm = c.contact_name || '+' + c.wa_id, w = win(c), kv = (k, v) => v ? `<dt>${k}</dt><dd>${esc(v)}</dd>` : '';
   top.innerHTML = `${avatar(nm, 72)}<h2>${esc(nm)}</h2><span class="mute">+${esc(c.wa_id)}</span><em class="chip ${w.cls}">${w.open ? 'Reply window open · ' + w.txt : 'Reply window closed'}</em>`;
-  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', srcName(c)) + (safeUrl(c.ad_source_url) ? `<dt>Ad</dt><dd>${adLink(c, c.ad_headline ? esc(c.ad_headline) : 'Open ad')}</dd>` : '') + kv('Asked for', nice(c.intent)) + kv('Department', c.team) + kv('List', c.list_name) + kv('Number used', c.number_label)
+  $('#cpkv').innerHTML = kv('WhatsApp name', c.profile_name) + kv('Name given', c.given_name) + kv('Came from', srcName(c)) + (safeUrl(c.ad_source_url) ? `<dt>Ad</dt><dd>${adLink(c, c.ad_headline ? esc(c.ad_headline) : 'Open ad')}</dd>` : '') + kv('Asked for', nice(c.intent)) + kv('Department', deptName(c.team)) + kv('List', c.list_name) + kv('Number used', c.number_label)
     + kv('First contact', c.contact_since ? new Date(c.contact_since).toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' }) : '') + kv('Chat status', c.bot_step === 'held' ? 'On hold' : c.status === 'closed' ? 'Closed' : 'Open') + kv('Marketing', c.opted_out ? 'Opted out' : 'Allowed');
   fillDemoPanel();
 }
@@ -1322,7 +1327,7 @@ async function assignDialog() {
   bg.innerHTML = `<div class="dlg" role="dialog" aria-label="Assign chat"><div class="dlg-h"><b>Assign this chat</b><button type="button" class="ib" data-no aria-label="Close">${ico('x', 20)}</button></div><div class="dlg-b">
     ${bot ? '<p class="mute">This client is still with the chatbot. Assigning stops the chatbot and the agent takes over.</p>' : ''}
     <div class="pick"><button data-a=""><span class="pth">${ico('users', 20)}</span><div><b>Auto-pick</b><small>The next free agent of this chat's department</small></div></button>
-    ${(S.agents || []).map(a => `<button data-a="${a.id}"${a.id === c.assigned_to ? ' class="on"' : ''}>${avatar(a.name, 36)}<div><b>${esc(a.name)}${a.id === S.user.id ? ' (you)' : ''}</b><small>${esc(nice(a.team || ''))} · ${a.active_chats || 0} open${a.is_online ? ' · online' : ''}</small></div>${a.id === c.assigned_to ? `<span class="chip">Now</span>` : ''}</button>`).join('')}</div></div></div>`;
+    ${(S.agents || []).map(a => `<button data-a="${a.id}"${a.id === c.assigned_to ? ' class="on"' : ''}>${avatar(a.name, 36)}<div><b>${esc(a.name)}${a.id === S.user.id ? ' (you)' : ''}</b><small>${esc(deptName(a.team))} · ${a.active_chats || 0} open${a.is_online ? ' · online' : ''}</small></div>${a.id === c.assigned_to ? `<span class="chip">Now</span>` : ''}</button>`).join('')}</div></div></div>`;
   const done = () => bg.remove(); bg.__cancel = done;
   bg.onclick = async e => { if (e.target === bg || e.target.closest('[data-no]')) return done(); const b = e.target.closest('[data-a]'); if (!b) return;
     done(); const r = await api(`/conversations/${id}/reassign`, 'POST', { agent_id: b.dataset.a || undefined }); if (r.error) return toast(r.error);
@@ -1333,7 +1338,7 @@ async function assignDialog() {
 function renderMgr() {
   const el = $('#mgr'); if (!isMgr()) return;
   const c = S.conv;
-  el.innerHTML = `<div class="mgr"><span>Assigned to</span><select id="rs"><option value="">Auto-pick</option>${S.agents.map(a => `<option value="${a.id}"${a.id === c.assigned_to ? ' selected' : ''}>${esc(a.name)} (${esc(a.team)}, ${a.active_chats} open)</option>`).join('')}</select><button class="ghost" id="rb">Reassign</button></div>`;
+  el.innerHTML = `<div class="mgr"><span>Assigned to</span><select id="rs"><option value="">Auto-pick</option>${S.agents.map(a => `<option value="${a.id}"${a.id === c.assigned_to ? ' selected' : ''}>${esc(a.name)} (${esc(deptName(a.team))}, ${a.active_chats} open)</option>`).join('')}</select><button class="ghost" id="rb">Reassign</button></div>`;
   $('#rb').onclick = async () => { const r = await api(`/conversations/${S.active}/reassign`, 'POST', { agent_id: $('#rs').value || undefined }); if (r.error) return toast(r.error); toast('Chat reassigned'); loadList(); loadAgents(); };
 }
 function renderNotes() {
@@ -1527,6 +1532,38 @@ async function sendFile(file) {
   S.replyTo = null; renderReply(); if (S.active === id) addMsg(withQuote(d, rt));
   loadList();
 }
+
+/* Notifications off? A bar shows every time the app opens until they are allowed. When the phone or browser
+   can still ask, its button asks; when they were blocked, it says where to switch them on (an app cannot ask again then). */
+async function notifState() {
+  const C = window.Capacitor;
+  if (PWA.native) {
+    if (!C || !C.Plugins.PushNotifications || !/TeamInboxFCM/.test(navigator.userAgent)) return 'none';
+    try { const r = (await C.Plugins.PushNotifications.checkPermissions()).receive; return r === 'granted' ? 'on' : r === 'denied' ? 'blocked' : 'ask'; } catch { return 'none'; }
+  }
+  if (!window.Notification) return 'none';
+  return Notification.permission === 'granted' ? 'on' : Notification.permission === 'denied' ? 'blocked' : 'ask';
+}
+function notifHow() {
+  return PWA.native ? 'Open your phone Settings > Apps > TeamInbox Pro > Notifications, and switch them on.'
+    : PWA.ios ? 'Open the iPhone Settings > Notifications > TeamInbox Pro, and switch on Allow Notifications.'
+    : /Android/.test(navigator.userAgent) ? 'Tap the icon left of the web address (or the three dots > Settings > Site settings), choose Notifications, and pick Allow.'
+    : 'Click the icon left of the web address, set Notifications to Allow, then reload the page.';
+}
+async function notifNudge() {
+  const st = await notifState(), old = $('#nbar'); if (st === 'on' || st === 'none' || !S.token || !$('.shell')) { if (old) old.remove(); return; }
+  if (sessionStorage.getItem('ti_nbar') === '1') return; // closed with X: back next time the app opens
+  const bar = old || document.createElement('div'); bar.id = 'nbar'; bar.className = 'nbar';
+  bar.innerHTML = `${ico('bell', 20)}<div><b>${tr('Notifications are off')}</b><small>${tr(st === 'ask' ? 'Allow them so you never miss a client.' : notifHow())}</small></div>${st === 'ask' ? `<button class="btn" id="nballow">${tr('Allow')}</button>` : ''}<button class="ib" id="nbx" aria-label="${tr('Close')}">${ico('x', 18)}</button>`;
+  if (!old) document.body.appendChild(bar);
+  $('#nbx').onclick = () => { try { sessionStorage.setItem('ti_nbar', '1'); } catch {} bar.remove(); };
+  if ($('#nballow')) $('#nballow').onclick = async () => {
+    if (PWA.native) { try { await window.Capacitor.Plugins.PushNotifications.requestPermissions(); } catch {} initPush(); }
+    else { try { await Notification.requestPermission(); } catch {} await webPush(); }
+    notifNudge();
+  };
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.token) notifNudge(); }); // back from Settings: the bar goes once allowed
 
 /* ---------- Phone app (Android) push ---------- */
 async function initPush() {
@@ -1873,7 +1910,7 @@ async function showSettings(mode) {
   mode = S.stMode = mode || S.stMode || 'st';
   const el = openPage();
   const [st, ql, lb, ds] = await Promise.all([api('/settings'), api('/quick-replies'), api('/labels'), api('/departments')]); if (st.error) return toast(st.error); if (S.nav !== mode) return;
-  S.depts = arr(ds); const dsel = (id, v) => `<select id="${id}">${S.depts.map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
+  S.depts = arr(ds); S.deptList = S.depts; const dsel = (id, v) => `<select id="${id}">${S.depts.map(d => `<option value="${esc(d.key)}"${d.key === v ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`;
   S.quick = arr(ql); S.labels = arr(lb); fillLabelFilter();
   const b = st.bot, a = st.away, g = st.gate, dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], admin = S.user.role === 'admin';
   const fld = (id, label, v, area) => `<label class="fld"><span>${label}</span>${area ? `<textarea id="${id}" rows="3">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</label>`;
@@ -2809,7 +2846,7 @@ async function showReports() {
   const busiest = d.hours.reduce((a, x) => x.n > a.n ? x : a, { n: 0, hour: 0 });
   const xbtn = id => `<span style="flex:1"></span><button class="ghost" data-x="${id}">${ico('download', 14)}Export</button>`;
   const T = { // every table once: used for the screen and for the files
-    agents: { name: 'agents', head: ['Agent', 'Department', 'Chats received', 'Replied', 'Median first reply (seconds)', 'Messages sent', 'Open now', 'Closed'], rows: d.agents.map(a => [a.name, a.team, a.assigned, a.replied, a.median_reply_sec == null ? '' : Math.round(a.median_reply_sec), a.msgs_sent, a.open_now, a.closed_now]) },
+    agents: { name: 'agents', head: ['Agent', 'Department', 'Chats received', 'Replied', 'Median first reply (seconds)', 'Messages sent', 'Open now', 'Closed'], rows: d.agents.map(a => [a.name, deptName(a.team), a.assigned, a.replied, a.median_reply_sec == null ? '' : Math.round(a.median_reply_sec), a.msgs_sent, a.open_now, a.closed_now]) },
     daily: { name: 'daily', head: ['Date', 'New chats', 'Messages received', 'Sent by agents', 'Sent by bot', 'Failed'], rows: days.map(x => [x.day, x.new_chats, x.inbound, x.agent_out, x.bot_out, x.failed]) },
     broadcasts: { name: 'broadcasts', head: ['Broadcast', 'Template', 'Date', 'Status', 'Recipients', 'Sent', 'Delivered', 'Read', 'Failed'], rows: d.broadcasts.map(b => [b.name, b.template_name, b.at, b.status, b.total, b.sent, b.delivered, b.read, b.failed]) },
     quick: { name: 'quick-messages', head: ['Quick message', 'Switched on', 'Times sent (all time)', 'Last sent'], rows: d.quick.map(q => [q.name, q.active ? 'Yes' : 'No', q.sent_count, q.last_sent || '']) },
@@ -2827,7 +2864,7 @@ async function showReports() {
     <div class="hb"><span>Delivered</span><i style="width:${s.delivered_pct || 0}%"></i><b>${pctTxt(s.delivered_pct)}</b></div><div class="hb"><span>Read</span><i style="width:${s.read_pct || 0}%"></i><b>${pctTxt(s.read_pct)}</b></div><div class="hb"><span>Failed</span><i style="width:${s.failed_pct || 0}%;background:var(--red)"></i><b>${pctTxt(s.failed_pct)}</b></div>
     <p class="mute" style="margin:12px 0 0">${s.outbound} messages sent, ${s.template_out} of them templates. ${s.failed} failed.</p></div></div>
   <div class="tbl"><div class="tbl-h"><b>Agent performance</b>${xbtn('agents')}</div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Closed</th></tr></thead><tbody>
-    ${d.agents.map(a => `<tr><td>${userCell(a.name, a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.closed_now}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet.</td></tr>'}</tbody></table></div>
+    ${d.agents.map(a => `<tr><td>${userCell(a.name, deptName(a.team))}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.closed_now}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet.</td></tr>'}</tbody></table></div>
   <div class="tbl"><div class="tbl-h"><b>Day by day</b>${xbtn('daily')}</div><div class="tscroll"><table class="keep"><thead><tr><th>Date</th><th>New chats</th><th>Messages received</th><th>Sent by agents</th><th>Sent automatically</th><th>Failed</th></tr></thead><tbody>
     ${days.slice().reverse().map(x => `<tr><td>${niceDay(x.day)}</td><td>${x.new_chats}</td><td>${x.inbound}</td><td>${x.agent_out}</td><td>${x.bot_out}</td><td>${x.failed ? `<em class="chip closed">${x.failed}</em>` : 0}</td></tr>`).join('')}</tbody></table></div></div>
   ${d.broadcasts.length ? `<div class="tbl"><div class="tbl-h"><b>Bulk broadcasts</b>${xbtn('broadcasts')}</div><table><thead><tr><th>Broadcast</th><th>Date</th><th>Recipients</th><th>Delivered</th><th>Read</th><th>Failed</th></tr></thead><tbody>
@@ -3393,7 +3430,7 @@ async function showDashboard(days = S.dashDays || 14) {
     <div class="panel"><h3>WhatsApp numbers</h3><div id="dnum"><p class="mute">Checking…</p></div></div></div>
   <div class="two"><div class="panel"><h3>What clients asked for</h3>${hbars(d.intents)}</div><div class="panel"><h3>Where clients came from</h3>${hbars(d.sources)}</div></div>
   <div class="tbl"><div class="tbl-h"><b>Agent performance</b><small class="mute">Last ${d.days} days</small></div><table><thead><tr><th>Agent</th><th>Chats received</th><th>Replied</th><th>Median first reply</th><th>Messages sent</th><th>Open now</th><th>Unread</th></tr></thead><tbody>
-  ${d.agents.map(a => `<tr><td>${userCell(a.name, a.team)}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.unread ? `<em class="chip warn">${a.unread}</em>` : 0}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet. Add your team on the Team page.</td></tr>'}</tbody></table></div>`;
+  ${d.agents.map(a => `<tr><td>${userCell(a.name, deptName(a.team))}</td><td>${a.assigned}</td><td>${a.replied}/${a.assigned}</td><td>${fmtDur(a.median_reply_sec)}</td><td>${a.msgs_sent}</td><td>${a.open_now}</td><td>${a.unread ? `<em class="chip warn">${a.unread}</em>` : 0}</td></tr>`).join('') || '<tr><td colspan="7" class="mute">No agents yet. Add your team on the Team page.</td></tr>'}</tbody></table></div>`;
   $('#tb').onclick = showInbox; $('#dgo').onclick = () => goNav('inbox');
   $('#dr').onchange = e => showDashboard(+e.target.value);
   api('/whatsapp/numbers').then(ns => { const box = $('#dnum'); if (!box) return; ns = arr(ns);
