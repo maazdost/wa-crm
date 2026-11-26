@@ -37,7 +37,7 @@ async function checkCompany() {
     const claimed = (await query(`UPDATE conversations SET slow_alerted_at=now() WHERE id=$1 AND (slow_alerted_at IS NULL OR slow_alerted_at < assigned_at) RETURNING id`, [c.id])).rows[0];
     if (!claimed) continue;
     let moved = null;
-    {
+    if (!c.locked_to) { // a client kept with one agent is never moved: managers are only alerted
       // Who already had this client without replying (since the last reply by a person): the next one is someone new;
       // when everyone in the department has had a turn, it goes round again (never back to the same person in a row).
       const tried = (await query(`SELECT DISTINCT agent_id FROM slow_replies WHERE conversation_id=$1 AND created_at > COALESCE(

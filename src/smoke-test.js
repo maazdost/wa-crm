@@ -454,6 +454,27 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     await j(`/api/conversations/${s0.id}/messages`, { method: 'POST', body: { text: 'Sorry for the wait!' } }, admin);
     await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes' WHERE id=$1`, [s0.id]); await sleep(2500);
     check('once someone replies there is no alert', (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n === 2);
+    // Keep with this agent: a locked client never moves (slow rule, auto-pick, coming back after closing); a manager's new choice carries the lock
+    const lp = '9230070002' + Date.now().toString().slice(-4);
+    await inbound(lp, { text: { body: 'hi' } }); await sleep(200); await inbound(lp, { text: { body: 'more info please' } }); await sleep(200);
+    await inbound(lp, { text: { body: 'Locked Client' } }); await sleep(400);
+    const l0 = await convOf(lp), other = [a1, a2].find(a => a.user.id !== l0.assigned_to);
+    const byAgent = await j(`/api/conversations/${l0.id}/lock`, { method: 'POST', body: { lock: true } }, other.token);
+    const lk = await j(`/api/conversations/${l0.id}/lock`, { method: 'POST', body: { lock: true } }, admin);
+    await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes', slow_alerted_at=NULL WHERE id=$1`, [l0.id]);
+    await pool.query(`UPDATE settings SET value = jsonb_set(value, '{slow_since}', to_jsonb((now() - interval '1 hour')::text)) WHERE company_id=1 AND key='assign'`);
+    let la = 0; for (let k = 0; k < 20 && !la; k++) { await sleep(500); la = (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1 AND moved_to IS NULL', [l0.id])).rows[0].n; }
+    const l1 = await convOf(lp);
+    check('keep with this agent: only a manager can lock, and a slow agent keeps a locked client (managers only get the alert)', byAgent.status === 403 && lk.status === 200 && lk.data.locked_to === l0.assigned_to
+      && la === 1 && l1.assigned_to === l0.assigned_to);
+    const auto = await j(`/api/conversations/${l0.id}/reassign`, { method: 'POST', body: {} }, admin);
+    await pool.query(`UPDATE conversations SET status='closed', assigned_to=NULL WHERE id=$1`, [l0.id]);
+    await inbound(lp, { text: { body: 'I am back' } }); await sleep(800);
+    const l2 = await convOf(lp);
+    const mv = await j(`/api/conversations/${l0.id}/reassign`, { method: 'POST', body: { agent_id: other.user.id } }, admin);
+    const un = await j(`/api/conversations/${l0.id}/lock`, { method: 'POST', body: { lock: false } }, admin);
+    check('a locked client comes back to the same agent (auto-pick and after closing), a manager move carries the lock, and unlock works', auto.data.assigned_to === l0.assigned_to
+      && l2.assigned_to === l0.assigned_to && mv.data.locked_to === other.user.id && un.status === 200 && un.data.locked_to === null);
     await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: false } }, admin);
   }
   // Ad routing: a client from an ad that a rule fits skips the welcome and goes straight to that department

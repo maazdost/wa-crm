@@ -16,6 +16,10 @@ async function assignConversation(conversationId, team, opts = {}) {
   // people who must not get it (agents who did not reply in time); teamOnly: never fall back to another department
   const exclude = [].concat(opts.exclude || []).map(Number).filter(Boolean);
   const cfg = await settings.get('assign'), cid = tenant.cid();
+  // A client kept with one agent (locked_to) always goes to that agent while they are active, whatever the rules say.
+  const lk = (await pool.query(`SELECT c.locked_to FROM conversations c JOIN users u ON u.id=c.locked_to AND u.is_active WHERE c.id=$1 AND c.company_id=$2`, [conversationId, cid])).rows[0];
+  if (lk) return (await pool.query(`UPDATE conversations SET assigned_to=$1, status='open', assigned_at=CASE WHEN assigned_to IS DISTINCT FROM $1 THEN now() ELSE assigned_at END
+      WHERE id=$2 AND company_id=$3 RETURNING *`, [lk.locked_to, conversationId, cid])).rows[0];
   const batch = Math.min(20, Math.max(1, Number(cfg.batch) || 1));
   const client = await pool.connect();
   try {

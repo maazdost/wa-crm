@@ -1647,5 +1647,9 @@
 "reacted to a message": "نے ایک پیغام پر ردعمل دیا",
 "Notifications are off": "اطلاعات بند ہیں",
 "Allow them so you never miss a client.": "اجازت دیں تاکہ کوئی کلائنٹ نہ چھوٹے۔",
-"Allow": "اجازت دیں"
+"Allow": "اجازت دیں",
+  "Keep with this agent": "اسی ایجنٹ کے پاس رکھیں",
+  "Client kept with this agent": "کلائنٹ اسی ایجنٹ کے پاس رہے گا",
+  "Client can move again": "کلائنٹ اب منتقل ہو سکتا ہے",
+  "Every new message from this client goes to this agent. The chatbot, ad routing and the 10 minute rule never move them.": "اس کلائنٹ کا ہر نیا پیغام اسی ایجنٹ کو جائے گا۔ چیٹ بوٹ، اشتہار روٹنگ اور 10 منٹ کا اصول انہیں منتقل نہیں کریں گے۔"
 }
