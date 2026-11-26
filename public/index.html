@@ -259,7 +259,8 @@ td .ghost{padding:5px 10px;font-size:12.5px}
 .mb .add{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mb .add .fld{margin:0}.mb .add .full{grid-column:1/-1}
 .dlg{border-radius:16px}.dlg-b p{margin:0 0 12px}.dlg-f{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 .dlg-h{padding:12px 12px 12px 20px}
-@media(max-width:1280px){.cpanel{position:fixed;right:0;top:0;bottom:0;z-index:60;box-shadow:var(--sh2);width:min(340px,100%)}}
+@media(max-width:1280px){.cpanel{position:fixed;right:0;top:0;bottom:0;z-index:60;box-shadow:var(--sh2);width:min(340px,100%);transition:transform .2s ease}.cp-h{position:sticky;top:0;z-index:3;background:var(--surface);padding-top:env(safe-area-inset-top,0px);min-height:calc(60px + env(safe-area-inset-top,0px));padding-left:4px}}
+@media(min-width:1281px){.cp-h .cpb{display:none}}.cp-h>span{flex:1;min-width:0}
 @media(max-width:1100px){.lbrand{padding:32px}.lbrand h2{font-size:30px}.shell{grid-template-columns:68px minmax(0,1fr)}.shell .brand{justify-content:center;padding:0}.shell .brand b,.shell .ni span{display:none}.shell .ng{font-size:0;padding:0;margin:9px 12px;border-top:1px solid var(--line)}.shell .ng:first-child{border:0;margin:6px 0 0}.shell .ni{justify-content:center;padding:11px 0}.shell .ni .nb{position:absolute;top:2px;right:6px;min-width:17px;line-height:17px;font-size:10px;padding:0 4px}#navtg{display:none}.dgrid{grid-template-columns:minmax(0,1fr)}.team{padding:0 18px 40px}}
 @media(max-width:760px){
   .shell,.shell.navmin{grid-template-columns:minmax(0,1fr)}.nav,.topbar{display:none}.avtop{display:grid}.work{grid-template-columns:minmax(0,1fr)}
@@ -793,8 +794,8 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
 const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
-function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { if (history.state && history.state.drawer) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !(history.state && history.state.drawer) ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
-window.addEventListener('popstate', () => { if (S.skipPop) { S.skipPop = false; return; } const dw = $('#drawer'); if (dw && dw.classList.contains('open')) { closeDrawer('pop'); return; } if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
+function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; const ov = history.state && (history.state.drawer || history.state.cp); if (location.pathname === p) { if (ov) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !ov ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+window.addEventListener('popstate', () => { if (S.skipPop) { S.skipPop = false; return; } const dw = $('#drawer'); if (dw && dw.classList.contains('open')) { closeDrawer('pop'); return; } const cpn = $('#cpanel'); if (cpn && !cpn.hidden && !cpWide()) { togglePanel(false, 'pop'); return; } if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeDrawer('nav'); closeOverlays();
   ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
@@ -1255,11 +1256,22 @@ function closeSearch() { S.searching = false; S.q = ''; S.hits = []; S.hit = 0; 
 /* contact info and export */
 /* the contact panel on the right of a chat */
 const cpWide = () => innerWidth > 1280;
-function hidePanel() { const p = $('#cpanel'); if (p) { p.hidden = true; p.innerHTML = ''; } }
-function togglePanel(force) { const p = $('#cpanel'); if (!p || !S.conv) return; const show = force === undefined ? p.hidden : force; p.hidden = !show; if (cpWide()) localStorage.setItem('ti_cp', show ? '1' : '0'); }
+// On phones and small screens the contact panel lies over the chat. It closes with the back arrow, the X, a swipe to the right, or the phone's Back button.
+function cpHist(how) { if (!how && history.state && history.state.cp) { S.skipPop = true; history.back(); } }
+function hidePanel() { const p = $('#cpanel'); if (p) { if (history.state && history.state.cp) history.replaceState(null, '', location.href); p.hidden = true; p.innerHTML = ''; p.style.transform = ''; } }
+function togglePanel(force, how) { const p = $('#cpanel'); if (!p || !S.conv) return; const show = force === undefined ? p.hidden : force; if (show === !p.hidden) return; p.hidden = !show; p.style.transform = ''; if (cpWide()) localStorage.setItem('ti_cp', show ? '1' : '0');
+  else if (show) { if (!(history.state && history.state.cp)) history.pushState({ cp: 1 }, '', location.href); } else cpHist(how); }
+function cpSwipe() {
+  const p = $('#cpanel'); if (!p || p.__sw) return; p.__sw = 1; let x0 = null, y0 = 0, dx = 0, side = null;
+  p.addEventListener('touchstart', e => { if (cpWide()) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive: true });
+  p.addEventListener('touchmove', e => { if (x0 === null) return; const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    if (side === null && (Math.abs(mx) > 10 || Math.abs(my) > 10)) side = Math.abs(mx) > Math.abs(my) * 1.3; if (!side) return;
+    const rtl = document.documentElement.dir === 'rtl'; dx = rtl ? Math.min(0, mx) : Math.max(0, mx); p.style.transition = 'none'; p.style.transform = `translateX(${dx}px)`; }, { passive: true });
+  p.addEventListener('touchend', () => { if (x0 === null) return; x0 = null; p.style.transition = ''; if (side && Math.abs(dx) > 80) togglePanel(false); else p.style.transform = ''; });
+}
 function buildPanel() {
   const p = $('#cpanel'); if (!p) return;
-  p.innerHTML = `<div class="cp-h"><span>Contact details</span><button class="ib" id="cpx" aria-label="Close contact details">${ico('x', 20)}</button></div>
+  p.innerHTML = `<div class="cp-h"><button class="ib cpb" id="cpb" aria-label="Back">${ico('back', 22)}</button><span>Contact details</span><button class="ib" id="cpx" aria-label="Close contact details">${ico('x', 20)}</button></div>
     <div class="cp-top" id="cptop"></div>
     <div class="cp-sec"><h4>Assigned to</h4><div id="mgr">${isMgr() ? '' : esc(S.conv.assigned_to === S.user.id ? 'You' : S.conv.agent_name || 'Nobody yet')}</div></div>
     <div class="cp-sec"><h4>Tags</h4><div id="lbl"></div></div>
@@ -1267,10 +1279,10 @@ function buildPanel() {
     <div class="cp-sec"><h4>Internal notes</h4><section id="notes" class="notes"></section></div>
     <div class="cp-sec"><h4>About this client</h4><dl class="kv" id="cpkv"></dl></div>
     <div class="cp-sec"><h4>Media, files and voice notes</h4><div id="mcount"><button class="ghost" id="mcb">Count shared files</button></div></div>`;
-  $('#cpx').onclick = () => togglePanel(false);
+  $('#cpx').onclick = $('#cpb').onclick = () => togglePanel(false);
   $('#mcb').onclick = () => { const id = S.active, e = $('#mcount'); e.className = 'mute'; e.textContent = 'Counting…';
     loadAll().then(() => { if (S.active !== id || !$('#mcount')) return; const n = t => S.msgs.filter(m => m.media_id && m.type === t).length, parts = [[n('image'), 'photo'], [n('video'), 'video'], [n('audio'), 'voice note'], [n('document'), 'document']].filter(x => x[0]).map(x => `${x[0]} ${x[1]}${x[0] > 1 ? 's' : ''}`); $('#mcount').textContent = parts.join(' · ') || 'Nothing shared yet'; }); };
-  p.hidden = !(cpWide() && localStorage.getItem('ti_cp') !== '0');
+  p.hidden = !(cpWide() && localStorage.getItem('ti_cp') !== '0'); cpSwipe();
 }
 function fillPanel() {
   const c = S.conv, top = $('#cptop'); if (!c || !top) return;
