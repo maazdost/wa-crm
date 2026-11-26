@@ -29,7 +29,7 @@ async function find(ref, firstText) {
 const ruleFor = (rules, ad) => rules.find(r => r.active && hits(r, haystack(ad))) || null;
 
 /**
- * Sends the client to the rule's department: the department is set, its short message goes out, and the chat goes to the next
+ * Sends the client to the rule's department: the department is set, the welcome chatbot's greeting and the rule's short message go out, and the chat goes to the next
  * agent of that department. Returns the same shape as a finished chatbot, so the webhook tells the team the same way.
  */
 async function run(rule, conv, contact, waId) {
@@ -37,6 +37,8 @@ async function run(rule, conv, contact, waId) {
   await query(`UPDATE conversations SET team=CASE WHEN EXISTS (SELECT 1 FROM departments WHERE company_id=$3 AND key=$2) THEN $2 ELSE team END, bot_step='done', ad_rule_id=$4 WHERE id=$1`, [conv.id, rule.team, tenant.cid(), rule.id]);
   await query('UPDATE ad_rules SET hits = hits + 1, last_hit_at = now() WHERE id=$1', [rule.id]);
   let next = (await query('SELECT * FROM conversations WHERE id=$1', [conv.id])).rows[0];
+  // First the welcome chatbot's greeting (welcome text, community link), without its menu questions, then the ad's own message.
+  await require('./flows').sendGreeting(next, contact, waId).catch(e => console.error('ad greeting', e.message));
   if (rule.message) await autoreply.sendStep({ id: 0 }, next, waId, contact, { type: 'text', text: rule.message, buttons: [] }).catch(e => console.error('ad routing message', e.message));
   const owner = next.assigned_to && (await query('SELECT is_active FROM users WHERE id=$1', [next.assigned_to])).rows[0];
   if (owner?.is_active) next = (await query(`UPDATE conversations SET status='open' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];
