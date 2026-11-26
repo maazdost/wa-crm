@@ -950,7 +950,7 @@ function showLogin(err) {
     const r = await fetch(API + '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email:$('#em').value, password:$('#pw').value }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return showLogin(d.error || 'Could not sign in');
-    if (d.go) { location.href = d.go; return; } // this account lives on the company's own copy: go there, already signed in
+    if (d.go) { try { localStorage.setItem('wa_home', new URL(d.go).origin); } catch {} location.href = d.go + '.' + btoa(location.origin).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_'); return; } // this account lives on the company's own copy: go there, already signed in, and remember it so the app opens there next time
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token:d.token, user:d.user })); boot();
   };
 }
@@ -972,7 +972,9 @@ function showSignup() {
     S.token = d.token; S.user = d.user; localStorage.setItem('wa_auth', JSON.stringify({ token: d.token, user: d.user })); boot();
     setTimeout(() => toast('Welcome! Next step: open Settings and connect your WhatsApp number.'), 800); };
 }
-function logout() { if (S.webPush && S.token) fetch(API + '/api/push/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ endpoint: S.webPush }) }).catch(() => {}); S.webPush = null; if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null; history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
+function logout() { if (S.webPush && S.token) fetch(API + '/api/push/unsubscribe', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ endpoint: S.webPush }) }).catch(() => {}); S.webPush = null; if (S.pushToken && S.token) fetch(API + '/api/devices/remove', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + S.token}, body: JSON.stringify({ token: S.pushToken }) }).catch(() => {}); localStorage.removeItem('wa_auth'); if (S.sock) S.sock.disconnect(); S.token = null;
+  const main = localStorage.getItem('wa_main'); if (main && main !== location.origin) { localStorage.removeItem('wa_main'); location.replace(main + '/?signedout=1'); return; } // signed in through the main site: go back to its sign-in page
+  history.replaceState(null, '', '/'); document.title = 'TeamInbox Pro'; showLogin(); }
 
 /* ---------- Shell + list ---------- */
 async function boot() {
@@ -3414,10 +3416,15 @@ async function askCallPermission(id) {
 /* ---------- Start ---------- */
 applyTheme();
 // Arriving from the main site after signing in there: the sign-in comes in the address after # (never sent to a server) and is removed at once.
-if (/^#signin=/.test(location.hash)) { try { const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(location.hash.slice(8).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)))); if (a && a.token && a.user) localStorage.setItem('wa_auth', JSON.stringify({ token: a.token, user: a.user })); } catch {} history.replaceState(null, '', location.pathname + location.search); }
+if (/^#signin=/.test(location.hash)) { const [tok, from] = location.hash.slice(8).split('.'); try { const m = from && atob(from.replace(/-/g, '+').replace(/_/g, '/')); if (m && /^https?:\/\/[^/]+$/.test(m) && m !== location.origin) localStorage.setItem('wa_main', m); } catch {} try { const a = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(tok.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)))); if (a && a.token && a.user) localStorage.setItem('wa_auth', JSON.stringify({ token: a.token, user: a.user })); } catch {} history.replaceState(null, '', location.pathname + location.search); }
 const resetTok = new URLSearchParams(location.search).get('reset');
 const signupLink = new URLSearchParams(location.search).has('signup');
+// The phone app always opens the main site. An account that lives on a company's own copy was sent there at sign-in; send it there again
+// on every start, where it is still signed in, until that person signs out (which comes back here with ?signedout=1).
+if (new URLSearchParams(location.search).has('signedout')) { localStorage.removeItem('wa_home'); history.replaceState(null, '', location.pathname); }
+const homeSite = (() => { try { const h = localStorage.getItem('wa_home'); return h && h !== location.origin && /^https?:\/\/[^/]+$/.test(h) && !localStorage.getItem('wa_auth') ? h : ''; } catch { return ''; } })();
 if (resetTok) showReset(resetTok);
+else if (homeSite) location.replace(homeSite + '/');
 else try { const a = JSON.parse(localStorage.getItem('wa_auth')); if (a && a.token) { S.token = a.token; S.user = a.user; refreshMe(); boot(); } else if (signupLink) showSignup(); else showLogin(); } catch { showLogin(); }
 // Older sign-ins do not know the company name or super-admin access yet: fetch them once and redraw if anything changed.
 async function refreshMe() {
