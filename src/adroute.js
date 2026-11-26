@@ -9,13 +9,20 @@ const { assignConversation } = require('./assign');
 
 const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
 const haystack = (ref) => norm([ref && ref.headline, ref && ref.url, ref && ref.id].filter(Boolean).join(' '));
+// In the client's own words a rule word must be a whole word (a short ending like "classes" for "class" is fine), so "prop" does not match "property".
+const esc = (k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const saidHits = (rule, said) => !!said && (Array.isArray(rule.keywords) ? rule.keywords : []).map(norm).filter(Boolean).some(k => new RegExp(`(^|[^\\p{L}\\p{N}])${esc(k)}[\\p{L}]{0,2}($|[^\\p{L}\\p{N}])`, 'u').test(said));
 const hits = (rule, text) => !!text && (Array.isArray(rule.keywords) ? rule.keywords : []).map(norm).filter(Boolean).some(k => text.includes(k));
 
-/** The switched-on rule that fits this ad, or null. ref is what source.fromReferral() made of the click. */
-async function find(ref) {
-  const text = haystack(ref); if (!text) return null;
+/**
+ * The switched-on rule that fits this ad, or null. ref is what source.fromReferral() made of the click (may be null).
+ * firstText is the client's first message: an ad's ready-made first message ("I'm interested in a Scaling Account") is checked too,
+ * because Meta does not always send the ad details (boosted posts, wa.me links), and the headline may not carry the rule's word.
+ */
+async function find(ref, firstText) {
+  const text = haystack(ref), said = norm(firstText); if (!text && !said) return null;
   const rules = (await query('SELECT * FROM ad_rules WHERE company_id=$1 AND active ORDER BY id', [tenant.cid()])).rows;
-  return rules.find(r => hits(r, text)) || null;
+  return rules.find(r => hits(r, text)) || rules.find(r => saidHits(r, said)) || null;
 }
 
 /** Which rule an ad (from the list of ads) goes to, for the Ad routing page. */

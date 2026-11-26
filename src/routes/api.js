@@ -15,7 +15,7 @@ const isAgent = (u) => u.role === 'agent';
 const settings = require('../settings');
 const { markPersonal } = require('../personal');
 const bot = require('../bot');
-const { toOggOpus } = require('../audio');
+const { toMp3 } = require('../audio');
 const tenant = require('../tenant');
 const C = () => tenant.cid(); // the signed-in person's company; every query below is limited to it
 async function replyCtx(convId, id) {
@@ -407,8 +407,13 @@ router.post('/conversations/:id/status', required(), wrap(async (req, res) => {
 // Managers: reassign (to a chosen agent, or auto-pick when agent_id omitted)
 router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(async (req, res) => {
   const id = Number(req.params.id);
-  const cur = (await query('SELECT team FROM conversations WHERE id=$1 AND company_id=$2', [id, C()])).rows[0];
+  const cur = (await query('SELECT team, bot_step FROM conversations WHERE id=$1 AND company_id=$2', [id, C()])).rows[0];
   if (!cur) return res.status(404).json({ error: 'not found' });
+  // A chat still with the chatbot or the AI: a person takes over, so the chatbot and the AI stop and it becomes a normal client chat.
+  if (cur.bot_step !== 'held' && cur.bot_step !== 'done') {
+    await require('../flows').agentTookOver(id); await require('../ai').stop(id);
+    await query(`UPDATE conversations SET bot_step='done' WHERE id=$1 AND company_id=$2 AND bot_step NOT IN ('held','done')`, [id, C()]);
+  }
   let conv;
   if (req.body.agent_id) {
     if (!(await query('SELECT 1 FROM users WHERE id=$1 AND company_id=$2', [Number(req.body.agent_id) || 0, C()])).rows[0]) return res.status(400).json({ error: 'Person not found' });
@@ -434,8 +439,8 @@ router.post('/conversations/:id/media', express.raw({ type: () => true, limit: '
   let filename = String(req.query.filename || 'file').slice(0, 120);
   const caption = String(req.query.caption || '').trim().slice(0, 1000);
   let body = buf;
-  if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr|ogg)/.test(mime)) { // e.g. WebM from a browser recording
-    try { body = await toOggOpus(buf); mime = 'audio/ogg'; filename = 'voice-note.ogg'; } catch (e) { return res.status(422).json({ error: e.message }); }
+  if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr)/.test(mime)) { // e.g. WebM or OGG from a browser recording
+    try { body = await toMp3(buf); mime = 'audio/mpeg'; filename = 'voice-note.mp3'; } catch (e) { return res.status(422).json({ error: e.message }); }
   }
   const kind = mediaStore.kindOf(mime);
   if (kind === 'image' && buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Photos must be under 5 MB' });

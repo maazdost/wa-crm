@@ -617,6 +617,20 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .top{justify-content:flex-start}.top .toph{flex:1;min-width:0}
   .kpi b{white-space:normal;overflow-wrap:anywhere}
 }
+/* Computer: drag the edge of the menu or of the chat list to make it wider or narrower (double-click the edge to reset). */
+.ib.hot{color:var(--brand)}
+.rsz{display:none}
+@media (min-width:761px){
+  .nav,.side{position:relative}
+  .rsz{display:block;position:absolute;top:0;bottom:0;inset-inline-end:-4px;width:8px;cursor:col-resize;z-index:15;touch-action:none}
+  .rsz:after{content:"";position:absolute;top:0;bottom:0;left:3px;width:2px;background:var(--brand);opacity:0;transition:opacity .15s}
+  .rsz:hover:after,.rsz.on:after{opacity:.6}
+  .shell:not(.onpage) .work{grid-template-columns:var(--listw,clamp(310px,26vw,390px)) minmax(0,1fr) auto}
+  .navmin .nav>.rsz,.onpage .side>.rsz{display:none}
+  body.rszing{cursor:col-resize;user-select:none}body.rszing iframe{pointer-events:none}
+}
+@media (min-width:1101px){.shell:not(.navmin){grid-template-columns:var(--navw,236px) minmax(0,1fr)}}
+@media (max-width:1100px){.nav>.rsz{display:none}}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -829,6 +843,19 @@ const burger = () => `<button class="ib burger" data-burger aria-label="Open men
 function openDrawer() { const d = $('#drawer'); if (!d) return; closeOverlays(); d.hidden = false; d.querySelector('.dwp').style.transform = ''; if (!(history.state && history.state.drawer)) history.pushState({ drawer: 1 }, '', location.href); requestAnimationFrame(() => d.classList.add('open')); const on = d.querySelector('.dwi.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
 // The phone's Back button (Android app, Chrome) closes the menu instead of leaving the page: opening it adds a step to the history.
 function closeDrawer(how) { const d = $('#drawer'); if (!d || d.hidden || !d.classList.contains('open')) return; d.classList.remove('open'); if (!how && history.state && history.state.drawer) { S.skipPop = true; history.back(); } d.querySelector('.dwp').style.transform = ''; clearTimeout(d.__t); d.__t = setTimeout(() => { if (!d.classList.contains('open')) d.hidden = true; }, 220); }
+const RSZ = { navw: [180, 360], listw: [260, 640] };
+function resizeSetup() {
+  const sh = $('.shell'); if (!sh) return;
+  Object.keys(RSZ).forEach(k => { const v = +localStorage.getItem('ti_' + k); if (v >= RSZ[k][0] && v <= RSZ[k][1]) sh.style.setProperty('--' + k, v + 'px'); });
+  sh.querySelectorAll('[data-rsz]').forEach(h => {
+    const k = h.dataset.rsz, box = h.parentElement;
+    h.ondblclick = () => { sh.style.removeProperty('--' + k); localStorage.removeItem('ti_' + k); };
+    h.onpointerdown = e => { e.preventDefault(); h.setPointerCapture(e.pointerId); h.classList.add('on'); document.body.classList.add('rszing');
+      const rtl = getComputedStyle(sh).direction === 'rtl', x0 = e.clientX, w0 = box.getBoundingClientRect().width; let w = w0;
+      h.onpointermove = ev => { w = Math.round(Math.min(RSZ[k][1], Math.max(RSZ[k][0], w0 + (rtl ? x0 - ev.clientX : ev.clientX - x0)))); sh.style.setProperty('--' + k, w + 'px'); };
+      h.onpointerup = h.onpointercancel = () => { h.onpointermove = h.onpointerup = h.onpointercancel = null; h.classList.remove('on'); document.body.classList.remove('rszing'); localStorage.setItem('ti_' + k, w); }; };
+  });
+}
 function drawerSetup() {
   const d = $('#drawer'); if (!d) return; const p = d.querySelector('.dwp');
   document.addEventListener('click', e => { if (e.target.closest('[data-burger]')) openDrawer(); });
@@ -986,7 +1013,7 @@ async function boot() {
   $('#app').innerHTML = `<div class="shell${mgr ? ' ismgr' : ''}${navmin ? ' navmin' : ''}">
     <aside class="nav"><div class="brand"><span class="lg">TI</span><b>TeamInbox <em>Pro</em></b></div>
       <div class="navsc">${groups.map(g => `<div class="ng">${g[0]}</div>` + g[1].map(n => `<button class="ni${n[0] === 'inbox' ? ' on' : ''}" data-nav="${n[0]}" title="${n[1]}" aria-label="${n[1]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('')).join('')}</div>
-      <div class="navft"><button class="ni" id="out2" title="Sign out">${ico('logout', 20)}<span>Sign out</span></button></div></aside>
+      <div class="navft"><button class="ni" id="out2" title="Sign out">${ico('logout', 20)}<span>Sign out</span></button></div><div class="rsz" data-rsz="navw" title="Drag to resize"></div></aside>
     <div class="body"><header class="topbar"><button class="tbtn bare" id="navtg" title="Show or hide the menu" aria-label="Show or hide the menu">${ico('menu', 20)}</button>
       <div class="wsn"><small>Workspace</small><b id="wsname">${esc(S.user.company || 'TeamInbox Pro')}</b></div>
       ${mgr ? '<span class="pst" id="numpill" hidden></span>' : ''}<span class="pst off" id="live"><i></i><span>Connecting…</span></span>
@@ -995,7 +1022,7 @@ async function boot() {
     <div class="work"><aside class="side"><header class="top">${burger()}<div class="toph"><h1>Live Chat</h1><small id="sub">Loading…</small></div><button class="ib avtop" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 36)}</button></header>
       <div class="tools"><div class="search">${ico('search', 18)}<input id="q" placeholder="Search name or number"></div>
       <div class="tabs" id="tabs"></div>
-      <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div></aside>
+      <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div><div class="rsz" data-rsz="listw" title="Drag to resize"></div></aside>
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${bar.map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${({ inbox: 'Chats', bc: 'Broadcasts' })[k] || n[1]}</span>${badge(k)}</button>`; }).join('')}</nav>` : ''}
@@ -1005,7 +1032,7 @@ async function boot() {
       <div class="dwf">${items.some(n => n[0] === 'st') ? `<button class="dwi" data-nav="st">${ico('sliders', 20)}<span>Settings</span></button>` : ''}<button class="dwi" id="dwmode">${ico('moon', 20)}<span>Dark mode</span><span class="tog"><input type="checkbox" tabindex="-1"${effTheme() === 'dark' ? ' checked' : ''}><i></i></span></button><button class="dwi danger" id="dwout">${ico('logout', 20)}<span>Sign out</span></button></div></div></div></div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
-  drawerSetup();
+  drawerSetup(); resizeSetup();
   document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-burger],.drawer')) closeOverlays(); });
   new MutationObserver(syncNav).observe($('#team'), { attributes: true, attributeFilter: ['hidden'] });
   $('#out').onclick = logout; $('#out2').onclick = logout; pwaButton();
@@ -1120,17 +1147,20 @@ function renderHead() {
     return;
   }
   const items = [['info', 'info', 'Contact info'], ['search', 'search', 'Search'], ['select', 'select', 'Select messages'], ['theme', 'palette', 'Chat theme'], ['export', 'download', 'Export chat'], '-',
+    ...(isMgr() && c.bot_step !== 'held' ? [['assign', 'userplus', c.assigned_to ? 'Assign to someone else' : 'Assign to an agent'], '-'] : []),
     ['fav', 'star', c.favorite ? 'Remove from favourites' : 'Add to favourites'], ['pin', 'pin', c.pinned ? 'Unpin chat' : 'Pin chat'], ['unread', 'mail', 'Mark as unread'], ['archive', 'archive', c.archived ? 'Unarchive chat' : 'Archive chat'], '-',
     ...(c.bot_step === 'held' ? (isMgr() ? [['release', 'check', 'Start as client']] : []) : (can('close') ? [['status', 'x', c.status === 'closed' ? 'Reopen chat' : 'Close chat']] : [])), ...(can('not_client') ? [['nonclient', 'ban', 'Not a client', true]] : [])];
   $('#head').innerHTML = `<header class="ch"><button class="back" id="back" aria-label="Back">${ico('back')}</button>${avatar(nm, 40)}
   <div class="who"><b>${esc(nm)}</b><span class="mute">+${esc(c.wa_id)} · ${esc(nice(c.intent || 'new'))}${c.number_label ? ' · via ' + esc(c.number_label) : ''}</span></div>
   ${c.calls_enabled && c.bot_step !== 'held' && can('calls') ? `<button class="ib" id="callbtn" aria-label="Call on WhatsApp" title="Call on WhatsApp">${ico('phone')}</button>` : ''}
+  ${isMgr() && c.bot_step !== 'held' ? `<button class="ib${c.assigned_to ? '' : ' hot'}" id="asgbtn" aria-label="Assign" title="${c.assigned_to ? 'Assigned to ' + esc(c.agent_name || '') + '. Assign to someone else' : 'Assign to an agent'}">${ico('userplus')}</button>` : ''}
   <button class="ib" id="notesbtn" aria-label="Notes" title="Internal notes">${ico('note')}${S.notes.length ? `<i class="ub">${S.notes.length}</i>` : ''}</button>
   <button class="ib" id="cpbtn" aria-label="Contact details" title="Contact details">${ico('panel')}</button>
   <div class="menuwrap"><button class="ib" id="morebtn" aria-label="More actions">${ico('more')}</button><div class="menu" id="cm" hidden>${items.map(i => i === '-' ? '<hr class="sep">' : `<button data-act="${i[0]}"${i[3] ? ' class="danger"' : ''}>${ico(i[1], 18)}<span>${i[2]}</span></button>`).join('')}</div></div></header>` + strip;
   $('#back').onclick = () => { document.body.classList.remove('chat-open'); S.active = null; hidePanel(); renderList(); };
   $('#morebtn').onclick = () => { const m = $('#cm'), was = m.hidden; closeOverlays(); m.hidden = !was; };
   if ($('#callbtn')) $('#callbtn').onclick = startCall;
+  if ($('#asgbtn')) $('#asgbtn').onclick = () => assignDialog();
   $('#notesbtn').onclick = () => { togglePanel(true); const n = $('#notes'); if (n) { n.scrollIntoView({ block: 'center' }); const i = $('#ni'); if (i && innerWidth > 760) i.focus(); } };
   $('#cpbtn').onclick = () => togglePanel();
   $('#cm').onclick = e => { const b = e.target.closest('button'); if (b) { closeOverlays(); chatAct(b.dataset.act); } };
@@ -1148,6 +1178,7 @@ async function chatAct(act) {
   if (act === 'archive') { if (await setFlag(id, { archived: !c.archived })) { toast(c.archived ? 'Chat unarchived' : 'Chat archived'); if (!c.archived) leaveChat(); else { c.archived = false; renderHead(); } } return; }
   if (act === 'status') { const r = await api(`/conversations/${id}/status`, 'POST', { status: c.status === 'closed' ? 'open' : 'closed' }); if (r.error) return toast(r.error); S.conv.status = c.status === 'closed' ? 'open' : 'closed'; renderHead(); renderComposer(); loadList(); return; }
   if (act === 'release') { const r = await api(`/conversations/${id}/release`, 'POST'); if (r.error) return toast(r.error); toast('The bot has greeted them'); return leaveChat(); }
+  if (act === 'assign') return assignDialog();
   if (act === 'nonclient') { if (!await sure('Mark as not a client?', 'Their chat is deleted and they are ignored from now on.', { ok: 'Not a client', danger: 1 })) return; const r = await api(`/conversations/${id}/not-client`, 'POST'); if (r.error) return toast(r.error); toast('Marked as not a client'); leaveChat(); }
 }
 function bindMsgs() {
@@ -1250,6 +1281,22 @@ function typingPing() {
   const t = $('#txt'); S.typingAt = S.typingAt || {};
   if (!t || !t.value.trim() || !S.conv || S.conv.assigned_to !== S.user.id || Date.now() - (S.typingAt[S.active] || 0) < 12000) return;
   S.typingAt[S.active] = Date.now(); api(`/conversations/${S.active}/typing`, 'POST');
+}
+// Managers: give the open chat to a person. Works for chats still with the chatbot or the AI too (they stop and the person takes over).
+async function assignDialog() {
+  const id = S.active, c = S.conv; if (!id || !c) return; if (!S.agents || !S.agents.length) await loadAgents();
+  const bg = document.createElement('div'); bg.className = 'dlg-bg';
+  const bot = c.status === 'bot' && c.bot_step !== 'done';
+  bg.innerHTML = `<div class="dlg" role="dialog" aria-label="Assign chat"><div class="dlg-h"><b>Assign this chat</b><button type="button" class="ib" data-no aria-label="Close">${ico('x', 20)}</button></div><div class="dlg-b">
+    ${bot ? '<p class="mute">This client is still with the chatbot. Assigning stops the chatbot and the agent takes over.</p>' : ''}
+    <div class="pick"><button data-a=""><span class="pth">${ico('users', 20)}</span><div><b>Auto-pick</b><small>The next free agent of this chat's department</small></div></button>
+    ${(S.agents || []).map(a => `<button data-a="${a.id}"${a.id === c.assigned_to ? ' class="on"' : ''}>${avatar(a.name, 36)}<div><b>${esc(a.name)}${a.id === S.user.id ? ' (you)' : ''}</b><small>${esc(nice(a.team || ''))} · ${a.active_chats || 0} open${a.is_online ? ' · online' : ''}</small></div>${a.id === c.assigned_to ? `<span class="chip">Now</span>` : ''}</button>`).join('')}</div></div></div>`;
+  const done = () => bg.remove(); bg.__cancel = done;
+  bg.onclick = async e => { if (e.target === bg || e.target.closest('[data-no]')) return done(); const b = e.target.closest('[data-a]'); if (!b) return;
+    done(); const r = await api(`/conversations/${id}/reassign`, 'POST', { agent_id: b.dataset.a || undefined }); if (r.error) return toast(r.error);
+    const who = (S.agents.find(a => a.id === r.assigned_to) || {}).name; toast(who ? 'Chat assigned to ' + who : 'Chat assigned');
+    if (S.active === id) { S.conv = { ...S.conv, ...r, agent_name: who || S.conv.agent_name }; renderHead(); if ($('#mgr')) renderMgr(); } loadList(); loadAgents(); };
+  document.body.appendChild(bg);
 }
 function renderMgr() {
   const el = $('#mgr'); if (!isMgr()) return;
