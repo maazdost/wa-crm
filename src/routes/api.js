@@ -457,6 +457,41 @@ router.post('/conversations/:id/media', express.raw({ type: () => true, limit: '
   } catch (e) { res.status(502).json({ error: e.message }); }
 }));
 
+// Send a message again that WhatsApp did not deliver (status "failed"): text, text with buttons, photo, video, voice note or file.
+// The same bubble in the chat gets the new WhatsApp id, so it shows sent / delivered / read from then on.
+router.post('/messages/:id/resend', required(), wrap(async (req, res) => {
+  const m = (await query(`SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1 AND c.company_id=$2`, [Number(req.params.id) || 0, C()])).rows[0];
+  if (!m) return res.status(404).json({ error: 'not found' });
+  req.params.id = String(m.conversation_id); const c = await loadConversation(req, res); if (!c) return;
+  if (m.direction !== 'out' || m.status !== 'failed') return res.status(409).json({ error: 'Only messages that were not delivered can be sent again' });
+  if (m.template_name || m.type === 'template') return res.status(409).json({ error: 'Send the template again from the template button' });
+  if (!windowInfo(c).window_open) return res.status(409).json({ error: 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', code: 'WINDOW_CLOSED' });
+  const w = wa.forConversation(c);
+  try {
+    let sent, upd = {};
+    if (m.type === 'text' || !m.media_id) {
+      const [text, bl] = String(m.body || '').split('\n\n🔘 '), btns = bl ? bl.split('  ·  ').map(x => x.trim().slice(0, 20)).filter(Boolean).slice(0, 3) : [];
+      if (!text.trim()) return res.status(409).json({ error: 'This message cannot be sent again' });
+      sent = btns.length ? await w.sendButtons(c.wa_id, text.slice(0, 1024), btns.map((t, i) => ({ id: 'qr_' + (i + 1), title: t }))) : await w.sendText(c.wa_id, text);
+    } else {
+      const file = await mediaStore.ensure(m.media_id, w).catch(() => null);
+      if (!file) return res.status(409).json({ error: 'The file is no longer available. Send it again from the paperclip.' });
+      let body = file.data, mime = String(m.media_mime || file.mime || 'application/octet-stream').split(';')[0], name = m.media_name || 'file';
+      if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr)/.test(mime)) { body = await toMp3(body); mime = 'audio/mpeg'; name = 'voice-note.mp3'; } // older voice notes were OGG
+      const kind = mediaStore.kindOf(mime), caption = m.body && !/^\[\w+\]$/.test(m.body) ? m.body : '';
+      const up = await w.uploadMedia(body, mime, name);
+      sent = await w.sendMedia(c.wa_id, kind, up.id, { caption, filename: name });
+      await mediaStore.store(up.id, mime, body);
+      upd = { media_id: up.id, media_mime: mime, media_name: name, type: kind };
+    }
+    const r = (await query(`UPDATE messages SET wa_message_id=$2, status='sent', error=NULL, created_at=now(),
+        media_id=COALESCE($3, media_id), media_mime=COALESCE($4, media_mime), media_name=COALESCE($5, media_name), type=COALESCE($6, type) WHERE id=$1 RETURNING *`,
+      [m.id, sent.messages?.[0]?.id || null, upd.media_id || null, upd.media_mime || null, upd.media_name || null, upd.type || null])).rows[0];
+    await query('UPDATE conversations SET last_message_at=now() WHERE id=$1', [c.id]);
+    res.json(r);
+  } catch (e) { res.status(502).json({ error: e.message }); }
+}));
+
 router.get('/messages/:id/media', required(), wrap(async (req, res) => {
   const m = (await query(`SELECT m.*, c.assigned_to, c.wa_number_id FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1 AND c.company_id=$2`, [Number(req.params.id) || 0, C()])).rows[0];
   if (!m || !m.media_id) return res.status(404).json({ error: 'not found' });

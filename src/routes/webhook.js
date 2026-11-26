@@ -212,6 +212,7 @@ router.post('/', (req, res) => {
     }
     for (const s of v.statuses || []) {
       if (s.type === 'call') { calls.onStatus(s).catch(e => console.error('call status', e.message)); continue; }
+      if (s.status === 'failed') console.error('message not delivered', s.id, JSON.stringify(s.errors || []).slice(0, 600));
       query(`UPDATE broadcast_recipients SET status=$2, error=COALESCE($3, error) WHERE wa_message_id=$1 AND status <> 'read' AND NOT (status='delivered' AND $2='sent')`,
         [s.id, s.status, s.errors?.[0]?.title || null]).catch(() => {});
       query(`UPDATE messages SET status=$2, error=$3 WHERE wa_message_id=$1
