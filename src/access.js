@@ -19,7 +19,7 @@ const PERMS = {
     settings: { label: 'Settings, Bot and Away', hint: 'Change the welcome bot, away message, assignment rules and the daily summary', on: true, rules: [['PUT', /^\/settings\//], ['ANY', /^\/summary-settings(\/|$)/]] },
     payments: { label: 'Payments', hint: 'Check payment screenshots and send receipts', on: true, rules: [['ANY', /^\/(payments|payments-settings)(\/|$)/]] },
     reports: { label: 'Reports and Health Audit', hint: 'Open reports and export them', on: true, rules: [['ANY', /^\/(reports|health-audit)(\/|$)/]] },
-    reassign: { label: 'Reassign chats', hint: 'Move a chat to another agent or release it', on: true, rules: [['POST', /^\/conversations\/\d+\/(reassign|release)$/]] },
+    reassign: { label: 'Reassign chats', hint: 'Move a chat to another agent or release it', on: true, rules: [['POST', /^\/conversations\/\d+\/(reassign|release|lock)$/]] },
     activity: { label: 'Activity Log', hint: 'See who did what', on: false, rules: [['ANY', /^\/activity-log(\/|$)/]] }
   },
   agent: {
@@ -74,6 +74,7 @@ const EVENTS = [
   ['DELETE', /^\/departments\/(\d+)$/, 'Agents', 'Deleted a department', byId('departments')],
   ['POST', /^\/conversations\/(\d+)\/status$/, 'Chats', (r) => r.body.status === 'closed' ? 'Closed a chat' : 'Reopened a chat', chat],
   ['POST', /^\/conversations\/(\d+)\/reassign$/, 'Chats', 'Reassigned a chat', chat],
+  ['POST', /^\/conversations\/(\d+)\/lock$/, 'Chats', 'Kept a client with one agent (or let go)', chat],
   ['POST', /^\/conversations\/(\d+)\/release$/, 'Chats', 'Released a chat', chat],
   ['POST', /^\/conversations\/(\d+)\/not-client$/, 'Chats', 'Marked a chat as not a client', chat],
   ['PUT', /^\/settings\/(\w+)$/, 'Settings', 'Changed settings', (r, m) => SETTING[m[1]] || m[1]],

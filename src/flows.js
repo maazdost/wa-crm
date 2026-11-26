@@ -56,7 +56,7 @@ async function act(conv, st) {
   if (st.tag_id) await query('INSERT INTO conversation_labels(conversation_id,label_id) SELECT $1, id FROM labels WHERE id=$2 AND company_id=$3 ON CONFLICT DO NOTHING', [conv.id, st.tag_id, cid]);
   if (st.team) await query('UPDATE conversations SET team=$2 WHERE id=$1 AND EXISTS (SELECT 1 FROM departments WHERE company_id=$3 AND key=$2)', [conv.id, st.team, cid]);
   if (st.assign_to) await query(`UPDATE conversations SET assigned_to=$2, assigned_at=CASE WHEN assigned_to IS DISTINCT FROM $2 THEN now() ELSE assigned_at END
-    WHERE id=$1 AND EXISTS (SELECT 1 FROM users WHERE id=$2 AND company_id=$3 AND is_active)`, [conv.id, st.assign_to, cid]);
+    WHERE id=$1 AND locked_to IS NULL AND EXISTS (SELECT 1 FROM users WHERE id=$2 AND company_id=$3 AND is_active)`, [conv.id, st.assign_to, cid]); // a client kept with an agent stays
 }
 
 /** Ends the flow and hands the chat to the team: the agent it already has, else the usual automatic choice. */

@@ -404,6 +404,15 @@ router.post('/conversations/:id/status', required(), wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// Admins and managers: keep a client with one agent for good (the agent the chat has now), or let them go again.
+router.post('/conversations/:id/lock', required('admin', 'manager'), wrap(async (req, res) => {
+  const id = Number(req.params.id) || 0, on = !!req.body.lock;
+  const c = (await query(`UPDATE conversations SET locked_to = CASE WHEN $2 THEN assigned_to ELSE NULL END WHERE id=$1 AND company_id=$3 AND ($2 = FALSE OR assigned_to IS NOT NULL) RETURNING id, locked_to`, [id, on, C()])).rows[0];
+  if (!c) return res.status(400).json({ error: on ? 'Assign the chat to someone first' : 'Chat not found' });
+  rt.toConversation({ company_id: C() }, 'conversation:updated', { conversationId: id });
+  res.json(c);
+}));
+
 // Managers: reassign (to a chosen agent, or auto-pick when agent_id omitted)
 router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(async (req, res) => {
   const id = Number(req.params.id);
@@ -417,7 +426,8 @@ router.post('/conversations/:id/reassign', required('admin', 'manager'), wrap(as
   let conv;
   if (req.body.agent_id) {
     if (!(await query('SELECT 1 FROM users WHERE id=$1 AND company_id=$2', [Number(req.body.agent_id) || 0, C()])).rows[0]) return res.status(400).json({ error: 'Person not found' });
-    conv = (await query(`UPDATE conversations SET assigned_to=$2, status='open', assigned_at=now() WHERE id=$1 AND company_id=$3 RETURNING *`, [id, req.body.agent_id, C()])).rows[0];
+    // a client kept with an agent moves with the lock: the manager chose the new person
+    conv = (await query(`UPDATE conversations SET assigned_to=$2::int, status='open', assigned_at=now(), locked_to=CASE WHEN locked_to IS NOT NULL THEN $2::int ELSE NULL END WHERE id=$1 AND company_id=$3 RETURNING *`, [id, Number(req.body.agent_id), C()])).rows[0];
   } else {
     conv = await assignConversation(id, cur.team);
   }

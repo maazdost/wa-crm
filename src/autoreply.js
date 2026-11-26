@@ -84,7 +84,7 @@ async function run(rule, conv, contact, waId) {
 
   const wasNew = conv.status === 'bot';
   const owner = conv.assigned_to && (await query('SELECT is_active FROM users WHERE id=$1', [conv.assigned_to])).rows[0];
-  const chosen = rule.assign_to && (await query('SELECT id FROM users WHERE id=$1 AND company_id=$2 AND is_active', [rule.assign_to, cid])).rows[0];
+  const chosen = !conv.locked_to && rule.assign_to && (await query('SELECT id FROM users WHERE id=$1 AND company_id=$2 AND is_active', [rule.assign_to, cid])).rows[0];
   let next = null;
   if (chosen) next = (await query(`UPDATE conversations SET assigned_to=$2, status='open', bot_step='done', assigned_at=CASE WHEN assigned_to IS DISTINCT FROM $2 THEN now() ELSE assigned_at END WHERE id=$1 RETURNING *`, [conv.id, chosen.id])).rows[0];
   else if (owner?.is_active) next = (await query(`UPDATE conversations SET status='open', bot_step='done' WHERE id=$1 RETURNING *`, [conv.id])).rows[0];

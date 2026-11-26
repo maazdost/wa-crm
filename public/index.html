@@ -210,7 +210,7 @@ body{font-family:Inter,"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial
 .cp-top{display:grid;justify-items:center;gap:3px;padding:22px 16px 16px;text-align:center}.cp-top h2{margin:10px 0 0;font-size:17px;font-weight:700;overflow-wrap:anywhere}.cp-top .chip{margin-top:8px;font-size:11.5px;padding:3px 10px}
 .cp-sec{border-top:1px solid var(--line);padding:14px 16px}.cp-sec h4{margin:0 0 10px;font-size:10.5px;letter-spacing:.9px;text-transform:uppercase;color:var(--mute);font-weight:700}
 .cp-sec .kv{grid-template-columns:112px minmax(0,1fr);font-size:13px;gap:7px 10px}
-.cp-sec .mgr{display:grid;gap:8px}.cp-sec .mgr>span{display:none}.cp-sec .mgr select{max-width:none;padding:8px 10px}
+.cp-sec .mgr{display:grid;gap:8px}.lockrow{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer}.lockrow input{width:18px;height:18px;accent-color:var(--brand)}.lockrow b{font-weight:600}.cp-sec .mgr>span{display:none}.cp-sec .mgr select{max-width:none;padding:8px 10px}
 .cpanel .notes{background:none;border:0;padding:0;max-height:none;overflow:visible;font-size:13.5px}
 .cpanel .notes p{background:var(--notes);border:1px solid var(--notes-line);border-radius:10px;padding:8px 10px}.cpanel .notes p.mute{background:none;border:0;padding:0}
 .cpanel .notes form{display:grid;gap:8px}
@@ -1123,7 +1123,7 @@ function renderList(quiet) {
       return `<div class="row${c.id === S.active ? ' on' : ''}${c.unread_count || c.marked_unread ? ' unread' : ''}" data-id="${c.id}" tabindex="0" role="button">${avatar(nm, 49)}<span class="rb">
       <span class="r1"><b>${esc(nm)}</b><time>${fmtD(c.last_message_at)}</time></span>
       <span class="r2"><span class="prev">${esc(snip(c.last_type, c.last_body))}</span><span class="rx">${c.pinned ? `<span class="pinic">${ico('pin', 15)}</span>` : ''}${c.unread_count ? `<i class="ub">${c.unread_count}</i>` : c.marked_unread ? '<i class="ub dotb"></i>' : ''}<button class="rowx" data-x="${c.id}" aria-label="Chat options" tabindex="-1">${ico('chev', 18)}</button></span></span>
-      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${c.status === 'bot' ? (c.bot_step === 'ai' ? `<em class="chip ok">${tr('With the AI')}</em>` : c.bot_step !== 'done' ? `<em class="chip warn">${tr('With the chatbot')}</em>` : '') : ''}${isMgr() ? `<em class="tag">${esc(c.agent_name || 'Unassigned')}</em>` : ''}</span></span></div>`; }).join(''));
+      <span class="r3"><em class="tag">${esc(nice(c.intent || 'new'))}</em><em class="chip ${w.cls}">${w.txt}</em>${(c.labels || []).map(l => `<em class="tag" style="background:${esc(l.color)}22;color:${esc(l.color)}">${esc(l.name)}</em>`).join('')}${c.status === 'bot' ? (c.bot_step === 'ai' ? `<em class="chip ok">${tr('With the AI')}</em>` : c.bot_step !== 'done' ? `<em class="chip warn">${tr('With the chatbot')}</em>` : '') : ''}${isMgr() ? `<em class="tag">${c.locked_to ? '🔒 ' : ''}${esc(c.agent_name || 'Unassigned')}</em>` : c.locked_to && c.assigned_to === S.user.id ? '<em class="tag" title="Kept with you">🔒</em>' : ''}</span></span></div>`; }).join(''));
   el.scrollTop = top;
   el.querySelectorAll('.row').forEach(r => {
     r.onclick = e => { if (r.__lp) { r.__lp = false; return; } const x = e.target.closest('.rowx'); if (x) { e.stopPropagation(); const b = x.getBoundingClientRect(); return rowMenu(+x.dataset.x, b.left - 150, b.bottom + 4); } openConv(+r.dataset.id); };
@@ -1290,7 +1290,7 @@ function buildPanel() {
   const p = $('#cpanel'); if (!p) return;
   p.innerHTML = `<div class="cp-h"><button class="ib cpb" id="cpb" aria-label="Back">${ico('back', 22)}</button><span>Contact details</span><button class="ib" id="cpx" aria-label="Close contact details">${ico('x', 20)}</button></div>
     <div class="cp-top" id="cptop"></div>
-    <div class="cp-sec"><h4>Assigned to</h4><div id="mgr">${isMgr() ? '' : esc(S.conv.assigned_to === S.user.id ? 'You' : S.conv.agent_name || 'Nobody yet')}</div></div>
+    <div class="cp-sec"><h4>Assigned to</h4><div id="mgr">${isMgr() ? '' : (S.conv.locked_to ? '🔒 ' : '') + esc(S.conv.assigned_to === S.user.id ? 'You' : S.conv.agent_name || 'Nobody yet')}</div></div>
     <div class="cp-sec"><h4>Tags</h4><div id="lbl"></div></div>
     <div class="cp-sec" hidden><h4>Demo class</h4><div id="cpdemo"></div></div>
     <div class="cp-sec"><h4>Internal notes</h4><section id="notes" class="notes"></section></div>
@@ -1335,11 +1335,16 @@ async function assignDialog() {
     if (S.active === id) { S.conv = { ...S.conv, ...r, agent_name: who || S.conv.agent_name }; renderHead(); if ($('#mgr')) renderMgr(); } loadList(); loadAgents(); };
   document.body.appendChild(bg);
 }
+function nameOf(id) { const a = (S.agents || []).find(x => x.id === id); return a ? a.name : ''; }
 function renderMgr() {
   const el = $('#mgr'); if (!isMgr()) return;
   const c = S.conv;
-  el.innerHTML = `<div class="mgr"><span>Assigned to</span><select id="rs"><option value="">Auto-pick</option>${S.agents.map(a => `<option value="${a.id}"${a.id === c.assigned_to ? ' selected' : ''}>${esc(a.name)} (${esc(deptName(a.team))}, ${a.active_chats} open)</option>`).join('')}</select><button class="ghost" id="rb">Reassign</button></div>`;
-  $('#rb').onclick = async () => { const r = await api(`/conversations/${S.active}/reassign`, 'POST', { agent_id: $('#rs').value || undefined }); if (r.error) return toast(r.error); toast('Chat reassigned'); loadList(); loadAgents(); };
+  el.innerHTML = `<div class="mgr"><span>Assigned to</span><select id="rs"><option value="">Auto-pick</option>${S.agents.map(a => `<option value="${a.id}"${a.id === c.assigned_to ? ' selected' : ''}>${esc(a.name)} (${esc(deptName(a.team))}, ${a.active_chats} open)</option>`).join('')}</select><button class="ghost" id="rb">Reassign</button></div>
+    <label class="lockrow" title="${tr('Every new message from this client goes to this agent. The chatbot, ad routing and the 10 minute rule never move them.')}"><input type="checkbox" id="lkc"${c.locked_to ? ' checked' : ''}${c.assigned_to ? '' : ' disabled'}> <span>🔒 ${tr('Keep with this agent')}${c.locked_to ? ` <b>${esc(nameOf(c.locked_to) || c.agent_name || '')}</b>` : ''}</span></label>`;
+  $('#rb').onclick = async () => { const r = await api(`/conversations/${S.active}/reassign`, 'POST', { agent_id: $('#rs').value || undefined }); if (r.error) return toast(r.error); toast('Chat reassigned');
+    if (S.active === r.id) { S.conv = { ...S.conv, ...r, agent_name: nameOf(r.assigned_to) || S.conv.agent_name }; renderHead(); renderMgr(); } loadList(); loadAgents(); };
+  $('#lkc').onchange = async e => { const on = e.target.checked, r = await api(`/conversations/${S.active}/lock`, 'POST', { lock: on }); if (r.error) { e.target.checked = !on; return toast(r.error); }
+    S.conv = { ...S.conv, locked_to: r.locked_to }; toast(on ? tr('Client kept with this agent') : tr('Client can move again')); renderMgr(); loadList(); };
 }
 function renderNotes() {
   $('#notes').innerHTML = (S.notes.map(n => `<p><b>${esc(n.author)}</b> <small>${fmtD(n.created_at)}</small><br>${esc(n.body)}</p>`).join('') || '<p class="mute">No notes yet. Notes are internal and never sent to the client.</p>') +
