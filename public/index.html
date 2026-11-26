@@ -543,7 +543,7 @@ button.cttag{cursor:pointer;padding:5px 12px;font-size:12.5px}button.cttag.on{ba
 @supports (-webkit-touch-callout:none){input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]),select,textarea{font-size:16px!important}}
 
 /* With a mouse the tab row cannot be swiped, so on computers the tabs go onto a second line instead of hiding. */
-@media (min-width:761px){.tabs{flex-wrap:wrap;overflow:visible}}
+.srow{display:flex;gap:6px;align-items:center}.srow .search{flex:1;min-width:0}.fbtn{position:relative;flex:none}.fbtn .fdot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--brand)}.tmore{display:inline-flex;align-items:center;gap:3px}.tools .tabs{gap:4px}.tools .tabs button{padding:5px 8px;font-size:12.5px}.filters[hidden]{display:none}
 
 /* ---------- polish pass ---------- */
 select:not([multiple]){appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-inline-end:34px!important;text-overflow:ellipsis;cursor:pointer}
@@ -714,8 +714,10 @@ async function api(path, method = 'GET', body) {
 function toast(t) { const e = document.createElement('div'); e.className = 'toast'; e.textContent = t; document.body.appendChild(e); setTimeout(() => e.remove(), 4000); }
 const fmtT = t => new Date(t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
 const fmtD = t => { const d = new Date(t); return d.toDateString() === new Date().toDateString() ? fmtT(t) : d.toLocaleDateString([], { day:'numeric', month:'short' }); };
+// WhatsApp lets you write freely for 24 hours after the client's last message (ads too: their 72 hours only make messages free, not open longer).
 function win(c) {
-  const ms = c.window_expires_at ? new Date(c.window_expires_at) - Date.now() : 0;
+  let end = c.window_expires_at ? +new Date(c.window_expires_at) : 0; if (c.last_customer_message_at) end = Math.min(end, +new Date(c.last_customer_message_at) + 864e5);
+  const ms = end - Date.now();
   if (ms <= 0) return { open:false, txt:'Window closed', cls:'closed' };
   return { open:true, txt:`${Math.floor(ms / 36e5)}h ${Math.floor(ms % 36e5 / 6e4)}m left`, cls: ms < 72e5 ? 'warn' : 'ok' };
 }
@@ -1021,9 +1023,9 @@ async function boot() {
       <button class="tbtn" id="modebtn" title="Light or dark" aria-label="Light or dark">${ico(effTheme() === 'dark' ? 'sun' : 'moon', 18)}</button>
       <button class="prof" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 30)}<div><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}</small></div>${ico('chev', 16)}</button></header>
     <div class="work"><aside class="side"><header class="top">${burger()}<div class="toph"><h1>Live Chat</h1><small id="sub">Loading…</small></div><button class="ib avtop" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 36)}</button></header>
-      <div class="tools"><div class="search">${ico('search', 18)}<input id="q" placeholder="Search name or number"></div>
+      <div class="tools"><div class="srow"><div class="search">${ico('search', 18)}<input id="q" placeholder="Search name or number"></div><button class="ib fbtn" id="fbtn" type="button" title="Filter by agent or tag" aria-label="Filter by agent or tag">${ico('sliders', 18)}<b class="fdot" hidden></b></button></div>
       <div class="tabs" id="tabs"></div>
-      <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div><div class="rsz" data-rsz="listw" title="Drag to resize"></div></aside>
+      <div class="filters" id="filt" hidden>${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div><div class="rsz" data-rsz="listw" title="Drag to resize"></div></aside>
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
     ${mgr ? `<nav class="tabbar">${bar.map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${({ inbox: 'Chats', bc: 'Broadcasts' })[k] || n[1]}</span>${badge(k)}</button>`; }).join('')}</nav>` : ''}
@@ -1047,9 +1049,14 @@ async function boot() {
   document.removeEventListener('keydown', onKey); document.addEventListener('keydown', onKey);
   $('#pwb').onclick = async () => { closeOverlays(); const cur = await ask('Change password', { note: 'First, type your current password.', type: 'password', ok: 'Next' }); if (cur === null) return; const nw = await ask('New password', { note: 'At least 8 characters.', type: 'password', min: 8, ok: 'Change password' }); if (!nw) return; const r = await api('/me/password', 'POST', { current: cur, password: nw }); toast(r.error || 'Password changed'); };
   $('#q').oninput = debounce(loadList, 300);
-  $('#lf').onchange = e => { S.label = e.target.value; loadList(); };
-  renderTabs(); $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tab = b.dataset.t; renderTabs(); loadList(); };
-  if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; loadList(); }; loadAgents(); }
+  const fdot = () => { const d = $('.fdot'); if (d) d.hidden = !(S.label || S.agent); };
+  $('#lf').onchange = e => { S.label = e.target.value; fdot(); loadList(); };
+  renderTabs(); $('#tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; const go = t => { S.tab = t; renderTabs(); loadList(); };
+    if (b.dataset.more !== undefined) { e.stopPropagation(); const r = b.getBoundingClientRect(); floatMenu((S.moreTabs || []).map(([k, l, n]) => [k === S.tab ? 'check' : '', tr(l) + (n ? ` (${n})` : ''), () => go(k)]), r.left, r.bottom + 4); return; }
+    go(b.dataset.t); };
+  $('#fbtn').onclick = () => { const f = $('#filt'), show = f.hidden; f.hidden = !show; try { localStorage.setItem('ti_filt', show ? '1' : '0'); } catch {} };
+  try { if (localStorage.getItem('ti_filt') === '1') $('#filt').hidden = false; } catch {}
+  if (mgr) { $('#as').onchange = e => { S.agent = e.target.value; fdot(); loadList(); }; loadAgents(); }
   S.templates = arr(await api('/templates')); S.labels = arr(await api('/labels')); S.quick = arr(await api('/quick-replies')); fillLabelFilter(); loadLib(); loadProducts();
   await loadList(); connect(); initPush(); webPush();
   document.addEventListener('click', () => window.Notification && Notification.permission === 'default' && Promise.resolve(Notification.requestPermission()).then(webPush).catch(() => {}), { once:true });
@@ -1081,7 +1088,11 @@ async function loadCounts() { const c = await api('/conversations/counts'); if (
 function renderTabs() {
   const c = S.counts || {}, mgr = isMgr(), el = $('#tabs'); if (!el) return;
   const tabs = [['open', 'All'], ...(mgr ? [['mine', 'Mine', c.mine]] : []), ['unread', 'Unread', c.unread], ['fav', 'Favourites', c.fav], ...(mgr ? [['unassigned', 'Unassigned', c.unassigned], ['held', 'Held', c.held]] : []), ['closed', 'Closed']];
-  el.innerHTML = tabs.map(([k, l, n]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${l}${n ? ` <i>${n}</i>` : ''}</button>`).join('');
+  // One row only: the main tabs stay, the others sit under More (which shows the chosen one's name)
+  const main = mgr ? ['open', 'mine', 'unread', 'unassigned'] : ['open', 'unread', 'fav'], more = tabs.filter(t => !main.includes(t[0])), cur = more.find(t => t[0] === S.tab), mn = more.reduce((a, t) => a + (t[2] || 0), 0);
+  S.moreTabs = more;
+  el.innerHTML = tabs.filter(t => main.includes(t[0])).map(([k, l, n]) => `<button data-t="${k}" class="${k === S.tab ? 'on' : ''}">${tr(l)}${n ? ` <i>${n}</i>` : ''}</button>`).join('')
+    + `<button data-more class="tmore${cur ? ' on' : ''}">${cur ? tr(cur[1]) + (cur[2] ? ` <i>${cur[2]}</i>` : '') : tr('More') + (mn ? ` <i>${mn}</i>` : '')}${ico('chev', 14)}</button>`;
 }
 async function setFlag(id, body) { const r = await api(`/conversations/${id}/flags`, 'POST', body); if (r.error) { toast(r.error); return false; } loadList(); return true; }
 function rowMenu(id, x, y) {
@@ -1137,7 +1148,7 @@ async function openConv(id) {
 const canReply = () => S.conv && S.conv.status !== 'closed' && S.conv.bot_step !== 'held' && win(S.conv).open;
 function renderHead() {
   const c = S.conv, w = win(c), nm = c.contact_name || '+' + c.wa_id; fillPanel();
-  const strip = `<div class="winbar ${w.cls}">${ico('clock', 13)}${w.open ? '24h reply window open · ' + w.txt : 'Reply window closed · send a template to reopen the chat'}</div>`;
+  const strip = `<div class="winbar ${w.cls}">${ico('clock', 13)}${w.open ? tr('Reply window open') + ' · ' + w.txt : 'Reply window closed · send a template to reopen the chat'}</div>`;
   if (S.selMode) {
     $('#head').innerHTML = `<header class="ch selh"><button class="ib" id="selx" aria-label="Cancel selection">${ico('x')}</button><b>${S.sel.size} selected</b><span style="flex:1"></span>${S.sel.size === 1 && canReply() ? `<button class="ib" id="selr" aria-label="Reply">${ico('reply')}</button>` : ''}<button class="ib" id="selc" aria-label="Copy">${ico('copy')}</button><button class="ib" id="sele" aria-label="Export selected">${ico('download')}</button></header>` + strip;
     $('#selx').onclick = endSel;
