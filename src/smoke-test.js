@@ -450,7 +450,7 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
       && [a1.user.id, a2.user.id].includes(s1.assigned_to) && log1.length === 1 && log1[0].agent_id === s0.assigned_to && log1[0].moved_to === s1.assigned_to);
     await back(); let n = 1; for (let k = 0; k < 20 && n < 2; k++) { await sleep(500); n = (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n; }
     const s2 = await convOf(sp), an = (await j('/api/analytics?days=7', {}, admin)).data;
-    check('the second slow agent is only reported, the chat is not moved again, and the dashboard counts late replies', n === 2 && s2.assigned_to === s1.assigned_to && an.kpi.late >= 2);
+    check('the second slow agent: the chat moves on again (to someone who has not had it, or round again), and the dashboard counts late replies', n === 2 && s2.assigned_to && s2.assigned_to !== s1.assigned_to && an.kpi.late >= 2);
     await j(`/api/conversations/${s0.id}/messages`, { method: 'POST', body: { text: 'Sorry for the wait!' } }, admin);
     await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes' WHERE id=$1`, [s0.id]); await sleep(2500);
     check('once someone replies there is no alert', (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [s0.id])).rows[0].n === 2);

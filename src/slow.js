@@ -1,5 +1,6 @@
 // Slow-reply alert: when a client has been given to an agent and the agent has not written for a few minutes,
-// the managers and admins are told, and the chat moves to the next free agent of the same department (once per chat).
+// the managers and admins are told, and the chat moves to the next free agent of the same department. It keeps moving
+// every few minutes, through each agent of the department in turn, until someone replies.
 // Switched on per company under Settings > Chat assignment (assign.slow_on, assign.slow_min). Off by default.
 // Runs every minute (SLOW_TICK_MS) for every company that has it switched on.
 const { query } = require('./db');
@@ -36,10 +37,18 @@ async function checkCompany() {
     const claimed = (await query(`UPDATE conversations SET slow_alerted_at=now() WHERE id=$1 AND (slow_alerted_at IS NULL OR slow_alerted_at < assigned_at) RETURNING id`, [c.id])).rows[0];
     if (!claimed) continue;
     let moved = null;
-    if (!c.slow_moved) {
-      moved = await assignConversation(c.id, c.team, { exclude: c.assigned_to }).catch(e => { console.error('slow reply move', e.message); return null; });
+    {
+      // Who already had this client without replying (since the last reply by a person): the next one is someone new;
+      // when everyone in the department has had a turn, it goes round again (never back to the same person in a row).
+      const tried = (await query(`SELECT DISTINCT agent_id FROM slow_replies WHERE conversation_id=$1 AND created_at > COALESCE(
+          (SELECT MAX(created_at) FROM messages WHERE conversation_id=$1 AND sender_type='agent'), '-infinity')`, [c.id])).rows.map(r => r.agent_id);
+      // It stays in the client's department; only a department with nobody in rotation (e.g. General) borrows from the others.
+      const own = c.team ? (await query(`SELECT COUNT(*)::int AS n FROM users WHERE company_id=$1 AND is_active AND in_rotation AND (team=$2 OR extra_teams ? $2)`, [cid, c.team])).rows[0].n : 0;
+      const go = (ex) => assignConversation(c.id, c.team, { exclude: ex, teamOnly: own > 0 }).catch(e => { console.error('slow reply move', e.message); return null; });
+      moved = await go([c.assigned_to, ...tried]);
+      if (!moved) moved = await go([c.assigned_to]);
       if (moved && moved.assigned_to !== c.assigned_to) {
-        await query('UPDATE conversations SET slow_moved=TRUE, slow_alerted_at=NULL WHERE id=$1', [c.id]); // the new agent's wait is watched too (alert only)
+        await query('UPDATE conversations SET slow_moved=TRUE, slow_alerted_at=NULL WHERE id=$1', [c.id]); // the new agent's wait is watched too
         const to = (await query('SELECT name FROM users WHERE id=$1', [moved.assigned_to])).rows[0];
         moved.agent = to && to.name;
         push.notifyUser(moved.assigned_to, 'New client assigned', `${c.who}: ${c.agent} did not reply in ${min} min`, { conversationId: c.id }, 'assigned');

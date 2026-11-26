@@ -13,7 +13,8 @@ const tenant = require('./tenant');
  * Managers can always assign a chat by hand, which ignores all of this.
  */
 async function assignConversation(conversationId, team, opts = {}) {
-  const exclude = Number(opts.exclude) || 0; // someone who must not get it (the agent who did not reply in time)
+  // people who must not get it (agents who did not reply in time); teamOnly: never fall back to another department
+  const exclude = [].concat(opts.exclude || []).map(Number).filter(Boolean);
   const cfg = await settings.get('assign'), cid = tenant.cid();
   const batch = Math.min(20, Math.max(1, Number(cfg.batch) || 1));
   const client = await pool.connect();
@@ -24,7 +25,7 @@ async function assignConversation(conversationId, team, opts = {}) {
       `SELECT u.id, u.is_online, u.max_active_chats,
               (SELECT COUNT(*) FROM conversations c WHERE c.assigned_to=u.id AND c.status='open')::int AS active
          FROM users u
-        WHERE u.company_id=$2 AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1 OR u.extra_teams ? $1) AND u.id <> $3
+        WHERE u.company_id=$2 AND u.is_active AND u.in_rotation AND ($1::text IS NULL OR u.team=$1 OR u.extra_teams ? $1) AND NOT (u.id = ANY($3::int[]))
         ORDER BY u.id`, [teamFilter, cid, exclude])).rows;
     const pickLeast = (rows) => rows.slice().sort((a, b) =>
       (a.active >= a.max_active_chats) - (b.active >= b.max_active_chats) || (b.is_online - a.is_online) || (a.active - b.active) || (a.id - b.id))[0];
@@ -44,7 +45,7 @@ async function assignConversation(conversationId, team, opts = {}) {
       return cfg.mode === 'turns' ? pickTurn(rows, teamFilter || '*') : pickLeast(rows);
     };
     let agent = team ? await pick(team) : null;
-    if (!agent) agent = await pick(null);
+    if (!agent && !(team && opts.teamOnly)) agent = await pick(null);
     if (!agent) { await client.query('ROLLBACK'); return null; }
     await client.query('UPDATE users SET last_assigned_at=now() WHERE id=$1', [agent.id]);
     const { rows } = await client.query(
