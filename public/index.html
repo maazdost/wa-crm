@@ -798,7 +798,7 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
 const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
-function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; const ov = history.state && (history.state.drawer || history.state.cp); if (location.pathname === p) { if (ov) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !ov ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; const ov = history.state && (history.state.drawer || history.state.cp); if (location.pathname === p) { if (ov) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !ov && !PWA.ios ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (S.skipPop) { S.skipPop = false; return; } const dw = $('#drawer'); if (dw && dw.classList.contains('open')) { closeDrawer('pop'); return; } const cpn = $('#cpanel'); if (cpn && !cpn.hidden && !cpWide()) { togglePanel(false, 'pop'); return; } if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeDrawer('nav'); closeOverlays();
@@ -845,7 +845,7 @@ const sure = (title, note, o = {}) => ask(title, { ...o, note, confirm: true });
 function closeOverlays() { document.querySelectorAll('.menu,.sheet').forEach(m => { if (m.id === 'fm') m.remove(); else m.hidden = true; }); closeDrawer(); }
 /* Phone side menu: the 3-line button opens it from the left. It closes with the X, a tap outside, a swipe to the left, Esc, or by picking a page. */
 const burger = () => `<button class="ib burger" data-burger aria-label="Open menu">${ico('burger', 24)}</button>`;
-function openDrawer() { const d = $('#drawer'); if (!d) return; closeOverlays(); d.hidden = false; d.querySelector('.dwp').style.transform = ''; if (!(history.state && history.state.drawer)) history.pushState({ drawer: 1 }, '', location.href); requestAnimationFrame(() => d.classList.add('open')); const on = d.querySelector('.dwi.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
+function openDrawer() { const d = $('#drawer'); if (!d) return; closeOverlays(); d.hidden = false; d.querySelector('.dwp').style.transform = ''; if (!PWA.ios && !(history.state && history.state.drawer)) history.pushState({ drawer: 1 }, '', location.href); requestAnimationFrame(() => d.classList.add('open')); const on = d.querySelector('.dwi.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
 // The phone's Back button (Android app, Chrome) closes the menu instead of leaving the page: opening it adds a step to the history.
 function closeDrawer(how) { const d = $('#drawer'); if (!d || d.hidden || !d.classList.contains('open')) return; d.classList.remove('open'); if (!how && history.state && history.state.drawer) { S.skipPop = true; history.back(); } d.querySelector('.dwp').style.transform = ''; clearTimeout(d.__t); d.__t = setTimeout(() => { if (!d.classList.contains('open')) d.hidden = true; }, 220); }
 const RSZ = { navw: [180, 360], listw: [260, 640] };
@@ -1273,11 +1273,13 @@ function closeSearch() { S.searching = false; S.q = ''; S.hits = []; S.hit = 0; 
 /* contact info and export */
 /* the contact panel on the right of a chat */
 const cpWide = () => innerWidth > 1280;
+// iPhone and iPad keep a single history entry: a finger swipe from the screen edge there goes back or forward in history and slides
+// in an old picture of the page, so the app never adds entries on iOS (it has no Back button; menus and panels close with X or a swipe).
 // On phones and small screens the contact panel lies over the chat. It closes with the back arrow, the X, a swipe to the right, or the phone's Back button.
 function cpHist(how) { if (!how && history.state && history.state.cp) { S.skipPop = true; history.back(); } }
 function hidePanel() { const p = $('#cpanel'); if (p) { if (history.state && history.state.cp) history.replaceState(null, '', location.href); p.hidden = true; p.innerHTML = ''; p.style.transform = ''; } }
 function togglePanel(force, how) { const p = $('#cpanel'); if (!p || !S.conv) return; const show = force === undefined ? p.hidden : force; if (show === !p.hidden) return; p.hidden = !show; p.style.transform = ''; if (cpWide()) localStorage.setItem('ti_cp', show ? '1' : '0');
-  else if (show) { if (!(history.state && history.state.cp)) history.pushState({ cp: 1 }, '', location.href); } else cpHist(how); }
+  else if (show) { if (!PWA.ios && !(history.state && history.state.cp)) history.pushState({ cp: 1 }, '', location.href); } else cpHist(how); }
 function cpSwipe() {
   const p = $('#cpanel'); if (!p || p.__sw) return; p.__sw = 1; let x0 = null, y0 = 0, dx = 0, side = null;
   p.addEventListener('touchstart', e => { if (cpWide()) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive: true });
