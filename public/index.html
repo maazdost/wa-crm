@@ -179,6 +179,12 @@ body{font-family:Inter,"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial
 .navmin .brand{justify-content:center;padding:0}.navmin .brand b,.navmin .ni span{display:none}
 .navmin .ng{font-size:0;padding:0;margin:9px 12px;border-top:1px solid var(--line)}.navmin .ng:first-child{border:0;margin:6px 0 0}
 .navmin .ni{justify-content:center;padding:11px 0}.navmin .ni .nb{position:absolute;top:2px;right:6px;min-width:17px;line-height:17px;font-size:10px;padding:0 4px}
+.grp>.gi{display:none}.grp.open>.gi{display:block}.ngb .chv{display:flex;margin-inline-start:auto;color:var(--mute);transition:transform .15s}.ngb .chv .ic{transform:rotate(-90deg);color:var(--mute)}[dir=rtl] .ngb .chv .ic{transform:rotate(90deg)}.grp.open>.ngb .chv{transform:rotate(90deg)}[dir=rtl] .grp.open>.ngb .chv{transform:rotate(-90deg)}
+.ni.ngb{margin-top:4px;font-weight:600;color:var(--ink)}.ni.ngb>span{flex:1}.nav .grp .gi .ni{padding-inline-start:22px}.grp.open>.ngb{background:var(--hover)}
+.dwi.ngb{font-weight:600;color:var(--ink)}.dwsc .grp .gi .dwi{padding-inline-start:26px}.dwsc .grp.open>.ngb{background:var(--hover)}
+.navmin .nav .grp{border-top:1px solid var(--line);margin-top:6px;padding-top:4px}.navmin .nav .grp>.gi{display:none!important}.navmin .nav .ngb .chv{display:none}.navmin .nav .grp.open>.ngb{background:none}.navmin .nav .grp:has(.on)>.ngb{background:var(--tint)}.navmin .nav .grp:has(.on)>.ngb .ic{color:var(--tint-ink)}
+.gfly{position:fixed;right:auto;z-index:90;min-width:210px;padding:6px}.gfly button{padding:9px 12px;border-radius:8px;font-size:14px}.gfly .gfh{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mute);padding:6px 10px 4px}.gfly button.on{background:var(--tint);color:var(--tint-ink);font-weight:600}
+@media(max-width:1100px){.shell .nav .grp{border-top:1px solid var(--line);margin-top:6px;padding-top:4px}.shell .nav .grp>.gi{display:none!important}.shell .nav .ngb .chv{display:none}.shell .nav .grp.open>.ngb{background:none}.shell .nav .grp:has(.on)>.ngb{background:var(--tint)}.shell .nav .grp:has(.on)>.ngb .ic{color:var(--tint-ink)}}
 .body{display:flex;flex-direction:column;min-width:0;min-height:0}
 .topbar{height:60px;flex:none;display:flex;align-items:center;gap:10px;padding:0 18px 0 10px;background:var(--surface);border-bottom:1px solid var(--line)}
 .wsn{display:grid;line-height:1.25;min-width:0;margin-right:auto}.wsn small{font-size:10px;letter-spacing:.9px;text-transform:uppercase;color:var(--mute);font-weight:700}.wsn b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -805,7 +811,7 @@ function goNav(k) {
   ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
-function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
+function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); openGroupOf(k); if (sh && ROUTES[k]) setUrl(k); }
 // On pages the menu is open unless you fold it; in Live Chat it is folded unless you open it. Each choice is remembered.
 const navIsMin = pg => pg ? localStorage.getItem('ti_nav') === 'min' : localStorage.getItem('ti_navchat') !== 'full';
 function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open', 'pgopen'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
@@ -842,6 +848,24 @@ function ask(title, o = {}) {
 }
 const sure = (title, note, o = {}) => ask(title, { ...o, note, confirm: true });
 
+/* Menu folders: Dashboard, Live Chat and Demo Classes stay on top; the other groups open and close. One folder is open at a time
+   (in the computer menu and the phone menu separately) and the folder of the page you are on opens by itself.
+   When the computer menu shows icons only, a folder shows its pages in a small list beside it. */
+const FOLD = g => !['Overview', 'Conversations'].includes(g);
+function setGroup(g, open) { g.classList.toggle('open', open); const b = g.querySelector('[data-gt]'); if (b) b.setAttribute('aria-expanded', open); }
+function openGroupOf(k) { ['.navsc', '.dwsc'].forEach(sel => { const box = $(sel); if (!box) return; const cur = box.querySelector(`.grp [data-nav="${k}"]`); if (!cur) return; const g = cur.closest('.grp'); box.querySelectorAll('.grp').forEach(x => setGroup(x, x === g)); }); }
+const navIcons = b => b.closest('.nav') && getComputedStyle(b.querySelector('span')).display === 'none';
+function groupFly(g) { let f = $('#gfly'); if (!f) { f = document.createElement('div'); f.id = 'gfly'; f.className = 'menu gfly'; document.body.appendChild(f);
+    f.onmouseenter = () => clearTimeout(f.__t); f.onmouseleave = () => { f.__t = setTimeout(() => { f.hidden = true; }, 250); }; }
+  clearTimeout(f.__t); const r = g.querySelector('[data-gt]').getBoundingClientRect();
+  f.innerHTML = `<div class="gfh">${esc(g.dataset.g)}</div>` + [...g.querySelectorAll('.gi [data-nav]')].map(b => `<button data-nav="${b.dataset.nav}" class="${b.classList.contains('on') ? 'on' : ''}">${b.querySelector('.ic') ? b.querySelector('.ic').outerHTML : ''}<span>${esc(b.getAttribute('title') || b.textContent)}</span></button>`).join('');
+  f.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => { f.hidden = true; goNav(b.dataset.nav); });
+  f.hidden = false; f.style.left = (document.dir === 'rtl' ? Math.max(8, r.left - f.offsetWidth - 6) : r.right + 6) + 'px'; f.style.top = Math.max(8, Math.min(r.top, innerHeight - f.offsetHeight - 8)) + 'px'; }
+function groupSetup() {
+  document.querySelectorAll('.grp').forEach(g => { const b = g.querySelector('[data-gt]');
+    b.onclick = e => { e.stopPropagation(); if (navIcons(b)) return groupFly(g); const was = g.classList.contains('open'); g.parentElement.querySelectorAll('.grp').forEach(x => setGroup(x, false)); setGroup(g, !was); if (!was) requestAnimationFrame(() => g.scrollIntoView({ block: 'nearest', behavior: 'smooth' })); };
+    if (g.closest('.nav')) { g.onmouseenter = () => { if (navIcons(b)) groupFly(g); }; g.onmouseleave = () => { const f = $('#gfly'); if (f && !f.hidden) f.__t = setTimeout(() => { f.hidden = true; }, 250); }; } });
+}
 function closeOverlays() { document.querySelectorAll('.menu,.sheet').forEach(m => { if (m.id === 'fm') m.remove(); else m.hidden = true; }); closeDrawer(); }
 /* Phone side menu: the 3-line button opens it from the left. It closes with the X, a tap outside, a swipe to the left, Esc, or by picking a page. */
 const burger = () => `<button class="ib burger" data-burger aria-label="Open menu">${ico('burger', 24)}</button>`;
@@ -1017,7 +1041,8 @@ async function boot() {
   const navmin = navIsMin(false);
   $('#app').innerHTML = `<div class="shell${mgr ? ' ismgr' : ''}${navmin ? ' navmin' : ''}">
     <aside class="nav"><div class="brand"><span class="lg">TI</span><b>TeamInbox <em>Pro</em></b></div>
-      <div class="navsc">${groups.map(g => `<div class="ng">${g[0]}</div>` + g[1].map(n => `<button class="ni${n[0] === 'inbox' ? ' on' : ''}" data-nav="${n[0]}" title="${n[1]}" aria-label="${n[1]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('')).join('')}</div>
+      <div class="navsc">${groups.map(g => { const l = g[1].map(n => `<button class="ni${n[0] === 'inbox' ? ' on' : ''}" data-nav="${n[0]}" title="${n[1]}" aria-label="${n[1]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('');
+        return FOLD(g[0]) ? `<div class="grp" data-g="${g[0]}"><button class="ni ngb" data-gt title="${g[0]}" aria-expanded="false">${ico(g[1][0][2], 20)}<span>${g[0]}</span><i class="chv">${ico('chev', 16)}</i></button><div class="gi">${l}</div></div>` : `<div class="ng">${g[0]}</div>` + l; }).join('')}</div>
       <div class="navft"><button class="ni" id="out2" title="Sign out">${ico('logout', 20)}<span>Sign out</span></button></div><div class="rsz" data-rsz="navw" title="Drag to resize"></div></aside>
     <div class="body"><header class="topbar"><button class="tbtn bare" id="navtg" title="Show or hide the menu" aria-label="Show or hide the menu">${ico('menu', 20)}</button>
       <div class="wsn"><small>Workspace</small><b id="wsname">${esc(S.user.company || 'TeamInbox Pro')}</b></div>
@@ -1033,11 +1058,12 @@ async function boot() {
     ${mgr ? `<nav class="tabbar">${bar.map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${({ inbox: 'Chats', bc: 'Broadcasts' })[k] || n[1]}</span>${badge(k)}</button>`; }).join('')}</nav>` : ''}
     <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ` · <span id="accteam">${esc(S.user.team)}</span>` : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwai" hidden>${ico('download', 18)}<span>Install app</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
     <div class="drawer" id="drawer" hidden><div class="dwp" role="dialog" aria-label="Menu"><div class="dwh">${avatar(S.user.name, 40)}<div><b>${esc(S.user.name)}</b><small>${esc(S.user.company || 'TeamInbox Pro')}</small></div><button class="ib" data-dwx aria-label="Close menu">${ico('x', 22)}</button></div>
-      <div class="dwsc">${groups.map(g => { const l = g[1].filter(n => n[0] !== 'st'); return l.length ? `<div class="dwg">${g[0]}</div>` + l.map(n => `<button class="dwi" data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('') : ''; }).join('')}</div>
+      <div class="dwsc">${groups.map(g => { const l = g[1].filter(n => n[0] !== 'st'); if (!l.length) return ''; const h = l.map(n => `<button class="dwi" data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('');
+        return FOLD(g[0]) ? `<div class="grp" data-g="${g[0]}"><button class="dwi ngb" data-gt aria-expanded="false">${ico(l[0][2], 20)}<span>${g[0]}</span><i class="chv">${ico('chev', 18)}</i></button><div class="gi">${h}</div></div>` : `<div class="dwg">${g[0]}</div>` + h; }).join('')}</div>
       <div class="dwf">${items.some(n => n[0] === 'st') ? `<button class="dwi" data-nav="st">${ico('sliders', 20)}<span>Settings</span></button>` : ''}<button class="dwi" id="dwmode">${ico('moon', 20)}<span>Dark mode</span><span class="tog"><input type="checkbox" tabindex="-1"${effTheme() === 'dark' ? ' checked' : ''}><i></i></span></button><button class="dwi danger" id="dwout">${ico('logout', 20)}<span>Sign out</span></button></div></div></div></div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
-  drawerSetup(); resizeSetup();
+  drawerSetup(); resizeSetup(); groupSetup();
   document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-burger],.drawer')) closeOverlays(); });
   new MutationObserver(syncNav).observe($('#team'), { attributes: true, attributeFilter: ['hidden'] });
   $('#out').onclick = logout; $('#out2').onclick = logout; pwaButton();
