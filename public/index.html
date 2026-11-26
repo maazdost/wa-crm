@@ -270,7 +270,7 @@ td .ghost{padding:5px 10px;font-size:12.5px}
   .ch{background:var(--brand-d);color:#fff;border-bottom:0}.ch .who span{color:#cdebe3}.ch .ib,.ch .back{color:#fff}.ch .ib:hover{background:rgba(255,255,255,.14)}
   .shell.ismgr .list{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
   .shell.ismgr .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px))}
-  .chat-open .tabbar{display:none!important}
+  .chat-open:not(.pgopen) .tabbar{display:none!important}
   .tb{position:relative;flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:500;color:var(--mute);padding:4px 0}.tb .ic{box-sizing:content-box;padding:4px 18px;border-radius:16px}.tb.on{color:var(--ink);font-weight:700}.tb.on .ic{background:var(--pillon)}.tb .nb{position:absolute;top:0;left:56%}
   .login{grid-template-columns:minmax(0,1fr);grid-template-rows:max-content 1fr;grid-auto-rows:auto}.lbrand{padding:calc(22px + env(safe-area-inset-top,0px)) 20px 24px;gap:14px}.lbrand h2{font-size:24px;margin-bottom:8px;letter-spacing:-.4px}.lbrand p{font-size:14px}.lmock,.lb-pts,.lbrand>small{display:none}.lform{padding:26px 18px 32px;place-items:start center}.lform h1{font-size:24px}
   .msgs{padding:12px 3%}.b{max-width:84%}.stats,.stats.s4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.bx{display:grid}
@@ -595,6 +595,28 @@ td .ghost+.ghost{margin-inline-start:6px}
 .dmsgs{margin:12px 0}.dmsgs summary{cursor:pointer;font-weight:600;margin-bottom:8px}
 #dsf .fld{margin-bottom:12px}#cpdemo p{margin:0 0 8px}
 @media(max-width:700px){.dpl{grid-template-columns:1fr 1fr}.dpl .fld:first-child{grid-column:1/-1}.dbtns{white-space:normal}.dbtns .ghost{margin:2px 0}}
+/* ---------- Phone side menu (3-line button) and no sliding pages ---------- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.team{overflow-x:hidden;overscroll-behavior:none}.list,.msgs,.navsc,.cpanel{overscroll-behavior:none}
+.burger{display:none}
+.drawer{position:fixed;inset:0;z-index:80;background:rgba(11,20,26,0);transition:background .22s;touch-action:pan-y}.drawer.open{background:rgba(11,20,26,.5)}
+.dwp{position:absolute;top:0;bottom:0;inset-inline-start:0;width:min(84vw,320px);background:var(--surface);display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 0 30px rgba(0,0,0,.35)}
+[dir=rtl] .dwp{transform:translateX(100%)}.drawer.open .dwp{transform:none}
+.dwh{display:flex;align-items:center;gap:12px;background:var(--brand-d);color:#fff;padding:calc(14px + env(safe-area-inset-top,0px)) 8px 14px 16px}.dwh>div{flex:1;min-width:0;display:grid;line-height:1.3}
+.dwh b{font-size:15.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwh small{color:#cdebe3;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dwh .ib{color:#fff}
+.dwsc{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none;padding:4px 8px 10px}
+.dwg{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--mute);padding:14px 12px 4px}
+.dwi{display:flex;align-items:center;gap:14px;width:100%;min-height:44px;border:0;background:none;border-radius:10px;padding:9px 12px;font-size:15px;font-weight:500;color:var(--ink2);text-align:start}
+.dwi .ic{color:var(--icon)}.dwi:active{background:var(--hover)}.dwi.on{background:var(--tint);color:var(--tint-ink);font-weight:600}.dwi.on .ic{color:var(--tint-ink)}
+.dwi>span:first-of-type{flex:1;min-width:0}.dwi .nb{margin-inline-start:auto}.dwi .tog{pointer-events:none}.dwi.danger,.dwi.danger .ic{color:var(--red)}
+.dwf{border-top:1px solid var(--line);padding:6px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+[dir=rtl] .dwg{letter-spacing:0;text-transform:none}
+@media (max-width:760px){
+  .burger{display:grid;color:#fff;padding:6px;margin-inline-start:-6px}.burger:hover{background:rgba(255,255,255,.14)}
+  .ph .back{display:none!important}.ph .pht{flex:1}
+  .top{justify-content:flex-start}.top .toph{flex:1;min-width:0}
+  .kpi b{white-space:normal;overflow-wrap:anywhere}
+}
 </style></head><body>
 <div id="app"></div>
 <script>
@@ -727,6 +749,7 @@ const ICONS = {
   clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  burger: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   menu: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
   plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
@@ -756,19 +779,19 @@ const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Ch
 const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
-function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { S.urlReady = true; return; } history[S.urlReady ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
-window.addEventListener('popstate', () => { if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
+function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; if (location.pathname === p) { if (history.state && history.state.drawer) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !(history.state && history.state.drawer) ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
+window.addEventListener('popstate', () => { if (S.skipPop) { S.skipPop = false; return; } const dw = $('#drawer'); if (dw && dw.classList.contains('open')) { closeDrawer('pop'); return; } if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
-  S.nav = k; closeOverlays();
+  S.nav = k; closeDrawer('nav'); closeOverlays();
   ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
 // On pages the menu is open unless you fold it; in Live Chat it is folded unless you open it. Each choice is remembered.
 const navIsMin = pg => pg ? localStorage.getItem('ti_nav') === 'min' : localStorage.getItem('ti_navchat') !== 'full';
-function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
+function showInbox() { $('#team').hidden = true; $('#team').innerHTML = ''; $('#chat').hidden = false; document.body.classList.remove('chat-open', 'pgopen'); if (!S.active) { S.conv = null; $('#chat').className = 'chat empty'; $('#chat').innerHTML = EMPTY; hidePanel(); renderList(true); } }
 /* ---------- Page building blocks ---------- */
-const phead = (title, sub = '', actions = '') => `<header class="ph"><button class="back" id="tb" aria-label="Back">${ico('back')}</button><div class="pht"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="pha">${actions}</div></header>`;
+const phead = (title, sub = '', actions = '') => `<header class="ph">${burger()}<button class="back" id="tb" aria-label="Back">${ico('back')}</button><div class="pht"><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div><div class="pha">${actions}</div></header>`;
 const kpi = (icon, value, label, tone = '') => `<div class="kpi${tone ? ' t-' + tone : ''}"><span>${ico(icon, 22)}</span><div><small>${label}</small><b>${value}</b></div></div>`;
 const emptyState = (icon, title, text = '', action = '') => `<div class="empty-s"><span class="emp-ic">${ico(icon, 28)}</span><b>${title}</b>${text ? `<span>${text}</span>` : ''}${action}</div>`;
 const userCell = (name, sub, size = 36) => `<div class="uc">${avatar(name || '?', size)}<div><b>${esc(name || '—')}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</div></div>`;
@@ -800,7 +823,25 @@ function ask(title, o = {}) {
 }
 const sure = (title, note, o = {}) => ask(title, { ...o, note, confirm: true });
 
-function closeOverlays() { document.querySelectorAll('.menu,.sheet').forEach(m => { if (m.id === 'fm') m.remove(); else m.hidden = true; }); }
+function closeOverlays() { document.querySelectorAll('.menu,.sheet').forEach(m => { if (m.id === 'fm') m.remove(); else m.hidden = true; }); closeDrawer(); }
+/* Phone side menu: the 3-line button opens it from the left. It closes with the X, a tap outside, a swipe to the left, Esc, or by picking a page. */
+const burger = () => `<button class="ib burger" data-burger aria-label="Open menu">${ico('burger', 24)}</button>`;
+function openDrawer() { const d = $('#drawer'); if (!d) return; closeOverlays(); d.hidden = false; d.querySelector('.dwp').style.transform = ''; if (!(history.state && history.state.drawer)) history.pushState({ drawer: 1 }, '', location.href); requestAnimationFrame(() => d.classList.add('open')); const on = d.querySelector('.dwi.on'); if (on) on.scrollIntoView({ block: 'nearest' }); }
+// The phone's Back button (Android app, Chrome) closes the menu instead of leaving the page: opening it adds a step to the history.
+function closeDrawer(how) { const d = $('#drawer'); if (!d || d.hidden || !d.classList.contains('open')) return; d.classList.remove('open'); if (!how && history.state && history.state.drawer) { S.skipPop = true; history.back(); } d.querySelector('.dwp').style.transform = ''; clearTimeout(d.__t); d.__t = setTimeout(() => { if (!d.classList.contains('open')) d.hidden = true; }, 220); }
+function drawerSetup() {
+  const d = $('#drawer'); if (!d) return; const p = d.querySelector('.dwp');
+  document.addEventListener('click', e => { if (e.target.closest('[data-burger]')) openDrawer(); });
+  d.onclick = e => { if (e.target === d || e.target.closest('[data-dwx]')) closeDrawer(); };
+  $('#dwout').onclick = logout;
+  $('#dwmode').onclick = e => { e.preventDefault(); setPref({ mode: effTheme() === 'dark' ? 'light' : 'dark' }); applyTheme(); d.querySelector('#dwmode input').checked = effTheme() === 'dark'; const mb = $('#modebtn'); if (mb) mb.innerHTML = ico(effTheme() === 'dark' ? 'sun' : 'moon', 18); };
+  let x0 = null, y0 = 0, dx = 0, side = null;
+  p.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; side = null; }, { passive: true });
+  p.addEventListener('touchmove', e => { if (x0 === null) return; const mx = e.touches[0].clientX - x0, my = e.touches[0].clientY - y0;
+    if (side === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) side = Math.abs(mx) > Math.abs(my); if (!side) return;
+    dx = Math.min(0, mx); const rtl = document.dir === 'rtl' || document.documentElement.dir === 'rtl'; if (rtl) dx = Math.max(0, mx); p.style.transition = 'none'; p.style.transform = `translateX(${dx}px)`; }, { passive: true });
+  p.addEventListener('touchend', () => { p.style.transition = ''; if (side && Math.abs(dx) > 70) closeDrawer(); else p.style.transform = ''; x0 = null; });
+}
 function accMenu(kind) { const m = $('#acc'), was = m.hidden; closeOverlays(); if (!was) return; m.className = 'menu acc ' + kind; m.hidden = false; }
 
 /* ---------- Theme, menus, dialogs ---------- */
@@ -936,7 +977,7 @@ function logout() { if (S.webPush && S.token) fetch(API + '/api/push/unsubscribe
 /* ---------- Shell + list ---------- */
 async function boot() {
   const mgr = isMgr(), tabs = mgr ? [['open','Open'],['unassigned','Unassigned'],['held','Held'],['closed','Closed']] : [['open','Open'],['closed','Closed']];
-  const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super) && navAllowed(n)), more = items.filter(n => !['inbox', 'dash', 'bc'].includes(n[0]));
+  const items = NAV.filter(n => (mgr || !n[3]) && (!n[4] || S.user.is_super) && navAllowed(n)), bar = ['inbox', 'dash', 'bc', 'st'].filter(k => items.some(n => n[0] === k));
   const badge = k => k === 'inbox' ? '<i class="nb" hidden></i>' : '';
   const groups = []; items.forEach(n => { if (!groups.length || groups[groups.length - 1][0] !== n[5]) groups.push([n[5], []]); groups[groups.length - 1][1].push(n); });
   const navmin = navIsMin(false);
@@ -949,20 +990,21 @@ async function boot() {
       ${mgr ? '<span class="pst" id="numpill" hidden></span>' : ''}<span class="pst off" id="live"><i></i><span>Connecting…</span></span>
       <button class="tbtn" id="modebtn" title="Light or dark" aria-label="Light or dark">${ico(effTheme() === 'dark' ? 'sun' : 'moon', 18)}</button>
       <button class="prof" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 30)}<div><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}</small></div>${ico('chev', 16)}</button></header>
-    <div class="work"><aside class="side"><header class="top"><div><h1>Live Chat</h1><small id="sub">Loading…</small></div><button class="ib avtop" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 36)}</button></header>
+    <div class="work"><aside class="side"><header class="top">${burger()}<div class="toph"><h1>Live Chat</h1><small id="sub">Loading…</small></div><button class="ib avtop" data-acc="a-top" aria-label="Account">${avatar(S.user.name, 36)}</button></header>
       <div class="tools"><div class="search">${ico('search', 18)}<input id="q" placeholder="Search name or number"></div>
       <div class="tabs" id="tabs"></div>
       <div class="filters">${mgr ? '<select id="as"><option value="">All agents</option></select>' : ''}<select id="lf"><option value="">All tags</option></select></div></div><div id="list" class="list"></div></aside>
     <main class="main"><div id="chat" class="chat empty">${EMPTY}</div><div id="team" class="team" hidden></div></main>
     <aside class="cpanel" id="cpanel" hidden></aside></div></div>
-    ${mgr ? `<nav class="tabbar">${['inbox', 'dash', 'bc'].map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${k === 'inbox' ? 'Chats' : n[1]}</span>${badge(k)}</button>`; }).join('')}<button class="tb" data-more="1">${ico('more', 22)}<span>More</span></button></nav>` : ''}
+    ${mgr ? `<nav class="tabbar">${bar.map(k => { const n = NAV.find(x => x[0] === k); return `<button class="tb${k === 'inbox' ? ' on' : ''}" data-nav="${k}">${ico(n[2], 22)}<span>${({ inbox: 'Chats', bc: 'Broadcasts' })[k] || n[1]}</span>${badge(k)}</button>`; }).join('')}</nav>` : ''}
     <div class="menu acc" id="acc" hidden><div class="accname"><b>${esc(S.user.name)}</b><small>${esc(S.user.role)}${S.user.team && !mgr ? ' · ' + esc(S.user.team) : ''}</small>${S.user.company ? `<small id="accco">${esc(S.user.company)}</small>` : ''}</div><button id="themebtn">${ico('palette', 18)}<span>Theme and wallpaper</span></button><button id="pwai" hidden>${ico('download', 18)}<span>Install app</span></button><button id="pwb">${ico('sliders', 18)}<span>Change password</span></button><button id="npb">${ico('bell', 18)}<span>Notification preferences</span></button>${Object.keys(LANGS).filter(l => l !== LANG).map(l => `<button data-lang="${l}">${ico('globe', 18)}<span data-notr>${LANGS[l][0]}</span></button>`).join('')}<hr class="sep"><button id="out" class="danger">${ico('logout', 18)}<span>Sign out</span></button></div>
-    ${mgr ? `<div class="sheet" id="sheet" hidden><div class="sheetbody">${more.map(n => `<button data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span></button>`).join('')}</div></div>` : ''}</div>`;
+    <div class="drawer" id="drawer" hidden><div class="dwp" role="dialog" aria-label="Menu"><div class="dwh">${avatar(S.user.name, 40)}<div><b>${esc(S.user.name)}</b><small>${esc(S.user.company || 'TeamInbox Pro')}</small></div><button class="ib" data-dwx aria-label="Close menu">${ico('x', 22)}</button></div>
+      <div class="dwsc">${groups.map(g => { const l = g[1].filter(n => n[0] !== 'st'); return l.length ? `<div class="dwg">${g[0]}</div>` + l.map(n => `<button class="dwi" data-nav="${n[0]}">${ico(n[2], 20)}<span>${n[1]}</span>${badge(n[0])}</button>`).join('') : ''; }).join('')}</div>
+      <div class="dwf">${items.some(n => n[0] === 'st') ? `<button class="dwi" data-nav="st">${ico('sliders', 20)}<span>Settings</span></button>` : ''}<button class="dwi" id="dwmode">${ico('moon', 20)}<span>Dark mode</span><span class="tog"><input type="checkbox" tabindex="-1"${effTheme() === 'dark' ? ' checked' : ''}><i></i></span></button><button class="dwi danger" id="dwout">${ico('logout', 20)}<span>Sign out</span></button></div></div></div></div>`;
   document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goNav(b.dataset.nav));
   document.querySelectorAll('[data-acc]').forEach(b => b.onclick = () => accMenu(b.dataset.acc));
-  const mb = document.querySelector('[data-more]'); if (mb) mb.onclick = () => { const s = $('#sheet'), was = s.hidden; closeOverlays(); s.hidden = !was; };
-  if ($('#sheet')) $('#sheet').onclick = e => { if (e.target.id === 'sheet') $('#sheet').hidden = true; };
-  document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-more]')) closeOverlays(); });
+  drawerSetup();
+  document.addEventListener('click', e => { if (!e.target.closest('.menu,.menuwrap,[data-acc],[data-burger],.drawer')) closeOverlays(); });
   new MutationObserver(syncNav).observe($('#team'), { attributes: true, attributeFilter: ['hidden'] });
   $('#out').onclick = logout; $('#out2').onclick = logout; pwaButton();
   $('#navtg').onclick = () => { const sh = $('.shell'), m = sh.classList.toggle('navmin'); localStorage.setItem(sh.classList.contains('onpage') ? 'ti_nav' : 'ti_navchat', m ? 'min' : 'full'); };
@@ -1050,7 +1092,7 @@ function renderList(quiet) {
 /* ---------- Chat ---------- */
 function resetChatState() { cancelRec(true); S.sel = new Set(); S.selMode = false; S.q = ''; S.hits = []; S.hit = 0; S.replyTo = null; S.searching = false; }
 async function openConv(id) {
-  S.active = id; document.body.classList.add('chat-open'); $('#team').hidden = true; $('#chat').hidden = false;
+  S.active = id; document.body.classList.add('chat-open'); document.body.classList.remove('pgopen'); $('#team').hidden = true; $('#chat').hidden = false;
   const d = await api(`/conversations/${id}/messages`); if (d.error) return toast(d.error);
   if (S.active !== id) return;
   resetChatState();
@@ -1335,7 +1377,7 @@ function onKey(e) {
   const dlg = document.querySelector('.dlg-bg'); if (dlg) { if (dlg.__cancel) dlg.__cancel(); else dlg.remove(); return; }
   const mo = [...document.querySelectorAll('.modal')].find(m => !m.hidden); if (mo) { mo.hidden = true; return; }
   const lb = document.querySelector('.lb'); if (lb) { lb.remove(); return; }
-  if ([...document.querySelectorAll('.menu,.sheet')].some(m => !m.hidden)) { closeOverlays(); return; }
+  if ([...document.querySelectorAll('.menu,.sheet,.drawer')].some(m => !m.hidden)) { closeOverlays(); return; }
   const qr = $('#qr'); if (qr && !qr.hidden) { qr.hidden = true; return; }
   if (REC) { cancelRec(); return; }
   if (S.selMode) { endSel(); return; }
@@ -1470,7 +1512,7 @@ function connect() {
 }
 
 /* ---------- Companies (super admin only) ---------- */
-function openPage() { document.body.classList.add('chat-open'); S.active = null; hidePanel(); $('#chat').hidden = true; const el = $('#team'); el.hidden = false; el.scrollTop = 0; return el; }
+function openPage() { document.body.classList.add('chat-open', 'pgopen'); S.active = null; hidePanel(); $('#chat').hidden = true; const el = $('#team'); el.hidden = false; el.scrollTop = 0; return el; }
 async function showCompanies() {
   const el = openPage();
   const [cs, pl] = await Promise.all([api('/super/companies'), api('/super/plans')]); if (cs.error) return toast(cs.error); if (S.nav !== 'co') return;
