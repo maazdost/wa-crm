@@ -113,7 +113,7 @@ mark{background:#fde68a;color:#111b21;border-radius:2px;padding:0 1px}.b.curhit 
 .quote{background:var(--quote);border-left:4px solid var(--brand);border-radius:6px;padding:4px 8px;margin:0 0 4px;display:grid;cursor:pointer;min-width:120px}.quote b{font-size:12.5px;font-weight:600;color:var(--brand-d)}.quote span{font-size:13px;color:var(--mute);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;color:var(--mute);margin-top:1px}
 .tg{display:inline-block;font-size:11px;font-weight:600;color:#8b7fd6;margin-bottom:1px}.b.out:not(.bot) .tg{color:var(--brand-d)}
-.tk.read{color:var(--blue)}.tk.failed{color:var(--red);font-weight:700}.er{font-size:12px;color:var(--red)}
+.tk.read{color:var(--blue)}.tk.failed{color:var(--red);font-weight:700}.rsnd{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 12px;font-size:12.5px;color:var(--red);border-color:var(--red-line)}.er{font-size:12px;color:var(--red)}
 .rpbar{display:flex;align-items:center;gap:8px;background:var(--bg);padding:8px 14px 0}.rq{flex:1;min-width:0;background:var(--card);border-left:4px solid var(--brand);border-radius:8px;padding:6px 10px;display:grid}.rq b{font-size:12.5px;color:var(--brand-d)}.rq span{font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #comp{background:var(--bg)}
 .cmp{display:flex;align-items:flex-end;gap:6px;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
@@ -1181,10 +1181,18 @@ async function chatAct(act) {
   if (act === 'assign') return assignDialog();
   if (act === 'nonclient') { if (!await sure('Mark as not a client?', 'Their chat is deleted and they are ignored from now on.', { ok: 'Not a client', danger: 1 })) return; const r = await api(`/conversations/${id}/not-client`, 'POST'); if (r.error) return toast(r.error); toast('Marked as not a client'); leaveChat(); }
 }
+// A message WhatsApp did not deliver: send it again (same bubble, new WhatsApp id).
+async function resendMsg(id, btn) {
+  if (btn) { btn.disabled = true; btn.lastChild.textContent = 'Sending…'; }
+  const r = await api(`/messages/${id}/resend`, 'POST');
+  if (r.error) { if (btn) { btn.disabled = false; btn.lastChild.textContent = 'Resend'; } return toast(r.error); }
+  const i = S.msgs.findIndex(x => x.id === id); if (i >= 0) { S.msgs.splice(i, 1); } addMsg(r); toast('Sent again');
+}
 function bindMsgs() {
   const el = $('#msgs');
   el.addEventListener('click', e => {
     const bx = e.target.closest('.bx'), b = e.target.closest('.b');
+    const rs = e.target.closest('[data-resend]'); if (rs) { e.stopPropagation(); return resendMsg(+rs.dataset.resend, rs); }
     if (bx && b) { e.stopPropagation(); return msgMenu(+b.dataset.id, bx); }
     if (S.selMode && b) { return toggleSel(+b.dataset.id); }
     const qt = e.target.closest('.quote'); if (qt && qt.dataset.q) gotoMsg(+qt.dataset.q);
@@ -1321,7 +1329,7 @@ function renderMsgs(stick = true) {
     const tag = m.sender_type === 'bot' ? '<span class="tg">Bot</span>' : m.type === 'template' ? '<span class="tg">Template</span>' : '';
     const quote = m.reply_to_wa_id ? `<div class="quote" data-q="${m.q_id || ''}"><b>${esc(m.q_id ? (m.q_sender === 'customer' ? nm : m.q_sender === 'bot' ? 'Bot' : (m.q_agent || 'Team')) : 'Message')}</b><span>${esc(m.q_id ? snip(m.q_type, m.q_body) : 'Original message not available')}</span></div>` : '';
     const plain = m.media_id && /^\[\w+\]$/.test(m.body || '');
-    return sep + `<div class="b ${cls}${tail}${S.sel.has(m.id) ? ' sel' : ''}${m.id === cur ? ' curhit' : ''}" data-id="${m.id}"><button class="bx" tabindex="-1" aria-label="Message options">${ico('chev', 16)}</button>${tag}${quote}${mediaHtml(m)}${plain ? '' : `<p>${hlText(m.body || '[' + m.type + ']')}</p>`}<span class="meta">${fmtT(m.created_at)} ${tick}</span>${m.error ? `<span class="er">${esc(m.error)}</span>` : ''}</div>`;
+    return sep + `<div class="b ${cls}${tail}${S.sel.has(m.id) ? ' sel' : ''}${m.id === cur ? ' curhit' : ''}" data-id="${m.id}"><button class="bx" tabindex="-1" aria-label="Message options">${ico('chev', 16)}</button>${tag}${quote}${mediaHtml(m)}${plain ? '' : `<p>${hlText(m.body || '[' + m.type + ']')}</p>`}<span class="meta">${fmtT(m.created_at)} ${tick}</span>${m.error ? `<span class="er">${esc(m.error)}</span>` : ''}${m.direction === 'out' && m.status === 'failed' && !m.template_name && m.type !== 'template' ? `<button type="button" class="ghost rsnd" data-resend="${m.id}">${ico('send', 15)}<span>Resend</span></button>` : ''}</div>`;
   }).join('');
   if (stick) el.scrollTop = el.scrollHeight;
   hydrateMedia(el, stick);
