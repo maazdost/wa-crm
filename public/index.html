@@ -733,7 +733,7 @@ const ICONS = {
   inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
   building: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
   chart: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
-  thumb: '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>', camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  thumb: '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>', tiktok: '<path d="M9 12a4 4 0 1 0 4 4V3c.5 2.5 2.5 4.5 5 5"/>', camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   bag: '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>', target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -790,19 +790,19 @@ const EMPTY = `<span class="emp-ic">${ico('chat', 44)}</span><b>Select a convers
 const NAV = [['dash', 'Dashboard', 'grid', 1, 0, 'Overview'], ['inbox', 'Live Chat', 'chat', 0, 0, 'Conversations'], ['dc', 'Demo Classes', 'calendar', 0, 0, 'Conversations'], ['ct', 'Contacts', 'users', 1, 0, 'CRM'], ['au', 'Audience', 'userplus', 1, 0, 'CRM'], ['pl', 'Pipeline', 'panel', 1, 0, 'CRM'],
   ['tp', 'Templates', 'file', 1, 0, 'Messaging'], ['ml', 'Media Library', 'image', 1, 0, 'Messaging'], ['qr', 'Quick Replies', 'zap', 1, 0, 'Messaging'], ['qm', 'Quick Message', 'reply', 1, 0, 'Messaging'], ['bc', 'Bulk Broadcasting', 'megaphone', 1, 0, 'Messaging'],
   ['cat', 'Catalogs', 'bag', 1, 0, 'Commerce'], ['pay', 'Payments', 'money', 1, 0, 'Commerce'], ['ads', 'Ad Manager', 'target', 1, 0, 'Commerce'],
-  ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'],
+  ['fb', 'Facebook Automation', 'thumb', 1, 0, 'Social Media'], ['ig', 'Instagram Automation', 'camera', 1, 0, 'Social Media'], ['tt', 'TikTok Automation', 'tiktok', 1, 0, 'Social Media'],
   ['cb', 'Chatbots', 'flow', 1, 0, 'Automation'], ['ai', 'AI Agent', 'spark', 1, 0, 'Automation'], ['fu', 'Follow-ups', 'clock', 1, 0, 'Automation'], ['bot', 'Bot & Away', 'bot', 1, 0, 'Automation'],
   ['rp', 'Reports', 'chart', 1, 0, 'Manage'], ['ds', 'Daily Summary', 'moon', 1, 0, 'Manage'], ['ha', 'Health Audit', 'shield', 1, 0, 'Manage'], ['tm', 'Agents', 'user', 1, 0, 'Manage'], ['pm', 'Permissions', 'lock', 1, 0, 'Manage'], ['tg', 'Tags', 'tag', 1, 0, 'Manage'], ['np', 'Notifications', 'bell', 0, 0, 'Manage'], ['al', 'Activity Log', 'clock', 1, 0, 'Manage'], ['st', 'Settings', 'sliders', 1, 0, 'Manage'],
   ['sa', 'Overview', 'shield', 1, 1, 'Super Admin'], ['co', 'Companies', 'building', 1, 1, 'Super Admin'], ['rq', 'Requests', 'inbox', 1, 1, 'Super Admin']];
 // Every page has its own address: /language/menu group/page, for example /en/manage/reports. Refresh, back, forward and bookmarks work.
-const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
+const ROUTES = { dash: 'dashboard', inbox: 'live-chat', ct: 'contacts', au: 'audience', pl: 'pipeline', tp: 'templates', ml: 'media-library', qr: 'quick-replies', qm: 'quick-message', bc: 'broadcasts', cat: 'catalogs', pay: 'payments', ds: 'daily-summary', ads: 'ad-manager', dc: 'demo-classes', fb: 'facebook-automation', ig: 'instagram-automation', tt: 'tiktok-automation', cb: 'chatbots', ai: 'ai-agent', fu: 'follow-ups', bot: 'bot', rp: 'reports', ha: 'health-audit', tm: 'agents', pm: 'permissions', np: 'notifications', al: 'activity-log', tg: 'tags', st: 'settings', co: 'companies', sa: 'admin-overview', rq: 'requests' };
 const routePath = k => { const n = NAV.find(x => x[0] === k); return `/${LANG}/${n[5].toLowerCase().replace(/\s+/g, '-')}/${ROUTES[k]}`; };
 const routeKey = p => { const last = String(p).replace(/\/+$/, '').split('/').pop(); return Object.keys(ROUTES).find(k => ROUTES[k] === last); }; // the short old addresses still open the right page
 function setUrl(k) { const p = routePath(k), n = NAV.find(x => x[0] === k); S.ptitle = (n ? tr(n[1]) + ' · ' : '') + 'TeamInbox Pro'; document.title = ((document.title.match(/^\(\d+\) /) || [''])[0]) + S.ptitle; const ov = history.state && (history.state.drawer || history.state.cp); if (location.pathname === p) { if (ov) history.replaceState(null, '', p); S.urlReady = true; return; } history[S.urlReady && !ov && !PWA.ios ? 'pushState' : 'replaceState'](null, '', p); S.urlReady = true; }
 window.addEventListener('popstate', () => { if (S.skipPop) { S.skipPop = false; return; } const dw = $('#drawer'); if (dw && dw.classList.contains('open')) { closeDrawer('pop'); return; } const cpn = $('#cpanel'); if (cpn && !cpn.hidden && !cpWide()) { togglePanel(false, 'pop'); return; } if (!$('.shell') || !S.token) return; const k = routeKey(location.pathname); if (k && document.querySelector(`[data-nav="${k}"]`)) goNav(k); });
 function goNav(k) {
   S.nav = k; closeDrawer('nav'); closeOverlays();
-  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
+  ({ inbox: showInbox, dash: () => showDashboard(), bc: showBroadcasts, ct: showContacts, au: showAudience, pl: showPipeline, tp: showTemplates, fu: showFollowups, st: () => showSettings('st'), qr: () => showSettings('qr'), bot: () => showSettings('bot'), tg: () => showSettings('tg'), tm: showTeam, co: showCompanies, sa: showSuper, rq: showRequests, ml: showLibrary, qm: showQuickMsg, cb: showFlows, ai: showAI, cat: showCatalog, pay: () => showPayments(), ds: () => showSummary(), ads: showAds, dc: showDemo, fb: () => showSocial('facebook'), ig: () => showSocial('instagram'), tt: () => showSocial('tiktok'), rp: showReports, ha: showHealth, pm: showPerms, np: showNotif, al: showActivity })[k]();
   syncNav();
 }
 function syncNav() { const t = $('#team'), pg = !!(t && !t.hidden), k = pg ? S.nav : 'inbox', sh = $('.shell'); if (sh) { sh.classList.toggle('onpage', pg); sh.classList.toggle('navmin', navIsMin(pg)); } document.querySelectorAll('[data-nav]').forEach(b => b.classList.toggle('on', b.dataset.nav === k)); if (sh && ROUTES[k]) setUrl(k); }
@@ -2432,8 +2432,8 @@ async function showSummary(d) {
 
 /* ---------- Facebook and Instagram Automation (rules that answer comments and direct messages) ---------- */
 async function showSocial(pf) {
-  const FB = pf === 'facebook', key = FB ? 'fb' : 'ig', icon = FB ? 'thumb' : 'camera';
-  const sc = screen(FB ? 'Facebook Automation' : 'Instagram Automation', FB ? 'Answer comments on your Facebook Page posts and Messenger messages automatically, and bring people to WhatsApp.' : 'Answer comments on your Instagram posts and reels and direct messages automatically, and bring people to WhatsApp.',
+  const FB = pf === 'facebook', TT = pf === 'tiktok', key = FB ? 'fb' : TT ? 'tt' : 'ig', icon = FB ? 'thumb' : TT ? 'tiktok' : 'camera';
+  const sc = screen(FB ? 'Facebook Automation' : TT ? 'TikTok Automation' : 'Instagram Automation', FB ? 'Answer comments on your Facebook Page posts and Messenger messages automatically, and bring people to WhatsApp.' : TT ? 'Answer comments on your TikTok videos and direct messages automatically, and bring people to WhatsApp.' : 'Answer comments on your Instagram posts and reels and direct messages automatically, and bring people to WhatsApp.',
     `<button class="btn" id="son">${ico('plus', 16)}New rule</button>`);
   const [d, ns] = await Promise.all([api('/social/' + pf), api('/whatsapp/numbers')]); if (d.error) return toast(d.error); if (S.nav !== key) return;
   const list = arr(d.rules), num = arr(ns).find(x => x.is_default) || arr(ns)[0], wa = num ? String(num.display_phone || '').replace(/\D/g, '') : '', waLink = wa ? 'https://wa.me/' + wa : '';
@@ -2447,9 +2447,9 @@ async function showSocial(pf) {
       <p data-notr>${esc(r.reply_text || r.private_text)}</p>
       <footer><span>${ico(TR[r.trigger][0], 14)}${TR[r.trigger][1]}</span>${r.trigger === 'comment' && r.reply_text ? `<span>${ico('reply', 14)}Public reply</span>` : ''}${r.private_text ? `<span>${ico('lock', 14)}Private message</span>` : ''}<span>${ico('send', 14)}Sent ${r.sent_count}</span></footer></div>`; };
   const ins = `<i>Insert:</i><button type="button" data-ins="{{name}}">+ Full name</button><button type="button" data-ins="{{first_name}}">+ First name</button>${waLink ? `<button type="button" data-ins="${waLink}">+ WhatsApp link</button>` : ''}`;
-  sc.innerHTML = `<div class="panel soc-c"><span class="qmic">${ico(icon, 22)}</span><div><h3>${FB ? 'Connect your Facebook Page' : 'Connect your Instagram account'}<em class="chip warn">Waiting for Meta verification</em></h3>
-      <p class="mute">Meta lets an app answer comments and messages only after your business is verified. You can build and try your rules now. They start answering on the day your account is connected.</p></div>
-      <button class="ghost" id="socc">${ico('lock', 16)}${FB ? 'Connect Facebook Page' : 'Connect Instagram account'}</button></div>
+  sc.innerHTML = `<div class="panel soc-c"><span class="qmic">${ico(icon, 22)}</span><div><h3>${FB ? 'Connect your Facebook Page' : TT ? 'Connect your TikTok account' : 'Connect your Instagram account'}<em class="chip warn">${TT ? 'Waiting for TikTok approval' : 'Waiting for Meta verification'}</em></h3>
+      <p class="mute">${TT ? 'TikTok lets an app read and answer messages only after it approves the business for its messaging service. Until then, run TikTok ads that open a WhatsApp chat: those chats come to Live Chat and are marked TikTok when the first message names TikTok. You can build and try your rules now.' : 'Meta lets an app answer comments and messages only after your business is verified. You can build and try your rules now. They start answering on the day your account is connected.'}</p></div>
+      <button class="ghost" id="socc">${ico('lock', 16)}${FB ? 'Connect Facebook Page' : TT ? 'Connect TikTok account' : 'Connect Instagram account'}</button></div>
   <div class="stats">${kpi(icon, list.length, 'Rules')}${kpi('zap', list.filter(r => r.active).length, 'Switched on', 'blue')}${kpi('send', list.reduce((n, r) => n + r.sent_count, 0), 'Replies sent', 'amber')}</div>
   ${list.length ? `<div class="cards">${list.map(card).join('')}</div>`
     : `<div class="tbl">${emptyState(icon, 'No rules yet', 'Add your first rule. For example: when someone comments the word price, reply in public and send the details in a private message.', `<button class="btn" id="son2">${ico('plus', 16)}New rule</button>`)}</div>`}
@@ -2484,7 +2484,7 @@ async function showSocial(pf) {
   };
   const by = id => list.find(r => r.id == id);
   $('#son').onclick = () => open(null); if ($('#son2')) $('#son2').onclick = () => open(null);
-  $('#socc').onclick = () => toast('This opens after Meta verifies your business');
+  $('#socc').onclick = () => toast(TT ? 'This opens after TikTok approves your business for messaging' : 'This opens after Meta verifies your business');
   $('#so2').onchange = sync; $('#so3').onchange = sync;
   $('#soka').onclick = addKw; $('#sok').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); addKw(); } };
   $('#sokw').onclick = e => { const x = e.target.closest('[data-kx]'); if (x) { R.keywords.splice(+x.dataset.kx, 1); drawKw(); } };
@@ -2907,7 +2907,7 @@ async function showHealth() {
 /* ---------- Permissions ---------- */
 // What this person may do. Admins may do everything; for managers and agents the admin decides on the Permissions page.
 const can = k => { const p = S.user && S.user.perms; return !p || p.all || p[k] !== false; };
-const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', au: 'contacts', pl: 'contacts', qm: 'automation', cb: 'automation', ai: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
+const PAGE_PERM = { tp: 'templates', bc: 'broadcasts', ct: 'contacts', au: 'contacts', pl: 'contacts', qm: 'automation', cb: 'automation', ai: 'automation', qr: 'automation', fu: 'automation', ml: 'library', cat: 'catalog', fb: 'social', ig: 'social', tt: 'social', tg: 'tags', st: 'settings', bot: 'settings', rp: 'reports', ha: 'reports', al: 'activity' };
 const navAllowed = n => n[0] === 'pm' ? S.user.role === 'admin' : S.user.role === 'admin' || !PAGE_PERM[n[0]] || can(PAGE_PERM[n[0]]);
 async function showPerms() {
   const sc = screen('Permissions', 'Choose what managers and agents can do. Admins can always do everything. A change works at once, the person does not need to sign in again.');
@@ -3194,10 +3194,10 @@ async function showPipeline() {
 const CT_SRC = { organic: 'WhatsApp', ad: 'Ad', import: 'Imported', manual: 'Added by hand', personal: 'Ignore list' };
 // Where a contact came from: the channel (WhatsApp, Facebook, Instagram...) and, for an ad or post they clicked, its link.
 const CH_NAME = { whatsapp: 'WhatsApp', facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', google: 'Google', youtube: 'YouTube', website: 'Website', referral: 'Referral', walkin: 'Walk-in', other: 'Other' };
-const CH_ICO = { whatsapp: 'chat', facebook: 'thumb', instagram: 'camera', website: 'globe', google: 'globe', referral: 'users', walkin: 'building' };
+const CH_ICO = { whatsapp: 'chat', facebook: 'thumb', instagram: 'camera', tiktok: 'tiktok', website: 'globe', google: 'globe', referral: 'users', walkin: 'building' };
 const srcAd = c => c.source === 'ad' || !!c.ad_source_url;
 const srcName = c => { const ch = c.channel && (CH_NAME[c.channel] || c.channel);
-  if (ch && srcAd(c) && (c.channel === 'facebook' || c.channel === 'instagram')) return `${ch} ${c.ad_source_type === 'post' ? 'post' : 'ad'}`;
+  if (ch && srcAd(c) && ['facebook', 'instagram', 'tiktok'].includes(c.channel)) return `${ch} ${c.ad_source_type === 'post' ? 'post' : 'ad'}`;
   return ch || CT_SRC[c.source] || nice(c.source) || 'WhatsApp'; };
 const srcChip = c => `<em class="chip srcc${c.channel ? ' ch-' + esc(c.channel.replace(/[^a-z]/g, '')) : ''}${srcAd(c) ? ' ad' : ''}"${c.channel && !CH_NAME[c.channel] ? ' data-notr' : ''}>${ico(srcAd(c) && !CH_ICO[c.channel] ? 'megaphone' : CH_ICO[c.channel] || (c.source === 'import' ? 'download' : c.source === 'manual' ? 'userplus' : 'tag'), 12)}${esc(srcName(c))}</em>`;
 const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '';

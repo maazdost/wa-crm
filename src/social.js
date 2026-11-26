@@ -6,7 +6,7 @@ const { query } = require('./db');
 const tenant = require('./tenant');
 const { matches } = require('./autoreply');
 
-const PLATFORMS = ['facebook', 'instagram'];
+const PLATFORMS = ['facebook', 'instagram', 'tiktok'];
 const TRIGGERS = ['comment', 'dm'];
 // {{name}} and {{first_name}} in a reply become the name of the person who wrote
 const fill = (text, name) => { const full = String(name || '').trim(); return String(text || '').replace(/\{\{\s*(name|first_name)\s*\}\}/gi, (_, k) => (k.toLowerCase() === 'name' ? full : full.split(/\s+/)[0]) || 'there'); };

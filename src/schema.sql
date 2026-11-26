@@ -372,7 +372,7 @@ CREATE INDEX IF NOT EXISTS idx_products_company ON products(company_id, id DESC)
 CREATE TABLE IF NOT EXISTS social_rules (
   id SERIAL PRIMARY KEY,
   company_id INT NOT NULL REFERENCES companies(id),
-  platform TEXT NOT NULL CHECK (platform IN ('facebook','instagram')),
+  platform TEXT NOT NULL CHECK (platform IN ('facebook','instagram','tiktok')),
   name TEXT NOT NULL,
   trigger TEXT NOT NULL DEFAULT 'comment' CHECK (trigger IN ('comment','dm')),
   match_type TEXT NOT NULL DEFAULT 'contains' CHECK (match_type IN ('any','contains','exact')),
@@ -386,6 +386,9 @@ CREATE TABLE IF NOT EXISTS social_rules (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_social_rules_company ON social_rules(company_id, platform, active);
+-- TikTok Automation uses the same rules. Older databases only allowed facebook and instagram: the check is widened (nothing is deleted).
+ALTER TABLE social_rules DROP CONSTRAINT IF EXISTS social_rules_platform_check;
+ALTER TABLE social_rules ADD CONSTRAINT social_rules_platform_check CHECK (platform IN ('facebook','instagram','tiktok'));
 CREATE TABLE IF NOT EXISTS social_log (
   id BIGSERIAL PRIMARY KEY,
   company_id INT NOT NULL REFERENCES companies(id),
