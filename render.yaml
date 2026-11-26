@@ -26,7 +26,13 @@ services:
       # Main site only: the clients' own copies, comma separated (https://wof.teaminboxpro.com). Their people can then sign in on the main site and app.
       - key: CLIENT_SITES
         sync: false
-      # AI Agent: the key of your Anthropic (Claude) account. Without it the AI Agent page says it is not connected.
+      # AI Agent: the key of one AI service. Without any of these the AI Agent page says it is not connected.
+      # GEMINI_API_KEY is free from aistudio.google.com, GROQ_API_KEY is free from console.groq.com, ANTHROPIC_API_KEY is Claude (paid).
+      # When more than one is set, the next is asked when one is busy or used up. AI_PROVIDER (gemini, groq, anthropic) names the first.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: META_APP_ID

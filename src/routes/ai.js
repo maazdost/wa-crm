@@ -26,7 +26,7 @@ router.get('/ai', mgr, wrap(async (req, res) => {
 
 router.put('/ai', mgr, wrap(async (req, res) => {
   const b = req.body || {};
-  if (b.enabled && !ai.ready()) return res.status(400).json({ error: 'The AI is not connected on the server yet. Ask your provider to set ANTHROPIC_API_KEY.' });
+  if (b.enabled && !ai.ready()) return res.status(400).json({ error: 'The AI is not connected on the server yet. Ask your provider to set GEMINI_API_KEY.' });
   const out = await ai.save(b);
   if (out.error) return res.status(400).json({ error: out.error });
   res.json({ settings: view(out) });
@@ -35,7 +35,7 @@ router.put('/ai', mgr, wrap(async (req, res) => {
 // "Try it": the page sends the test chat so far and the notes as typed (saved or not). Nothing is sent to WhatsApp and nothing counts against the plan.
 const tries = new Map(); // company id -> times of the last tries, so a stuck page cannot run up a bill
 router.post('/ai/try', mgr, wrap(async (req, res) => {
-  if (!ai.ready()) return res.status(400).json({ error: 'The AI is not connected on the server yet. Ask your provider to set ANTHROPIC_API_KEY.' });
+  if (!ai.ready()) return res.status(400).json({ error: 'The AI is not connected on the server yet. Ask your provider to set GEMINI_API_KEY.' });
   const now = Date.now(), mine = (tries.get(C()) || []).filter(t => now - t < 3600000);
   if (mine.length >= 60) return res.status(429).json({ error: 'That is a lot of tests in one hour. Try again a little later.' });
   mine.push(now); tries.set(C(), mine);
