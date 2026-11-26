@@ -203,4 +203,16 @@ async function agentTookOver(convId) {
   if (c) await query(`UPDATE bot_flow_runs SET finished_at=now(), result='agent' WHERE conversation_id=$1 AND finished_at IS NULL`, [convId]);
 }
 
-module.exports = { TYPES, KINDS, RETRY, welcome, findKeyword, start, reply, agentTookOver, nextIndex, sweep, startSweep };
+/** The welcome chatbot's opening messages (its message steps before the first question, buttons or hand over), sent on their own.
+ *  Used for clients from an ad: they get the greeting and links, then go straight to an agent without the menu. */
+async function sendGreeting(conv, contact, waId) {
+  const flow = await welcome(); if (!flow) return 0;
+  const steps = arr(flow.steps); let i = 0, sent = 0, hops = 0;
+  while (i >= 0 && i < steps.length && hops++ < 10 && steps[i].type === 'message') {
+    await sendStep(flow, conv, waId, contact, steps[i]).catch(e => console.error('ad greeting', e.message)); sent++;
+    i = nextIndex(steps, i, steps[i].next);
+  }
+  return sent;
+}
+
+module.exports = { TYPES, KINDS, RETRY, welcome, findKeyword, start, reply, agentTookOver, nextIndex, sweep, startSweep, sendGreeting };
