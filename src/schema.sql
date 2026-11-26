@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS chat_flags (
   PRIMARY KEY (user_id, conversation_id)
 );
 ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_wa_id TEXT;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reaction TEXT; -- the client's emoji reaction to this message
 
 -- Several WhatsApp Business numbers. Add or remove them from Settings; no redeploy needed.
 CREATE TABLE IF NOT EXISTS wa_numbers (
