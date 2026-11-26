@@ -15,7 +15,7 @@ const isAgent = (u) => u.role === 'agent';
 const settings = require('../settings');
 const { markPersonal } = require('../personal');
 const bot = require('../bot');
-const { toOggOpus } = require('../audio');
+const { toMp3 } = require('../audio');
 const tenant = require('../tenant');
 const C = () => tenant.cid(); // the signed-in person's company; every query below is limited to it
 async function replyCtx(convId, id) {
@@ -439,8 +439,8 @@ router.post('/conversations/:id/media', express.raw({ type: () => true, limit: '
   let filename = String(req.query.filename || 'file').slice(0, 120);
   const caption = String(req.query.caption || '').trim().slice(0, 1000);
   let body = buf;
-  if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr|ogg)/.test(mime)) { // e.g. WebM from a browser recording
-    try { body = await toOggOpus(buf); mime = 'audio/ogg'; filename = 'voice-note.ogg'; } catch (e) { return res.status(422).json({ error: e.message }); }
+  if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr)/.test(mime)) { // e.g. WebM or OGG from a browser recording
+    try { body = await toMp3(buf); mime = 'audio/mpeg'; filename = 'voice-note.mp3'; } catch (e) { return res.status(422).json({ error: e.message }); }
   }
   const kind = mediaStore.kindOf(mime);
   if (kind === 'image' && buf.length > 5 * 1024 * 1024) return res.status(413).json({ error: 'Photos must be under 5 MB' });
