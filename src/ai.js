@@ -8,7 +8,9 @@
 // so a client is never left without an answer.
 //
 // The chat is in conversations.status='bot' with bot_step='ai' while the AI is answering.
-// Needs ANTHROPIC_API_KEY on the server. AI_MODEL can name another Claude model.
+// Needs the key of one AI service on the server (see SERVICES below): GEMINI_API_KEY and GROQ_API_KEY have a free tier,
+// ANTHROPIC_API_KEY is Claude. When more than one is set they are tried in order, so a busy or used-up service does not
+// leave the client without an answer. AI_PROVIDER names the one to try first, AI_MODEL names its model.
 const Anthropic = require('@anthropic-ai/sdk');
 const { query } = require('./db');
 const wa = require('./whatsapp');
@@ -26,10 +28,31 @@ const LANGS = {
 };
 const DEFAULTS = { enabled: false, name: 'Assistant', notes: '', tone: 'friendly', language: 'auto', returning: true, max_replies: 10 };
 const NOTES_MAX = 20000;
-const MODEL = () => process.env.AI_MODEL || 'claude-opus-5-5';
 const fake = () => process.env.AI_FAKE === 'true'; // tests only: no request leaves the server
-const ready = () => fake() || !!process.env.ANTHROPIC_API_KEY;
-let client; const api = () => client || (client = new Anthropic({ maxRetries: 2, timeout: 60000 }));
+const env = (k) => String(process.env[k] || '').trim().replace(/^["']|["']$/g, '');
+// The AI services this server can use. All but Claude speak the same "chat completions" format, so one function serves them.
+// Each has a short list of models: when one is missing, busy or out of its free allowance, the next one is asked.
+const SERVICES = {
+  anthropic: { label: 'Claude', key: 'ANTHROPIC_API_KEY', models: ['claude-opus-5-5'] },
+  gemini: { label: 'Google Gemini', key: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/openai', max: 4000,
+    models: ['gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-flash-latest'] },
+  groq: { label: 'Groq', key: 'GROQ_API_KEY', url: 'https://api.groq.com/openai/v1', max: 1500, models: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'] },
+  // any other service with the same format: AI_API_KEY, AI_BASE_URL (for example https://openrouter.ai/api/v1) and AI_MODEL
+  custom: { label: 'AI service', key: 'AI_API_KEY', url: '', max: 2000, models: [] }
+};
+/** The services that have a key, in the order they are tried, each with its models. */
+function services() {
+  const first = env('AI_PROVIDER').toLowerCase(), model = env('AI_MODEL');
+  const names = Object.keys(SERVICES).filter(n => env(SERVICES[n].key));
+  names.sort((a, b) => (b === first) - (a === first));
+  return names.map((n, i) => {
+    const s = SERVICES[n], url = (env(n.toUpperCase() + '_BASE_URL') || (n === 'custom' ? env('AI_BASE_URL') : s.url) || '').replace(/\/+$/, '');
+    return { ...s, name: n, url, models: i === 0 && model ? [model, ...s.models.filter(m => m !== model)] : s.models };
+  }).filter(s => s.models.length && (s.name === 'anthropic' || s.url));
+}
+const MODEL = () => { const s = services()[0]; return s ? s.models[0] : ''; };
+const ready = () => fake() || services().length > 0;
+let client; const api = () => client || (client = new Anthropic({ maxRetries: 1, timeout: 45000 }));
 
 async function config(cid = tenant.cid()) {
   const r = (await query('SELECT * FROM ai_agent WHERE company_id=$1', [cid])).rows[0];
@@ -75,7 +98,7 @@ ${cfg.notes}
 const SCHEMA = { type: 'object', properties: { reply: { type: 'string', description: 'The WhatsApp message to send to the client' }, handover: { type: 'boolean', description: 'true when a team member must take over this chat' } }, required: ['reply', 'handover'], additionalProperties: false };
 
 /**
- * Asks Claude for the next reply. `turns` is the chat so far: [{ role: 'user'|'assistant', text }], ending with the client.
+ * Asks the AI for the next reply. `turns` is the chat so far: [{ role: 'user'|'assistant', text }], ending with the client.
  * Returns { reply, handover, tokens_in, tokens_out } or { error } when no usable answer came back.
  */
 async function ask(cfg, company, turns) {
@@ -93,9 +116,39 @@ async function ask(cfg, company, turns) {
     const handover = /\b(agent|human|person)\b|\[(image|audio|video|document|location)\]/i.test(q);
     return { reply: handover ? 'A team member will reply here shortly.' : 'TEST ANSWER: ' + (cfg.notes.split('\n').find(Boolean) || ''), handover, tokens_in: 10, tokens_out: 5 };
   }
+  const system = instructions(cfg, company);
+  // Every service and model with a key is asked in turn until one gives a usable answer. A key that is refused skips that service.
+  let last, tries = 0;
+  for (const s of services()) {
+    for (const model of s.models) {
+      if (tries++ >= 5) break;
+      try {
+        const out = s.name === 'anthropic' ? await askClaude(model, system, messages) : await askOpen(s, model, system, messages);
+        if (!out.error) return out;
+        last = { out }; console.warn(`ai agent: ${s.label} ${model}: ${out.error}`);
+      } catch (e) {
+        e.keyName = s.key; last = { e }; console.warn(`ai agent: ${s.label} ${model}: ${problem(e)}`);
+        if ([401, 403].includes(statusOf(e))) break;
+      }
+    }
+  }
+  if (!last) return { error: 'no AI service is connected' };
+  if (last.e) throw last.e;
+  return last.out;
+}
+/** Reads the model's text as { reply, handover }. Some models wrap the JSON in a code block or add a word before it. */
+function readAnswer(text) {
+  if (Array.isArray(text)) text = text.map(p => (p && p.text) || '').join('');
+  text = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/, '').trim();
+  let out; try { out = JSON.parse(text); } catch (e) { try { out = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch (e2) { return { error: 'answer was not readable' }; } }
+  const reply = String((out && out.reply) || '').trim().slice(0, 3500);
+  if (!reply) return { error: 'empty answer' };
+  return { reply, handover: out.handover === true || out.handover === 'true' };
+}
+async function askClaude(model, system, messages) {
   const req = {
-    model: MODEL(), max_tokens: 8000,
-    system: [{ type: 'text', text: instructions(cfg, company), cache_control: { type: 'ephemeral' } }],
+    model, max_tokens: 8000,
+    system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
     output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA } },
     messages
   };
@@ -110,20 +163,31 @@ async function ask(cfg, company, turns) {
   }
   const usage = { tokens_in: (r.usage?.input_tokens || 0) + (r.usage?.cache_read_input_tokens || 0) + (r.usage?.cache_creation_input_tokens || 0), tokens_out: r.usage?.output_tokens || 0 };
   if (r.stop_reason === 'refusal' || r.stop_reason === 'max_tokens') return { error: 'stopped: ' + r.stop_reason, ...usage };
-  const text = (r.content.find(b => b.type === 'text') || {}).text || '';
-  let out; try { out = JSON.parse(text); } catch (e) { return { error: 'answer was not readable', ...usage }; }
-  const reply = String(out.reply || '').trim().slice(0, 3500);
-  if (!reply) return { error: 'empty answer', ...usage };
-  return { reply, handover: !!out.handover, ...usage };
+  return { ...readAnswer((r.content.find(b => b.type === 'text') || {}).text), ...usage };
 }
+const JSON_RULE = '\n\nAnswer with one JSON object and nothing else, in exactly this shape: {"reply": "the WhatsApp message to send to the client", "handover": true or false}';
+/** Gemini, Groq and any other service with the "chat completions" format. */
+async function askOpen(s, model, system, messages) {
+  const body = { model, messages: [{ role: 'system', content: system + JSON_RULE }, ...messages], max_tokens: s.max, response_format: { type: 'json_object' } };
+  const post = () => fetch(s.url + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env(s.key) }, body: JSON.stringify(body), signal: AbortSignal.timeout(30000) });
+  let r = await post(), text = r.ok ? '' : await r.text().catch(() => '');
+  if (r.status === 400 && !/api.?key/i.test(text)) { delete body.response_format; r = await post(); text = r.ok ? '' : await r.text().catch(() => ''); } // a model that does not know the JSON switch
+  if (!r.ok) { const e = new Error(text.replace(/\s+/g, ' ').slice(0, 200) || 'error ' + r.status); e.aiStatus = r.status === 400 && /api.?key/i.test(text) ? 401 : r.status; throw e; }
+  const d = await r.json(), ch = d.choices && d.choices[0];
+  const usage = { tokens_in: d.usage?.prompt_tokens || 0, tokens_out: d.usage?.completion_tokens || 0 };
+  if (!ch || ['content_filter', 'length'].includes(ch.finish_reason)) return { error: 'stopped: ' + (ch ? ch.finish_reason : 'no answer'), ...usage };
+  return { ...readAnswer(ch.message && ch.message.content), ...usage };
+}
+const statusOf = (e) => e.aiStatus || (e instanceof Anthropic.APIError ? e.status : 0) || 0;
 /** One line for the server log and the page, never the key itself. */
 function problem(e) {
-  if (e instanceof Anthropic.AuthenticationError) return 'The AI key on the server is not accepted. Check ANTHROPIC_API_KEY on Render.';
-  if (e instanceof Anthropic.PermissionDeniedError) return 'The AI key is not allowed to use this model.';
-  if (e instanceof Anthropic.NotFoundError) return 'The AI model named in AI_MODEL was not found.';
-  if (e instanceof Anthropic.RateLimitError) return 'The AI service is busy or the account has reached its limit. Try again in a minute.';
-  if (e instanceof Anthropic.APIConnectionError) return 'The AI service could not be reached.';
-  if (e instanceof Anthropic.APIError) return `The AI service answered with an error (${e.status || 'unknown'}).`;
+  const st = statusOf(e);
+  if (st === 401) return `The AI key on the server is not accepted. Check ${e.keyName || 'ANTHROPIC_API_KEY'} on Render.`;
+  if (st === 403) return 'The AI key is not allowed to use this model.';
+  if (st === 404) return 'The AI model named in AI_MODEL was not found.';
+  if (st === 429 || st === 413) return 'The AI service is busy or the account has reached its limit. Try again in a minute.';
+  if (st) return `The AI service answered with an error (${st}).`;
+  if (e instanceof Anthropic.APIConnectionError || e.name === 'TimeoutError' || e.name === 'AbortError' || /fetch failed/i.test(e.message || '')) return 'The AI service could not be reached.';
   return e.message || 'unknown error';
 }
 
@@ -184,4 +248,7 @@ async function stop(convId) {
   await query(`UPDATE conversations SET bot_step='done', status=CASE WHEN status='bot' AND assigned_to IS NOT NULL THEN 'open' ELSE status END WHERE id=$1 AND bot_step='ai'`, [convId]);
 }
 
-module.exports = { TONES, LANGS, DEFAULTS, NOTES_MAX, MODEL, ready, config, save, on, ask, problem, reply, reopen, handover, stop };
+// One line in the server log at start, so it is clear which service answers (never the key itself).
+if (!fake()) { const u = services(); console.log(u.length ? 'AI Agent uses: ' + u.map(x => `${x.label} (${x.models[0]})`).join(', then ') : 'AI Agent is not connected: set GEMINI_API_KEY or GROQ_API_KEY (both free) or ANTHROPIC_API_KEY'); }
+
+module.exports = { TONES, LANGS, DEFAULTS, NOTES_MAX, MODEL, SERVICES, services, readAnswer, ready, config, save, on, ask, problem, reply, reopen, handover, stop };
