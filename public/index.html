@@ -129,6 +129,7 @@ mark{background:#fde68a;color:#111b21;border-radius:2px;padding:0 1px}.b.curhit 
 .qr button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 16px;border-bottom:1px solid var(--line)}.qr button:hover{background:var(--hover)}
 .qr small{display:block;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mi{max-width:min(280px,100%);max-height:280px;border-radius:6px;display:block;cursor:zoom-in;background:var(--bg);margin-bottom:3px}
+.b.hasrx{margin-bottom:16px}.b .rx{position:absolute;bottom:-15px;left:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 6px;font-size:14px;line-height:20px;box-shadow:var(--sh)}.b.out .rx{left:auto;right:10px}.gifw{position:relative;display:block;margin-bottom:4px}.gifw video{display:block;max-width:260px;max-height:260px;border-radius:6px}.gifw em{position:absolute;left:6px;bottom:6px;background:#0009;color:#fff;font:700 10px/1 sans-serif;font-style:normal;padding:3px 5px;border-radius:4px}
 .b audio{width:240px;max-width:100%;display:block;margin-bottom:4px}.b video{max-width:100%;border-radius:6px}.b .ghost{margin-bottom:4px}
 .lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:grid;place-items:center;z-index:110;cursor:zoom-out}.lb img{max-width:94vw;max-height:90vh}
 .dlg-bg{position:fixed;inset:0;background:rgba(11,20,26,.55);z-index:90;display:grid;grid-template-rows:minmax(0,1fr);place-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}.dlg-bg>.dlg{max-height:100%}
@@ -915,7 +916,7 @@ function floatMenu(items, x, y) {
   m.onclick = e => { const b = e.target.closest('button'); if (!b) return; const it = items[+b.dataset.i]; m.remove(); it[2](); };
 }
 const pad2 = n => String(n).padStart(2, '0');
-const snip = (type, body) => (!body || /^\[\w+\]$/.test(body)) ? ({ image: '📷 Photo', video: '🎥 Video', audio: '🎤 Voice message', document: '📄 Document', sticker: 'Sticker' }[type] || body || '') : body.replace(/\*([^*\n]+)\*/g, '$1');
+const snip = (type, body) => (!body || /^\[\w+\]$/.test(body)) ? ({ image: '📷 Photo', video: '🎥 Video', gif: '🎞️ GIF', audio: '🎤 Voice message', document: '📄 Document', sticker: 'Sticker', reaction: 'Reacted to a message', unsupported: 'Message WhatsApp cannot show here' }[type] || body || '') : body.replace(/\*([^*\n]+)\*/g, '$1');
 function hlText(t) {
   const q = S.q; if (!q) return esc(t).replace(/\*([^*\n]+)\*/g, '<b>$1</b>');
   const lo = t.toLowerCase(), ql = q.toLowerCase(); let out = '', i = 0;
@@ -1346,13 +1347,14 @@ function renderMsgs(stick = true) {
   el.innerHTML = (S.more ? '<button class="ghost" id="older" style="align-self:center">Load earlier messages</button>' : '') + S.msgs.map(m => {
     const day = new Date(m.created_at).toDateString();
     const sep = day !== last ? `<div class="day">${new Date(m.created_at).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</div>` : ''; last = day;
+    if (m.type === 'reaction') return sep + `<div class="callpill">${esc(nm)} ${tr('reacted to a message')}<time>${fmtT(m.created_at)}</time></div>`; // older reactions saved before emojis were kept
     if (m.type === 'call') return sep + `<div class="callpill${/missed|failed|not answered|declined/i.test(m.body || '') ? ' miss' : ''}">${ico('phone', 14)} ${esc(m.body || 'Call')}<time>${fmtT(m.created_at)}</time></div>`;
     const cls = m.sender_type === 'customer' ? 'in' : m.sender_type === 'bot' ? 'out bot' : 'out', tail = (m.direction !== prev || sep) ? ' tail' : ''; prev = m.direction;
     const tick = m.direction === 'out' ? `<span class="tk ${m.status}">${m.status === 'failed' ? 'Failed' : m.status === 'sent' ? '✓' : '✓✓'}</span>` : '';
     const tag = m.sender_type === 'bot' ? '<span class="tg">Bot</span>' : m.type === 'template' ? '<span class="tg">Template</span>' : '';
     const quote = m.reply_to_wa_id ? `<div class="quote" data-q="${m.q_id || ''}"><b>${esc(m.q_id ? (m.q_sender === 'customer' ? nm : m.q_sender === 'bot' ? 'Bot' : (m.q_agent || 'Team')) : 'Message')}</b><span>${esc(m.q_id ? snip(m.q_type, m.q_body) : 'Original message not available')}</span></div>` : '';
     const plain = m.media_id && /^\[\w+\]$/.test(m.body || '');
-    return sep + `<div class="b ${cls}${tail}${S.sel.has(m.id) ? ' sel' : ''}${m.id === cur ? ' curhit' : ''}" data-id="${m.id}"><button class="bx" tabindex="-1" aria-label="Message options">${ico('chev', 16)}</button>${tag}${quote}${mediaHtml(m)}${plain ? '' : `<p>${hlText(m.body || '[' + m.type + ']')}</p>`}<span class="meta">${fmtT(m.created_at)} ${tick}</span>${m.error ? `<span class="er">${esc(m.error)}</span>` : ''}${m.direction === 'out' && m.status === 'failed' && !m.template_name && m.type !== 'template' ? `<button type="button" class="ghost rsnd" data-resend="${m.id}">${ico('send', 15)}<span>Resend</span></button>` : ''}</div>`;
+    return sep + `<div class="b ${cls}${tail}${m.reaction ? ' hasrx' : ''}${S.sel.has(m.id) ? ' sel' : ''}${m.id === cur ? ' curhit' : ''}" data-id="${m.id}"><button class="bx" tabindex="-1" aria-label="Message options">${ico('chev', 16)}</button>${tag}${quote}${mediaHtml(m)}${plain ? '' : `<p>${hlText(m.body || '[' + m.type + ']')}</p>`}<span class="meta">${fmtT(m.created_at)} ${tick}</span>${m.error ? `<span class="er">${esc(m.error)}</span>` : ''}${m.direction === 'out' && m.status === 'failed' && !m.template_name && m.type !== 'template' ? `<button type="button" class="ghost rsnd" data-resend="${m.id}">${ico('send', 15)}<span>Resend</span></button>` : ''}${m.reaction ? `<span class="rx" title="${esc(nm)} reacted">${esc(m.reaction)}</span>` : ''}</div>`;
   }).join('');
   if (stick) el.scrollTop = el.scrollHeight;
   hydrateMedia(el, stick);
@@ -1479,6 +1481,7 @@ function mediaHtml(m) {
   if (!m.media_id) return '';
   if (m.type === 'image' || m.type === 'sticker') return `<img class="mi" data-mid="${m.id}" alt="${esc(m.media_name || 'Photo')}">`;
   if (m.type === 'audio') return `<audio controls data-mid="${m.id}"></audio>`;
+  if (m.type === 'gif') return `<span class="gifw"><video class="mi gif" data-mid="${m.id}" autoplay loop muted playsinline></video><em>GIF</em></span>`;
   if (m.type === 'video') return `<button class="ghost" data-open="${m.id}" data-play="1">Play video</button>`;
   return `<button class="ghost" data-open="${m.id}">Open ${esc(m.media_name || 'document')}</button>`;
 }
@@ -1547,7 +1550,7 @@ function popMsg(e) {
   let box = $('#npop'); if (!box) { box = document.createElement('div'); box.id = 'npop'; box.className = 'npop'; document.body.appendChild(box); }
   box.querySelectorAll(`[data-c="${e.conversationId}"]`).forEach(x => x.remove()); while (box.children.length >= 3) box.firstChild.remove();
   const el = document.createElement('div'), m = e.message, name = e.from.name || '+' + e.from.wa_id;
-  const kind = { image: 'Photo', video: 'Video', audio: 'Voice message', document: 'File', sticker: 'Sticker', location: 'Location', contacts: 'Contact card' }[m.type] || 'New message';
+  const kind = { image: 'Photo', video: 'Video', gif: 'GIF', audio: 'Voice message', document: 'File', sticker: 'Sticker', location: 'Location', contacts: 'Contact card' }[m.type] || 'New message';
   el.className = 'npc'; el.dataset.c = e.conversationId;
   el.innerHTML = `<div class="npch">${avatar(name, 36)}<div><b data-notr>${esc(name)}</b><small data-notr>+${esc(e.from.wa_id)} · ${new Date(m.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></div><button type="button" class="ib" data-x aria-label="Close">${ico('x', 18)}</button></div>
     <div class="npcm">${ico('chat', 15)}<span${m.body ? ' data-notr' : ''}>${m.body ? esc(String(m.body).slice(0, 200)) : kind}</span></div><button type="button" class="btn" data-go>${ico('reply', 16)}Reply</button>`;
@@ -1575,6 +1578,7 @@ function connect() {
       }
       loadList();
     });
+    sock.on('message:reaction', e => { const m = S.msgs.find(x => x.id == e.messageId); if (m && e.conversationId === S.active) { m.reaction = e.emoji; renderMsgs(false); } });
     sock.on('message:status', e => { const m = S.msgs.find(x => x.wa_message_id === e.waMessageId); if (m && e.conversationId === S.active) { m.status = e.status; renderMsgs(false); } });
     sock.on('conversation:assigned', () => { if (!isMgr()) { alertUser('New client assigned', 'Open your inbox to reply.'); toast('A new client was assigned to you'); } loadList(); });
     sock.on('conversation:unassigned', () => { if (isMgr()) toast('A client is waiting and no agent is available'); loadList(); });

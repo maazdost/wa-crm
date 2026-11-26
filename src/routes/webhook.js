@@ -49,8 +49,11 @@ function extract(m) {
     return { ...base, body: r.title, buttonId: r.id };
   }
   if (m.type === 'button') return { ...base, body: m.button?.text, buttonId: m.button?.payload };
+  if (m.type === 'reaction') return { ...base, reaction: { to: m.reaction?.message_id, emoji: m.reaction?.emoji || '' } };
   const media = m[m.type] || {};
-  return { ...base, body: media.caption || `[${m.type}]`, mediaId: media.id, mime: media.mime_type, filename: media.filename };
+  // GIFs arrive as short videos marked to play like a GIF (or, rarely, as image/gif): they are kept as type 'gif' and loop in the chat
+  const gif = (m.type === 'video' && (media.gif_playback || media.animated)) || media.mime_type === 'image/gif';
+  return { ...base, type: gif ? 'gif' : m.type, body: media.caption || `[${gif ? 'gif' : m.type}]`, mediaId: media.id, mime: media.mime_type, filename: media.filename };
 }
 
 async function handleMessage(m, profileName, numId) {
@@ -73,6 +76,14 @@ async function handleMessage(m, profileName, numId) {
     `INSERT INTO conversations(company_id, contact_id, wa_number_id) VALUES($3,$1,$2) ON CONFLICT (contact_id) DO UPDATE SET wa_number_id=COALESCE(EXCLUDED.wa_number_id, conversations.wa_number_id) RETURNING *`,
     [contact.id, numId || null, cid])).rows[0];
   const w = wa.forConversation(conv); // replies leave from the number the client wrote to
+
+  // A reaction (👍 ❤️ 😂 ...) is shown on the message it answers, like on the phone; an empty emoji means it was taken back.
+  // It is not a new chat message, so the bot and the reply window are left alone.
+  if (msg.reaction) {
+    const r = (await query(`UPDATE messages SET reaction=$3 WHERE conversation_id=$1 AND wa_message_id=$2 RETURNING id`, [conv.id, msg.reaction.to || '', msg.reaction.emoji || null])).rows[0];
+    if (r) rt.toConversation(conv, 'message:reaction', { conversationId: conv.id, messageId: r.id, emoji: msg.reaction.emoji || null });
+    return;
+  }
 
   const saved = await saveInbound(conv, msg);
   if (!saved) return; // duplicate delivery
