@@ -117,8 +117,15 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   await j('/api/social/rules/' + fba.id, { method: 'PATCH', body: { active: false } }, admin);
   check('social rule switch, wrong rules and agents are handled', (await j('/api/social/facebook/test', { method: 'POST', body: { text: 'nice coffee' } }, admin)).data.matched === false
     && (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Bad', match_type: 'contains', keywords: [], reply_text: 'x' } }, admin)).status === 400
-    && (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Bad', match_type: 'any' } }, admin)).status === 400 && (await j('/api/social/tiktok', {}, admin)).status === 404
+    && (await j('/api/social/facebook/rules', { method: 'POST', body: { name: 'Bad', match_type: 'any' } }, admin)).status === 400 && (await j('/api/social/tiktok', {}, admin)).status === 200 && (await j('/api/social/twitter', {}, admin)).status === 404
     && (await j('/api/social/facebook', {}, a1.token)).status === 403 && (await j('/api/social/rules/' + fbr.id, { method: 'DELETE' }, a1.token)).status === 403);
+  // A WhatsApp chat from a TikTok ad: the ready-made first message names TikTok, so the new contact is marked TikTok ad. An old client who mentions TikTok keeps their source.
+  const ttPh = '92300700' + Date.now().toString().slice(-5);
+  await inbound(ttPh, { text: { body: 'Hi, I saw your TikTok ad. Tell me more' } }); await sleep(400);
+  await inbound(phones[0], { text: { body: 'I also follow you on tiktok' } }); await sleep(400);
+  const ctList = arr => Array.isArray(arr) ? arr : (arr && (arr.contacts || arr.rows)) || [];
+  const ttC = ctList((await j('/api/contacts?q=' + ttPh, {}, admin)).data).find(c => c.wa_id === ttPh), oldC = ctList((await j('/api/contacts?q=' + phones[0], {}, admin)).data).find(c => c.wa_id === phones[0]);
+  check('a new chat whose first message names TikTok is marked as a TikTok ad, an old client is not', ttC && ttC.channel === 'tiktok' && ttC.source === 'ad' && oldC && oldC.channel !== 'tiktok');
   await j('/api/social/rules/' + fbr.id, { method: 'DELETE' }, admin); await j('/api/social/rules/' + fba.id, { method: 'DELETE' }, admin);
   check('social rules can be deleted and the log stays', (await j('/api/social/facebook', {}, admin)).data.rules.length === 0 && (await j('/api/social/facebook', {}, admin)).data.log.length === 2);
 

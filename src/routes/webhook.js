@@ -87,6 +87,13 @@ async function handleMessage(m, profileName, numId) {
 
   const saved = await saveInbound(conv, msg);
   if (!saved) return; // duplicate delivery
+  // A person whose very first message names TikTok came from a TikTok ad (TikTok sends no ad details, only the ad's ready-made message).
+  // A client who already wrote before, or who has another source, keeps it.
+  if (!ref && msg.type === 'text' && source.saysTikTok(msg.body) && (contact.channel == null || contact.channel === 'whatsapp') && contact.source === 'organic'
+    && (await query(`SELECT COUNT(*)::int AS n FROM messages WHERE conversation_id=$1 AND direction='in'`, [conv.id])).rows[0].n === 1) {
+    await query(`UPDATE contacts SET channel='tiktok', source='ad', ad_source_type='ad', ad_headline=COALESCE(ad_headline,$2), ad_clicked_at=now() WHERE id=$1`, [contact.id, String(msg.body).trim().slice(0, 200)]).catch(e => console.error('tiktok source', e.message));
+    Object.assign(contact, { channel: 'tiktok', source: 'ad' });
+  }
   query('UPDATE chat_flags SET archived=FALSE WHERE conversation_id=$1 AND archived', [conv.id]).catch(() => {}); // a new message brings an archived chat back
   conv = saved.conversation;
   if (msg.mediaId) mediaStore.ensure(msg.mediaId, w).catch(e => console.error('media download', e.message));

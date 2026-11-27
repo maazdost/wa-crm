@@ -43,6 +43,9 @@ function fromReferral(r) {
   return { channel, url, type: String(r.source_type || 'ad').toLowerCase().slice(0, 20), id: r.source_id ? String(r.source_id).slice(0, 60) : null,
     headline: String(r.headline || r.body || '').trim().slice(0, 200) || null };
 }
+// A WhatsApp chat that starts from a TikTok ad: TikTok sends no ad details, so the ad's ready-made first message
+// names TikTok (for example "Hi, I saw your TikTok ad about forex classes").
+const saysTikTok = (text) => /(^|[^\p{L}\p{N}])tik ?tok($|[^\p{L}\p{N}])/iu.test(String(text || ''));
 // A date from a file: an Excel day number, 2026-11-25 10:30, 25/11/2026, or "25 Nov 2026". Dates in the future or before 2000 are dropped.
 function cleanDate(v) {
   const s = String(v == null ? '' : v).trim();
@@ -55,4 +58,4 @@ function cleanDate(v) {
   if (!d || isNaN(d)) return null;
   return d.getFullYear() < 2000 || d > new Date(Date.now() + 86400000) ? null : d.toISOString();
 }
-module.exports = { CHANNELS, cleanUrl, appOfUrl, normChannel, fromReferral, cleanDate };
+module.exports = { CHANNELS, cleanUrl, appOfUrl, normChannel, fromReferral, cleanDate, saysTikTok };
