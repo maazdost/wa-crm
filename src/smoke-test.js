@@ -438,6 +438,10 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
     const listed = (await j('/api/drips', {}, admin)).data.find(d => d.id === fc.data.id);
     check('a follow-up for one department only gets clients of that department', fc.status === 200 && fbad.status === 400 && listed.team === 'classes'
       && got.includes(fc.data.id) && !got.includes(fs2.data.id));
+    const dc = (await pool.query('SELECT c.id FROM conversations c JOIN contacts ct ON ct.id=c.contact_id WHERE ct.wa_id=$1', [ph])).rows[0];
+    await j(`/api/conversations/${dc.id}/status`, { method: 'POST', body: { status: 'closed' } }, admin);
+    const left = (await pool.query(`SELECT COUNT(*)::int n FROM drip_enrollments e JOIN contacts ct ON ct.id=e.contact_id WHERE ct.wa_id=$1 AND e.status='active'`, [ph])).rows[0].n;
+    check('closing a chat stops its follow-ups', left === 0);
     for (const d of [fc.data, fs2.data]) await j('/api/drips/' + d.id, { method: 'DELETE' }, admin);
   }
   // Slow-reply alert: an agent who does not reply in time; managers are told and the chat moves once (server runs with SLOW_TICK_MS=1000)
