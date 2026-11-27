@@ -1973,6 +1973,8 @@ async function showSettings(mode) {
     <label class="fld"><span>Chats for each agent before the next agent's turn (1 to 20, used for "take turns")</span><input id="as2" type="number" min="1" max="20" value="${esc(st.assign.batch)}"></label>
     <label class="ck" style="margin:6px 0 4px"><span class="tog"><input type="checkbox" id="as3"${st.assign.slow_on ? ' checked' : ''}><i></i></span> Slow-reply alert</label>
     <label class="fld"><span>If the agent has not replied to a new client in this many minutes (2 to 120), managers are alerted and the chat moves to the next free agent of the same department, and keeps moving until someone replies</span><input id="as4" type="number" min="2" max="120" value="${esc(st.assign.slow_min || 10)}"></label>
+    <label class="ck" style="margin:6px 0 4px"><span class="tog"><input type="checkbox" id="as5"${st.assign.slow_hours !== false ? ' checked' : ''}><i></i></span> Only during working hours</label>
+    <div class="fld"><span>Slow-reply alert works between these times (Pakistan time). Outside them it is off: no alerts and no moves. A chat that came in at night gets the full wait after the start time.</span><div style="display:flex;gap:8px;max-width:340px"><input type="time" id="as6" value="${esc(st.assign.slow_start || '10:00')}"><input type="time" id="as7" value="${esc(st.assign.slow_end || '22:00')}"></div></div>
     <label class="fld"><span>Clients who tap "More info" go to</span>${dsel('rt1', st.routing.info)}</label><label class="fld"><span>Clients who tap "Join our team" go to</span>${dsel('rt2', st.routing.team)}</label><label class="fld"><span>Clients who tap "Join classes" go to</span>${dsel('rt3', st.routing.classes)}</label>
     <button class="btn">Save assignment</button></form>` : ''}
   <form class="panel" id="bf" ${sec('bot')}><h3>Bot messages</h3><p class="mute">What the bot says before a client is handed to an agent. Use {{name}} for the client's name.</p>
@@ -2006,7 +2008,7 @@ async function showSettings(mode) {
     el.querySelectorAll('[data-dr]').forEach(x => x.onclick = async () => { const v = await ask('Rename department', { placeholder: 'New name' }); if (!v || !v.trim()) return; const r = await api('/departments/' + x.dataset.dr, 'PATCH', { name: v.trim() }); toast(r.error || 'Renamed'); showSettings(); });
     el.querySelectorAll('[data-dd]').forEach(x => x.onclick = async () => { if (!await sure('Delete this department?', '', { ok: 'Delete', danger: 1 })) return; const r = await api('/departments/' + x.dataset.dd, 'DELETE'); toast(r.error || 'Department deleted'); showSettings(); });
     $('#asf').onsubmit = async e => { e.preventDefault();
-      const a = await api('/settings/assign', 'PUT', { mode: $('#as1').value, batch: +$('#as2').value, slow_on: $('#as3').checked, slow_min: +$('#as4').value }); if (a.error) return toast(a.error);
+      const a = await api('/settings/assign', 'PUT', { mode: $('#as1').value, batch: +$('#as2').value, slow_on: $('#as3').checked, slow_min: +$('#as4').value, slow_hours: $('#as5').checked, slow_start: $('#as6').value, slow_end: $('#as7').value }); if (a.error) return toast(a.error);
       const r = await api('/settings/routing', 'PUT', { info: $('#rt1').value, team: $('#rt2').value, classes: $('#rt3').value }); toast(r.error || 'Assignment saved'); };
   }
   loadWaStatus(); setupEmbeddedSignup();

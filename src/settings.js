@@ -8,7 +8,8 @@ const DEFAULTS = {
     btnInfo: 'More info', btnTeam: 'Join our team', btnClasses: 'Join classes'
   },
   wa: { waba_id: '' },
-  assign: { mode: 'least', batch: 1, slow_on: false, slow_min: 10 },
+  // slow_hours: the slow-reply alert and move only run between slow_start and slow_end (slow_tz); outside them it is off.
+  assign: { mode: 'least', batch: 1, slow_on: false, slow_min: 10, slow_hours: true, slow_start: '10:00', slow_end: '22:00', slow_tz: 'Asia/Karachi' },
   routing: { info: 'sales', team: 'recruitment', classes: 'classes' }, // which department each bot button sends clients to
   gate: { mode: 'all', keywords: ['info', 'class', 'course', 'join', 'trading', 'price', 'fees', 'team', 'learn'] },
   // Demo class bookings (Demo Classes page). Days: 0 Sunday ... 6 Saturday. Times are in tz.

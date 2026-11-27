@@ -1636,6 +1636,8 @@
 "With the chatbot": "چیٹ بوٹ کے ساتھ",
 "If the client types instead of tapping, or does not answer": "اگر کلائنٹ بٹن دبانے کے بجائے لکھے، یا جواب نہ دے",
 "Slow-reply alert": "دیر سے جواب کا الرٹ",
+"Only during working hours": "صرف کام کے اوقات میں",
+"Slow-reply alert works between these times (Pakistan time). Outside them it is off: no alerts and no moves. A chat that came in at night gets the full wait after the start time.": "دیر سے جواب کا الرٹ صرف ان اوقات میں کام کرتا ہے (پاکستان کا وقت)۔ ان کے باہر یہ بند رہتا ہے: نہ الرٹ، نہ چیٹ منتقل ہوتی ہے۔ رات کو آنے والی چیٹ کو شروع کے وقت کے بعد پورا انتظار ملتا ہے۔",
 "Late replies": "دیر سے جوابات",
 "Late reply": "دیر سے جواب",
 "Dark mode": "ڈارک موڈ",
