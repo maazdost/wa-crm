@@ -9,6 +9,7 @@ const rt = require('../realtime');
 const mediaStore = require('../media');
 const push = require('../push');
 const plan = require('../plan');
+const hhmm = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')) ? String(v) : null; // a time like 10:00 or 22:00
 const router = express.Router();
 const wrap = (fn) => (req, res) => fn(req, res).catch(e => { console.error(e); res.status(500).json({ error: e.message }); });
 const isAgent = (u) => u.role === 'agent';
@@ -657,7 +658,9 @@ router.put('/settings/:key', required('admin', 'manager'), wrap(async (req, res)
     const cur = await settings.get('assign');
     await settings.set('assign', { mode: b.mode === 'turns' ? 'turns' : 'least', batch: Math.min(20, Math.max(1, Math.round(Number(b.batch)) || 1)),
       slow_since: b.slow_on === true && !cur.slow_on ? new Date().toISOString() : cur.slow_since || null,
-      slow_on: 'slow_on' in b ? b.slow_on === true : cur.slow_on, slow_min: 'slow_min' in b ? Math.min(120, Math.max(2, Math.round(Number(b.slow_min)) || 10)) : cur.slow_min });
+      slow_on: 'slow_on' in b ? b.slow_on === true : cur.slow_on, slow_min: 'slow_min' in b ? Math.min(120, Math.max(2, Math.round(Number(b.slow_min)) || 10)) : cur.slow_min,
+      slow_hours: 'slow_hours' in b ? b.slow_hours === true : cur.slow_hours,
+      slow_start: hhmm(b.slow_start) || cur.slow_start, slow_end: hhmm(b.slow_end) || cur.slow_end, slow_tz: cur.slow_tz || 'Asia/Karachi' });
   } else if (k === 'routing') {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Only an admin can change this' });
     const keys = new Set((await query('SELECT key FROM departments WHERE company_id=$1', [C()])).rows.map(r => r.key)), v = {};

@@ -442,7 +442,27 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
   }
   // Slow-reply alert: an agent who does not reply in time; managers are told and the chat moves once (server runs with SLOW_TICK_MS=1000)
   {
-    const on = await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: true, slow_min: 2 } }, admin);
+    // Working hours: outside them the rule is off; the wait counts from opening time. (PKT = UTC+5, no summer time.)
+    const pk = (addMin) => { const d = new Date(Date.now() + 5 * 36e5 + addMin * 60000); return d.toISOString().slice(11, 16); };
+    const st0 = pk(120), shut = await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: true, slow_min: 2, slow_hours: true, slow_start: st0, slow_end: pk(180) } }, admin);
+    const hp = '9230070003' + Date.now().toString().slice(-4);
+    await inbound(hp, { text: { body: 'hi' } }); await sleep(200); await inbound(hp, { text: { body: 'more info please' } }); await sleep(200);
+    await inbound(hp, { text: { body: 'Night Client' } }); await sleep(400);
+    const h0 = await convOf(hp);
+    const late3 = async () => { await pool.query(`UPDATE conversations SET assigned_at = now() - interval '3 minutes', slow_alerted_at=NULL WHERE id=$1`, [h0.id]);
+      await pool.query(`UPDATE settings SET value = jsonb_set(value, '{slow_since}', to_jsonb((now() - interval '1 hour')::text)) WHERE company_id=1 AND key='assign'`); };
+    await late3(); await sleep(2500);
+    const hn1 = (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [h0.id])).rows[0].n, h1 = await convOf(hp);
+    const bad = await j('/api/settings/assign', { method: 'PUT', body: { slow_start: '25:99', slow_end: 'x' } }, admin), saved = (await j('/api/settings', {}, admin)).data.assign;
+    check('working hours: outside the hours a late chat is not moved or alerted, and wrong times are ignored', shut.status === 200 && hn1 === 0 && h1.assigned_to === h0.assigned_to
+      && bad.status === 200 && saved.slow_start === st0 && saved.slow_hours === true);
+    await j('/api/settings/assign', { method: 'PUT', body: { slow_start: pk(-1), slow_end: pk(180) } }, admin); // opened a minute ago
+    await late3(); await sleep(2500);
+    const hn2 = (await pool.query('SELECT COUNT(*)::int AS n FROM slow_replies WHERE conversation_id=$1', [h0.id])).rows[0].n;
+    check('working hours: a chat waiting from before opening time gets the full wait after opening (no move at once)', hn2 === 0 && (await convOf(hp)).assigned_to === h0.assigned_to);
+    await j(`/api/conversations/${h0.id}/messages`, { method: 'POST', body: { text: 'Good morning!' } }, admin);
+    // The rest of the slow-reply checks run with all-day hours (same start and end time).
+    const on = await j('/api/settings/assign', { method: 'PUT', body: { mode: 'least', batch: 1, slow_on: true, slow_min: 2, slow_start: '00:00', slow_end: '00:00' } }, admin);
     const sp = '9230070001' + Date.now().toString().slice(-4);
     await inbound(sp, { text: { body: 'hi' } }); await sleep(200);
     await inbound(sp, { text: { body: 'more info please' } }); await sleep(200);

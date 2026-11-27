@@ -2,6 +2,7 @@
 // the managers and admins are told, and the chat moves to the next free agent of the same department. It keeps moving
 // every few minutes, through each agent of the department in turn, until someone replies.
 // Switched on per company under Settings > Chat assignment (assign.slow_on, assign.slow_min). Off by default.
+// Only runs in working hours (assign.slow_hours, slow_start, slow_end, slow_tz; default 10:00 to 22:00 Pakistan time).
 // Runs every minute (SLOW_TICK_MS) for every company that has it switched on.
 const { query } = require('./db');
 const tenant = require('./tenant');
@@ -9,28 +10,41 @@ const settings = require('./settings');
 const { assignConversation } = require('./assign');
 
 const toMin = (s) => { const [h, m] = String(s).split(':').map(Number); return h * 60 + m; };
-// Outside the working hours of the away message nobody is expected to reply, so no alert then.
+const localNow = (tz) => { const d = new Date(new Date().toLocaleString('en-US', { timeZone: tz || 'Asia/Karachi' })); return { day: d.getDay(), mins: d.getHours() * 60 + d.getMinutes(), secs: d.getSeconds() }; };
+// When the slow-reply rule may act. With working hours on (Settings > Chat assignment, default 10:00 to 22:00 Pakistan time)
+// it is off outside them: no alerts and no moves. The wait is counted from the start of the hours, so a chat that came in
+// at night gets the full wait after opening time instead of moving the moment the hours start.
+// Hours like 22:00 to 06:00 run past midnight; the same start and end time means all day.
+// With working hours off it falls back to the away message hours (as before), if the away message is on.
+function hours(cfg) {
+  if (cfg.slow_hours === false) return null;
+  const s = toMin(cfg.slow_start || '10:00'), e = toMin(cfg.slow_end || '22:00'), t = localNow(cfg.slow_tz);
+  if (s === e) return { open: true, since: null };
+  const open = s < e ? t.mins >= s && t.mins < e : t.mins >= s || t.mins < e;
+  const since = ((t.mins - s + 1440) % 1440) * 60000 + t.secs * 1000; // how long ago today's hours started
+  return { open, since: open ? new Date(Date.now() - since).toISOString() : null };
+}
 async function offHours() {
   const a = await settings.get('away'); if (!a.enabled) return false;
-  const local = new Date(new Date().toLocaleString('en-US', { timeZone: a.tz }));
-  const mins = local.getHours() * 60 + local.getMinutes();
-  return !(a.days.includes(local.getDay()) && mins >= toMin(a.start) && mins < toMin(a.end));
+  const t = localNow(a.tz);
+  return !(a.days.includes(t.day) && t.mins >= toMin(a.start) && t.mins < toMin(a.end));
 }
 
 /** Checks one company. Returns what it did: [{ conversation_id, from, to }] */
 async function checkCompany() {
   const cfg = await settings.get('assign'); if (!cfg.slow_on) return [];
-  if (await offHours()) return [];
+  const h = hours(cfg);
+  if (h ? !h.open : await offHours()) return [];
   const min = Math.min(120, Math.max(2, Number(cfg.slow_min) || 10)), cid = tenant.cid();
   // Open chats with an agent, where the client wrote, and no person has written since the chat was given to this agent.
   const late = (await query(`SELECT c.*, COALESCE(ct.name, ct.profile_name, '+' || ct.wa_id) AS who, u.name AS agent
       FROM conversations c JOIN contacts ct ON ct.id=c.contact_id JOIN users u ON u.id=c.assigned_to
      WHERE c.company_id=$1 AND c.status='open' AND c.assigned_at IS NOT NULL AND c.last_customer_message_at IS NOT NULL
-       AND c.assigned_at < now() - ($2 || ' minutes')::interval
+       AND GREATEST(c.assigned_at, $4::timestamptz) < now() - ($2 || ' minutes')::interval -- the wait starts at opening time at the earliest
        AND c.assigned_at > GREATEST(now() - interval '1 day', $3::timestamptz) -- only chats given out since it was switched on, and not old ones
        AND (c.slow_alerted_at IS NULL OR c.slow_alerted_at < c.assigned_at)
        AND NOT EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id=c.id AND m.sender_type='agent' AND m.created_at >= c.assigned_at)
-     ORDER BY c.assigned_at LIMIT 20`, [cid, String(min), cfg.slow_since || new Date().toISOString()])).rows;
+     ORDER BY c.assigned_at LIMIT 20`, [cid, String(min), cfg.slow_since || new Date().toISOString(), h && h.since])).rows;
   const done = [], rt = require('./realtime'), push = require('./push');
   for (const c of late) {
     // Marked first, so a slow check or an error never alerts twice for the same wait.
@@ -71,4 +85,4 @@ async function run() {
 }
 let busy = false;
 const start = () => setInterval(async () => { if (busy) return; busy = true; try { await run(); } catch (e) { console.error('slow reply', e.message); } finally { busy = false; } }, Number(process.env.SLOW_TICK_MS || 60000));
-module.exports = { start, run, checkCompany };
+module.exports = { start, run, checkCompany, hours };
