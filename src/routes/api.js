@@ -473,37 +473,72 @@ router.post('/conversations/:id/media', express.raw({ type: () => true, limit: '
 
 // Send a message again that WhatsApp did not deliver (status "failed"): text, text with buttons, photo, video, voice note or file.
 // The same bubble in the chat gets the new WhatsApp id, so it shows sent / delivered / read from then on.
+// Sends one failed outbound message (m) again in its chat (c). Throws an Error with .status for messages that cannot be resent.
+async function resendOne(m, c) {
+  const fail = (status, msg, code) => Object.assign(new Error(msg), { status, code });
+  if (m.direction !== 'out' || m.status !== 'failed') throw fail(409, 'Only messages that were not delivered can be sent again');
+  if (m.template_name || m.type === 'template') throw fail(409, 'Send the template again from the template button');
+  if (!windowInfo(c).window_open) throw fail(409, 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', 'WINDOW_CLOSED');
+  const w = wa.forConversation(c);
+  let sent, upd = {};
+  if (m.type === 'text' || !m.media_id) {
+    const [text, bl] = String(m.body || '').split('\n\n🔘 '), btns = bl ? bl.split('  ·  ').map(x => x.trim().slice(0, 20)).filter(Boolean).slice(0, 3) : [];
+    if (!text.trim()) throw fail(409, 'This message cannot be sent again');
+    sent = btns.length ? await w.sendButtons(c.wa_id, text.slice(0, 1024), btns.map((t, i) => ({ id: 'qr_' + (i + 1), title: t }))) : await w.sendText(c.wa_id, text);
+  } else {
+    const file = await mediaStore.ensure(m.media_id, w).catch(() => null);
+    if (!file) throw fail(409, 'The file is no longer available. Send it again from the paperclip.');
+    let body = file.data, mime = String(m.media_mime || file.mime || 'application/octet-stream').split(';')[0], name = m.media_name || 'file';
+    if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr)/.test(mime)) { body = await toMp3(body); mime = 'audio/mpeg'; name = 'voice-note.mp3'; } // older voice notes were OGG
+    const kind = mediaStore.kindOf(mime), caption = m.body && !/^\[\w+\]$/.test(m.body) ? m.body : '';
+    const up = await w.uploadMedia(body, mime, name);
+    sent = await w.sendMedia(c.wa_id, kind, up.id, { caption, filename: name });
+    await mediaStore.store(up.id, mime, body);
+    upd = { media_id: up.id, media_mime: mime, media_name: name, type: kind };
+  }
+  const r = (await query(`UPDATE messages SET wa_message_id=$2, status='sent', error=NULL, created_at=now(),
+      media_id=COALESCE($3, media_id), media_mime=COALESCE($4, media_mime), media_name=COALESCE($5, media_name), type=COALESCE($6, type) WHERE id=$1 RETURNING *`,
+    [m.id, sent.messages?.[0]?.id || null, upd.media_id || null, upd.media_mime || null, upd.media_name || null, upd.type || null])).rows[0];
+  await query('UPDATE conversations SET last_message_at=now() WHERE id=$1', [c.id]);
+  return r;
+}
+
+// Send a message again that WhatsApp did not deliver (status "failed"): text, text with buttons, photo, video, voice note or file.
+// The same bubble in the chat gets the new WhatsApp id, so it shows sent / delivered / read from then on.
 router.post('/messages/:id/resend', required(), wrap(async (req, res) => {
   const m = (await query(`SELECT m.* FROM messages m JOIN conversations c ON c.id=m.conversation_id WHERE m.id=$1 AND c.company_id=$2`, [Number(req.params.id) || 0, C()])).rows[0];
   if (!m) return res.status(404).json({ error: 'not found' });
   req.params.id = String(m.conversation_id); const c = await loadConversation(req, res); if (!c) return;
-  if (m.direction !== 'out' || m.status !== 'failed') return res.status(409).json({ error: 'Only messages that were not delivered can be sent again' });
-  if (m.template_name || m.type === 'template') return res.status(409).json({ error: 'Send the template again from the template button' });
-  if (!windowInfo(c).window_open) return res.status(409).json({ error: 'The 24-hour reply window is closed. Send an approved template to reopen the chat.', code: 'WINDOW_CLOSED' });
-  const w = wa.forConversation(c);
-  try {
-    let sent, upd = {};
-    if (m.type === 'text' || !m.media_id) {
-      const [text, bl] = String(m.body || '').split('\n\n🔘 '), btns = bl ? bl.split('  ·  ').map(x => x.trim().slice(0, 20)).filter(Boolean).slice(0, 3) : [];
-      if (!text.trim()) return res.status(409).json({ error: 'This message cannot be sent again' });
-      sent = btns.length ? await w.sendButtons(c.wa_id, text.slice(0, 1024), btns.map((t, i) => ({ id: 'qr_' + (i + 1), title: t }))) : await w.sendText(c.wa_id, text);
-    } else {
-      const file = await mediaStore.ensure(m.media_id, w).catch(() => null);
-      if (!file) return res.status(409).json({ error: 'The file is no longer available. Send it again from the paperclip.' });
-      let body = file.data, mime = String(m.media_mime || file.mime || 'application/octet-stream').split(';')[0], name = m.media_name || 'file';
-      if (/^audio\//.test(mime) && !/^audio\/(aac|mp4|mpeg|amr)/.test(mime)) { body = await toMp3(body); mime = 'audio/mpeg'; name = 'voice-note.mp3'; } // older voice notes were OGG
-      const kind = mediaStore.kindOf(mime), caption = m.body && !/^\[\w+\]$/.test(m.body) ? m.body : '';
-      const up = await w.uploadMedia(body, mime, name);
-      sent = await w.sendMedia(c.wa_id, kind, up.id, { caption, filename: name });
-      await mediaStore.store(up.id, mime, body);
-      upd = { media_id: up.id, media_mime: mime, media_name: name, type: kind };
-    }
-    const r = (await query(`UPDATE messages SET wa_message_id=$2, status='sent', error=NULL, created_at=now(),
-        media_id=COALESCE($3, media_id), media_mime=COALESCE($4, media_mime), media_name=COALESCE($5, media_name), type=COALESCE($6, type) WHERE id=$1 RETURNING *`,
-      [m.id, sent.messages?.[0]?.id || null, upd.media_id || null, upd.media_mime || null, upd.media_name || null, upd.type || null])).rows[0];
-    await query('UPDATE conversations SET last_message_at=now() WHERE id=$1', [c.id]);
-    res.json(r);
-  } catch (e) { res.status(502).json({ error: e.message }); }
+  try { res.json(await resendOne(m, c)); }
+  catch (e) { res.status(e.status || 502).json({ error: e.message, ...(e.code ? { code: e.code } : {}) }); }
+}));
+
+// Failed messages from the last 24 hours that can still be sent free: not templates, the client's 24-hour window is open,
+// nothing later in that chat went through already, and the same text is not counted twice in one chat.
+const RESENDABLE_SQL = `SELECT m.id, m.conversation_id FROM messages m JOIN conversations c ON c.id=m.conversation_id
+  WHERE c.company_id=$1 AND m.direction='out' AND m.status='failed' AND m.template_name IS NULL AND m.type<>'template'
+    AND m.created_at > now() - interval '24 hours' AND c.window_expires_at > now()
+    AND NOT EXISTS (SELECT 1 FROM messages x WHERE x.conversation_id=m.conversation_id AND x.direction='out' AND x.id>m.id AND x.status IN ('sent','delivered','read'))
+    AND NOT EXISTS (SELECT 1 FROM messages d WHERE d.conversation_id=m.conversation_id AND d.direction='out' AND d.id<>m.id AND d.body=m.body AND d.created_at > now() - interval '24 hours'
+      AND (d.status IN ('sent','delivered','read') OR (d.status='failed' AND d.id<m.id)))
+  ORDER BY m.conversation_id, m.id`;
+router.get('/messages/failed', required('admin'), wrap(async (req, res) => {
+  const rows = (await query(RESENDABLE_SQL, [C()])).rows;
+  res.json({ messages: rows.length, chats: new Set(rows.map(r => r.conversation_id)).size });
+}));
+// Admin button "Resend all": sends every message above again, one by one.
+router.post('/messages/resend-failed', required('admin'), wrap(async (req, res) => {
+  const rows = (await query(RESENDABLE_SQL, [C()])).rows;
+  let sent = 0, failed = 0; const errors = {}, chats = new Set();
+  for (const r of rows) {
+    const m = (await query('SELECT * FROM messages WHERE id=$1', [r.id])).rows[0];
+    req.params.id = String(r.conversation_id); const c = await loadConversation(req, { status: () => ({ json: () => {} }) });
+    if (!m || !c) { failed++; continue; }
+    try { await resendOne(m, c); sent++; chats.add(c.id); }
+    catch (e) { failed++; errors[e.message] = (errors[e.message] || 0) + 1; }
+    await new Promise(ok => setTimeout(ok, 300)); // gentle pace for Meta
+  }
+  res.json({ sent, failed, chats: chats.size, errors });
 }));
 
 router.get('/messages/:id/media', required(), wrap(async (req, res) => {
