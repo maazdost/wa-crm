@@ -1916,6 +1916,19 @@ async function setupEmbeddedSignup() {
 }
 
 /* ---------- Settings (managers/admins) ---------- */
+// Admins: messages that did not send in the last 24 hours (for example while Meta blocked the number) can be sent again in one click.
+async function loadFailedBox() {
+  const el = $('#rsall'); if (!el) return;
+  const r = await api('/messages/failed'); if (r.error || !r.messages) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="numcard" style="margin-top:12px"><b>${r.messages} message${r.messages === 1 ? '' : 's'} did not send</b> <span class="mute">in ${r.chats} chat${r.chats === 1 ? '' : 's'}, last 24 hours</span><p class="mute" style="margin:6px 0 10px">Send them again for free. Templates, closed chats, and chats where a newer message already went through are left out.</p><button class="btn" id="rsallb">${ico('send', 16)}Resend all</button></div>`;
+  $('#rsallb').onclick = async () => {
+    const b = $('#rsallb'); b.disabled = true; b.lastChild.textContent = 'Sending…';
+    const x = await api('/messages/resend-failed', 'POST');
+    if (x.error) { b.disabled = false; b.lastChild.textContent = 'Resend all'; return toast(x.error); }
+    toast(`Sent again: ${x.sent} message${x.sent === 1 ? '' : 's'} in ${x.chats} chat${x.chats === 1 ? '' : 's'}` + (x.failed ? `. Still failing: ${x.failed}` : ''));
+    loadFailedBox();
+  };
+}
 async function loadWaStatus() {
   const r = await api('/whatsapp/status'), el = $('#ws'); if (!el) return;
   if (r.error) { el.textContent = r.error; return; }
@@ -1958,7 +1971,7 @@ async function showSettings(mode) {
   <div class="stwrap">
   ${admin ? `<div class="panel" id="planp" ${sec('general')}><h3>Plan and usage</h3><p class="mute">Loading…</p></div>` : ''}
   ${admin ? `<div class="panel" ${sec('general')}><h3>Company</h3><p class="mute">The name your team sees in the app.</p><label class="fld"><span>Company name</span><input id="coname" maxlength="80" value="${esc(S.user.company || '')}"></label><button class="btn" id="cosave">Save name</button></div>` : ''}
-  <div class="panel" id="wp" ${sec('wa')}><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>${admin ? '<div id="esu"></div>' : ''}
+  <div class="panel" id="wp" ${sec('wa')}><h3>WhatsApp numbers</h3><p class="mute">Every number added here receives and sends messages. A chat always answers from the number the client wrote to. The default number is used for new broadcasts and templates.</p><div id="ws" class="mute">Checking…</div>${admin ? '<div id="esu"></div>' : ''}${admin ? '<div id="rsall"></div>' : ''}
     ${admin ? `<p style="margin:14px 0 0"><button class="ghost" data-open="m-num">${ico('plus', 16)}Add a number with IDs from Meta</button></p>` : '<p class="mute">Only an admin can add or remove numbers.</p>'}
     <details style="margin-top:14px"><summary class="mute" style="cursor:pointer">Find the account ID of the default number</summary>
     <label class="fld" style="margin-top:10px"><span>Account IDs to try, as shown in Meta (separate with commas)</span><input id="w1" placeholder="4572421779664202, 1472520688056945"></label><button class="btn" id="w2">Find and save my account ID</button></details></div>
@@ -2011,7 +2024,7 @@ async function showSettings(mode) {
       const a = await api('/settings/assign', 'PUT', { mode: $('#as1').value, batch: +$('#as2').value, slow_on: $('#as3').checked, slow_min: +$('#as4').value, slow_hours: $('#as5').checked, slow_start: $('#as6').value, slow_end: $('#as7').value }); if (a.error) return toast(a.error);
       const r = await api('/settings/routing', 'PUT', { info: $('#rt1').value, team: $('#rt2').value, classes: $('#rt3').value }); toast(r.error || 'Assignment saved'); };
   }
-  loadWaStatus(); setupEmbeddedSignup();
+  loadWaStatus(); setupEmbeddedSignup(); loadFailedBox();
   if ($('#wnf')) $('#wnf').onsubmit = async e => { e.preventDefault();
     const r = await api('/whatsapp/numbers', 'POST', { label: $('#wn1').value, phone_number_id: $('#wn2').value, access_token: $('#wn3').value, waba_id: $('#wn4').value, make_default: $('#wn5').checked });
     if (r.error) return toast(r.error);
